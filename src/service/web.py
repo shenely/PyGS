@@ -79,7 +79,7 @@ class ZMQWebSocket(tornado.websocket.WebSocketHandler):
         del self.sockets[self]
 
 def main():
-    app = tornado.web.Application([(r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "./trunk/service/"}),
+    app = tornado.web.Application([(r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "./src/service/"}),
                                    (r"/view",ZMQWebSocket)])
     app.listen(8080)
     

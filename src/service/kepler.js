@@ -70,7 +70,7 @@ function KeplerControl( $scope, $element ) {
       .attr("d", function(d) { return path(d3.geo.circle().origin([ d.long, d.lat ]).angle(d.arc)()); })
     .enter().append("path")
       .attr("d", function(d) { return path(d3.geo.circle().origin([ d.long, d.lat ]).angle(d.arc)()); })
-      .style("fill", function(d,i) { return color(d.name); } )
+      .style("fill", function(d,i) { return color(i); } )
       .style("fill-opacity", 0.5);
   };
 
