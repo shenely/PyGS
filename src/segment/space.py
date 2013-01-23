@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   22 January 2013
+Modified:   23 January 2013
 
 Purpose:    
 """
@@ -24,7 +24,7 @@ import zmq
 
 #Internal libraries
 from ..core.scheduler import Scheduler
-from ..routine import control,queue,socket,epoch,state,transform,iterator
+from ..routine import control,queue,socket,epoch,state,transform,iterator,command,acknowledge,result
 from ..core.state import BaseState,KeplerianState
 #
 ##################
@@ -49,10 +49,15 @@ EARTH_GRAVITION = 398600
 
 EPOCH_ADDRESS = "Kepler.Physics.Epoch"
 STATE_ADDRESS = "Kepler.Space.{name!s}.State"
+COMMAND_ADDRESS = "Kepler.Space.{name!s}.Command"
+ACKNOWLEDGE_ADDRESS = "Kepler.Space.{name!s}.Acknowledge"
+RESULT_ADDRESS = "Kepler.Space.{name!s}.Result"
 
 ITERATE_MARGIN = timedelta(seconds=300)
+EXECUTE_MARGIN = timedelta(seconds=30)
 PUBLISH_MARGIN = timedelta(seconds=180)
 REMOVE_MARGIN = timedelta(seconds=120)
+COMMAND_MARGIN = timedelta(seconds=180)
 
 STEP_SIZE = timedelta(seconds=60)
 
@@ -80,10 +85,17 @@ class SpaceSegment(object):
         
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect("tcp://localhost:5555")
+    
+        self.cmd_socket = context.socket(zmq.SUB)
+        self.cmd_socket.connect("tcp://localhost:5556")
+        self.cmd_socket.setsockopt(zmq.SUBSCRIBE,COMMAND_ADDRESS.format(name=self.name))
 
         self.queue = PriorityQueue()
+        self.cmd_queue = PriorityQueue()
         
         self.task_iterate_state(elements)
+        self.task_acknowledge_command()
+        self.task_execute_command(elements)
 
     @classmethod
     def task_update_epoch(cls):
@@ -109,6 +121,31 @@ class SpaceSegment(object):
         before_state = epoch.before(elements,ITERATE_MARGIN,inspect_state,iterate_state)
         
         self.tasks.append(before_state)
+
+    def task_acknowledge_command(self):
+        publish_ack = socket.publish(self.socket)
+        format_ack = acknowledge.format(ACKNOWLEDGE_ADDRESS.format(name=self.name),publish_ack)
+        accept_cmd = command.accept(format_ack)
+        enqueue_cmd = queue.put(self.cmd_queue,accept_cmd)
+        reject_cmd = command.reject(format_ack)
+        after_epoch = epoch.before(self.physics,COMMAND_MARGIN,enqueue_cmd,reject_cmd)
+        parse_cmd = command.parse(after_epoch)
+        subscribe_cmd = socket.subscribe(self.cmd_socket,parse_cmd)
+        
+        self.cmd_task = subscribe_cmd
+        self.scheduler.handler(self.cmd_socket,self.cmd_task)
+
+    def task_execute_command(self,elements):
+        publish_result = socket.publish(self.socket)
+        format_result = result.format(RESULT_ADDRESS.format(name=self.name),publish_result)
+        execute_cmd = command.execute(format_result)
+        dequeue_cmd = queue.get(self.cmd_queue,execute_cmd)
+        remove_cmd = queue.get(self.cmd_queue)
+        after_state = epoch.after(elements,EXECUTE_MARGIN,None,dequeue_cmd)
+        before_state = epoch.before(elements,EXECUTE_MARGIN,remove_cmd,after_state)
+        inspect_cmd = queue.peek(self.cmd_queue,before_state)
+        
+        self.tasks.append(inspect_cmd)
                 
 def main():
     """Main Function"""
