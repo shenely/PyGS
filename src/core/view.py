@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 January 2013
+Modified:   22 January 2013
 
 Purpose:    
 """
@@ -21,7 +21,7 @@ from datetime import datetime
 #Internal libraries
 from . import ObjectDict
 from .message import RequestMessage
-from .state import GeographicState
+from .state import *
 #
 ##################
 
@@ -29,7 +29,8 @@ from .state import GeographicState
 ##################
 # Export section #
 #
-__all__ = ["GlobalView"]
+__all__ = ["GlobalView",
+           "LocalView"]
 #
 ##################
 
@@ -46,10 +47,19 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 class GlobalView(RequestMessage):
     def __init__(self,states):
-        #assert isinstance(epoch,datetime)
-        #assert isinstance(state,GeographicState)
+        assert filter(lambda state:isinstance(state,GeographicState),states)
         
         RequestMessage.__init__(self,"global",ObjectDict)
         
         self.params.epoch = states[0].epoch.strftime(EPOCH_FORMAT) if len(states) > 0 else None 
-        self.params.states = [{"arc":state.arc,"long":state.long,"lat":state.lat} for state in states]
+        self.params.states = states
+
+
+class LocalView(RequestMessage):
+    def __init__(self,states):
+        assert filter(lambda state:isinstance(state,HorizontalState),states)
+        
+        RequestMessage.__init__(self,"local",ObjectDict)
+        
+        self.params.epoch = states[0].epoch.strftime(EPOCH_FORMAT) if len(states) > 0 else None 
+        self.params.states = states

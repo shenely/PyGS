@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   11 January 2013
+Modified:   22 January 2013
 
 Purpose:    
 """
@@ -18,6 +18,7 @@ from math import pi,sqrt,cos,sin,tan,atan
 from datetime import datetime,timedelta
 import logging
 import types
+import copy
 
 #External libraries
 from scipy.optimize import newton
@@ -91,6 +92,6 @@ def kepler(state,margin,step=EPOCH_STEP_SIZE,error=ANOMALY_ERROR,pipeline=None):
         state.epoch += step
         state.theta = 2 * atan(sqrt((1 + e) / (1 - e)) * tan(E / 2))
                 
-        message = state.copy()
+        message = copy.deepcopy(state)
                         
         logging.info("Routine.Iterator:  Kepler iterated to %s" % state.epoch)

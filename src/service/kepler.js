@@ -60,18 +60,36 @@ function KeplerControl( $scope, $element ) {
     .datum({ "name": "sun" })
     .classed("light", true);*/
     
+  $scope.objects = {};
+  
   var socket = new WebSocket("ws://localhost:8080/view");
 	socket.onmessage = function (event) {
-    var view = JSON.parse(event.data);
-    $scope.objects = view.params.states;
-    
-    objects.selectAll("path")
-      .data($scope.objects)
-      .attr("d", function(d) { return path(d3.geo.circle().origin([ d.long, d.lat ]).angle(d.arc)()); })
-    .enter().append("path")
-      .attr("d", function(d) { return path(d3.geo.circle().origin([ d.long, d.lat ]).angle(d.arc)()); })
-      .style("fill", function(d,i) { return color(i); } )
-      .style("fill-opacity", 0.5);
+    var view = JSON.parse(event.data);   
+    objects.selectAll("path.cover")
+      .data(view.params.states)
+      .attr("d", function(d,i) {
+    	  $scope.objects[i].push([d.long, d.lat]);
+    	  $scope.objects[i].length > 200 ? $scope.objects[i].shift() : null;
+    	  return path(d3.geo.circle().origin([ d.long, d.lat ]).angle(d.arc)()); 
+    	  })
+      .enter().append("path")
+      	.classed("cover",true)
+        .attr("d", function(d,i) { 
+    	    $scope.objects[i] = [[d.long, d.lat]];
+    	    return path(d3.geo.circle().origin([ d.long, d.lat ]).angle(d.arc)()); })
+        .style("fill", function(d,i) { return color(i); } );
+   
+    objects.selectAll("path.track")
+      .data(view.params.states)
+      .attr("d", function(d,i) {
+      	  return path( { "type": "LineString", "coordinates": $scope.objects[i] } );
+        })
+      .enter().append("path")
+      	.classed("track",true)
+        .attr("d", function(d,i) { 
+            return path( { "type": "LineString", "coordinates": $scope.objects[i] } );
+    	  })
+        .style("stroke", function(d,i) { return color(i); } );
   };
 
   d3.json("world-110m.json", function(error, world) {

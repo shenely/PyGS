@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 January 2013
+Modified:   22 January 2013
 
 Purpose:    
 """
@@ -14,13 +14,14 @@ Purpose:
 # Import section #
 #
 #Built-in libraries
-from math import pi,sqrt,cos,sin,acos,asin,atan2
+from math import pi,sqrt,cos,sin,tan,acos,asin,atan2
 from datetime import datetime
+import functools
 import logging
 import types
 
 #External libraries
-from numpy import matrix,dot,cross
+from numpy import matrix,dot,cross,roots
 from scipy.linalg import norm
 
 #Internal libraries
@@ -36,7 +37,8 @@ from ..core.state import *
 __all__ = ["identity",
            "cartesian2keplerian",
            "keplerian2cartesian",
-           "cartesian2geographic"]
+           "cartesian2geographic",
+           "geographic2horizontal"]
 #
 ##################
 
@@ -49,8 +51,8 @@ __version__ = "0.1"#current version [major.minor]
 DEG_TO_RAD = pi / 180
 RAD_TO_DEG = 180 / pi
 
-EARTH_RADIUS = 6378
-EARTH_GRAVITATION = 368400
+EARTH_RADIUS = 6378.1
+EARTH_GRAVITATION = 368400.4
 
 JULIAN_DAY = 86400
 
@@ -69,6 +71,30 @@ ROTATION_Y_AXIS = lambda theta:matrix([[cos(theta),0,sin(theta)],
 ROTATION_Z_AXIS = lambda theta:matrix([[cos(theta),-sin(theta),0],
                        [sin(theta),cos(theta),0],
                        [0,0,1]])
+
+functools.wraps(cos)
+def cosd(x):
+    return cos(DEG_TO_RAD * x)
+
+functools.wraps(sin)
+def sind(x):
+    return sin(DEG_TO_RAD * x)
+
+functools.wraps(tan)
+def tand(x):
+    return tan(DEG_TO_RAD * x)
+
+functools.wraps(acos)
+def acosd(x):
+    return RAD_TO_DEG * acos(x)
+
+functools.wraps(asin)
+def asind(x):
+    return RAD_TO_DEG * asin(x)
+
+functools.wraps(atan2)
+def atand2(y,x):
+    return RAD_TO_DEG * atan2(y,x)
 #
 ####################
 
@@ -167,7 +193,7 @@ def cartesian2geographic(pipeline):
         assert isinstance(state,CartesianState)
         
         t = state.epoch
-        arc = RAD_TO_DEG * acos(EARTH_RADIUS / state.r)
+        arc = acosd(EARTH_RADIUS / state.R)
         long = (RAD_TO_DEG * state.alpha +\
                 360 * (t - J2000).total_seconds() / JULIAN_DAY) % 360
         lat = RAD_TO_DEG * state.delta
@@ -175,3 +201,31 @@ def cartesian2geographic(pipeline):
         state = GeographicState(t,arc,long,lat)
         
         logging.info("Routine.Transform:  CartesianToGeographic")
+
+@coroutine
+def geographic2horizontal(point,pipeline):
+    """Geographic State to Horizontal State Transform"""
+    
+    assert isinstance(point,GeographicState)
+    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+
+    state = None
+    while True:
+        state = yield state,pipeline
+        
+        assert isinstance(state,GeographicState)
+        
+        t = state.epoch
+        az = atan2(sind(state.long - point.long),
+                   cosd(point.lat) * tand(lat2) -\
+                   sind(point.lat) * cosd(state.long - point.long))
+        el = asin(cosd(point.lat) * cosd(state.lat) * cosd(state.long - point.long) -\
+                  sind(point.lat) * sind(state.lat))
+        r = max(roots([1 / EARTH_RADIUS,
+                       2 * sin(el),
+                       EARTH_RADIUS * (1 / cos(point.arc) ** 2 -\
+                                       1 / cos(state.arc) ** 2)]))
+
+        state = HorizontalState(t,az,el,r)
+        
+        logging.info("Routine.Transform:  GeographicToHorizontal")

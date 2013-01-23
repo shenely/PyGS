@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 January 2013
+Modified:   22 January 2013
 
 Purpose:    
 """
@@ -19,7 +19,7 @@ from datetime import datetime,time
 import types
 
 #External libraries
-from numpy import matrix,dot,cross,float64
+from numpy import matrix,dot,inner,cross,float64
 from scipy.linalg import norm
 
 #Internal libraries
@@ -34,7 +34,8 @@ from . import ObjectDict
 __all__ = ["BaseState",
            "CartesianState",
            "KeplerianState",
-           "GeographicState"]
+           "GeographicState",
+           "HorizontalState"]
 #
 ##################
 
@@ -57,69 +58,45 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 class BaseState(ObjectDict):
     def __init__(self,epoch):
+        assert isinstance(epoch,datetime)
+        
         self.epoch = epoch
-        
-    def copy(self):
-        epoch = datetime.strptime(self.epoch.strftime(EPOCH_FORMAT),EPOCH_FORMAT)
-        
-        return BaseState(epoch)
         
     @property
     def epoch(self):
         """State Epoch"""
         
         return self["epoch"]
-    
-    @epoch.setter
-    def epoch(self,epoch):
-        assert isinstance(epoch,datetime)
-        
-        self["epoch"] = epoch
 
 
 class CartesianState(BaseState):
     def __init__(self,epoch,position,velocity):
         BaseState.__init__(self,epoch)
         
+        assert isinstance(position,matrix)
+        assert position.dtype.type is float64
+        assert position.shape == (3,1)
+        assert norm(position) > EARTH_RADIUS
+        
+        assert isinstance(velocity,matrix)
+        assert velocity.dtype.type is float64
+        assert velocity.shape == (3,1)
+        assert velocity.T * velocity * norm(position) < 2 * EARTH_GRAVITATION
+        
         self.position = position
         self.velocity = velocity
-        
-    def copy(self):
-        epoch = datetime.strptime(self.epoch.strftime(EPOCH_FORMAT),EPOCH_FORMAT)
-        position = self.position.copy()
-        velocity = self.velocity.copy()
-        
-        return CartesianState(epoch,position,velocity)
         
     @property
     def position(self):
         """Cartesian Position Vector"""
         
         return self["position"]
-    
-    @position.setter
-    def position(self,position):
-        assert isinstance(position,matrix)
-        assert isinstance(position.dtype.type,float64)
-        assert position.shape == (1,3)
-        assert norm(position) > EARTH_RADIUS
-        
-        self["position"] = position
         
     @property
     def velocity(self):
         """Cartesian Velocity Vector"""
         
         return self["velocity"]
-    
-    @velocity.setter
-    def velocity(self,velocity):
-        assert isinstance(velocity,matrix)
-        assert isinstance(velocity.dtype.type,float64)
-        assert velocity.shape == (1,3)
-        assert norm(velocity) > EARTH_RADIUS
-        
-        self["velocity"] = velocity
     
     @property
     def x(self):
@@ -137,26 +114,6 @@ class CartesianState(BaseState):
         return self.position[2,0]
     
     @property
-    def r(self):
-        """Cartesian Radius (read-only)"""
-        return norm(self.position)
-    
-    @property
-    def alpha(self):
-        """Cartesian Right Ascension (read-only)"""
-        return atan2(self.position[1,0],self.position[0,0])
-    
-    @property
-    def delta(self):
-        """Cartesian Declination (read-only)"""
-        return asin(self.position[2,0] / self.r)
-    
-    @property
-    def V(self):
-        """Cartesian U (read-only)"""
-        return norm(self.velocity)
-    
-    @property
     def u(self):
         """Cartesian U (read-only)"""
         return self.velocity[0,0]
@@ -172,9 +129,29 @@ class CartesianState(BaseState):
         return self.velocity[2,0]
     
     @property
+    def R(self):
+        """Cartesian Radius (read-only)"""
+        return norm(self.position)
+    
+    @property
+    def V(self):
+        """Cartesian U (read-only)"""
+        return norm(self.velocity)
+    
+    @property
+    def alpha(self):
+        """Cartesian Right Ascension (read-only)"""
+        return atan2(self.position[1,0],self.position[0,0])
+    
+    @property
+    def delta(self):
+        """Cartesian Declination (read-only)"""
+        return asin(self.position[2,0] / self.R)
+    
+    @property
     def epsilon(self):
         """Cartesian Specific Energy (read-only)"""
-        return self.V ** 2 / 2 - EARTH_GRAVITATION / self.r
+        return self.V ** 2 / 2 - EARTH_GRAVITATION / self.R
     
     @property
     def h(self):
@@ -184,7 +161,7 @@ class CartesianState(BaseState):
     @property
     def e(self):
         """Cartesian Eccentricity Vector (read-only)"""
-        return cross(self.position,self.h) / EARTH_GRAVITATION - self.position / self.r
+        return cross(self.position,self.h) / EARTH_GRAVITATION - self.position / self.R
 
 
 class KeplerianState(BaseState):
@@ -197,29 +174,30 @@ class KeplerianState(BaseState):
                  longitude_of_ascending_node):
         BaseState.__init__(self,epoch)
         
+        assert isinstance(semi_major_axis,types.FloatType)
+        assert semi_major_axis > EARTH_RADIUS
+        assert isinstance(true_anomaly,types.FloatType)
+        assert true_anomaly >= 0
+        assert true_anomaly <  2 * pi
+        assert isinstance(eccentricity,types.FloatType)
+        assert eccentricity >= 0
+        assert eccentricity < 1
+        assert isinstance(argument_of_perigee,types.FloatType)
+        assert argument_of_perigee >= 0
+        assert argument_of_perigee < 2 * pi
+        assert isinstance(inclination,types.FloatType)
+        assert inclination >= 0
+        assert inclination < pi
+        assert isinstance(longitude_of_ascending_node,types.FloatType)
+        assert longitude_of_ascending_node >= 0
+        assert longitude_of_ascending_node < 2 * pi
+        
         self.a = semi_major_axis
         self.theta = true_anomaly
         self.e = eccentricity
         self.omega = argument_of_perigee
         self.i = inclination
         self.OMEGA = longitude_of_ascending_node
-        
-    def copy(self):
-        epoch = datetime.strptime(self.epoch.strftime(EPOCH_FORMAT),EPOCH_FORMAT)
-        semi_major_axis = self.a
-        true_anomaly = self.theta
-        eccentricity = self.e
-        argument_of_perigee = self.omega
-        inclination = self.i
-        longitude_of_ascending_node = self.OMEGA
-        
-        return KeplerianState(epoch,
-                              semi_major_axis,
-                              true_anomaly,
-                              eccentricity,
-                              argument_of_perigee,
-                              inclination,
-                              longitude_of_ascending_node)
     
     @property
     def a(self):
@@ -227,26 +205,11 @@ class KeplerianState(BaseState):
         
         return self["a"]
     
-    @a.setter
-    def a(self,semi_major_axis):
-        assert isinstance(semi_major_axis,types.FloatType)
-        assert semi_major_axis > EARTH_RADIUS
-        
-        self["a"] = semi_major_axis
-    
     @property
     def theta(self):
         """Keplerian True Anomaly"""
         
         return self["theta"]
-    
-    @theta.setter
-    def theta(self,true_anomaly):
-        assert isinstance(true_anomaly,types.FloatType)
-        assert true_anomaly >= 0
-        assert true_anomaly <  2 * pi
-        
-        self["theta"] = true_anomaly
     
     @property
     def e(self):
@@ -254,27 +217,11 @@ class KeplerianState(BaseState):
         
         return self["e"]
     
-    @e.setter
-    def e(self,eccentricity):
-        assert isinstance(eccentricity,types.FloatType)
-        assert eccentricity >= 0
-        assert eccentricity < 1
-        
-        self["e"] = eccentricity
-    
     @property
     def omega(self):
         """Keplerian Argument of Perigee"""
         
         return self["omega"]
-    
-    @omega.setter
-    def omega(self,argument_of_perigee):
-        assert isinstance(argument_of_perigee,types.FloatType)
-        assert argument_of_perigee >= 0
-        assert argument_of_perigee < 2 * pi
-        
-        self["omega"] = argument_of_perigee
     
     @property
     def i(self):
@@ -282,27 +229,11 @@ class KeplerianState(BaseState):
         
         return self["i"]
     
-    @i.setter
-    def i(self,inclination):
-        assert isinstance(inclination,types.FloatType)
-        assert inclination >= 0
-        assert inclination < pi
-        
-        self["i"] = inclination
-    
     @property
     def OMEGA(self):
         """Keplerian Right Ascension of the Ascending Node"""
         
         return self["OMEGA"]
-    
-    @OMEGA.setter
-    def OMEGA(self,longitude_of_ascending_node):
-        assert isinstance(longitude_of_ascending_node,types.FloatType)
-        assert longitude_of_ascending_node >= 0
-        assert longitude_of_ascending_node < 2 * pi
-        
-        self["OMEGA"] = longitude_of_ascending_node
     
     @property
     def epsilon(self):
@@ -358,7 +289,8 @@ class KeplerianState(BaseState):
     def M(self):
         """Keplerian Mean Anomaly (read-only)"""
         return self.E - self.e * sin(self.E)
-    
+   
+
 class GeographicState(BaseState):
     def __init__(self,
                  epoch,
@@ -366,6 +298,15 @@ class GeographicState(BaseState):
                  longitude,
                  latitude):   
         BaseState.__init__(self,epoch)
+        
+        assert isinstance(arc_length,types.FloatType)
+        assert arc_length >= 0
+        assert arc_length < 180
+        assert isinstance(longitude,types.FloatType)
+        assert longitude >= 0
+        assert longitude < 360
+        assert isinstance(latitude,types.FloatType)
+        assert abs(latitude) <= 90
              
         self.arc = arc_length
         self.long = longitude
@@ -375,33 +316,43 @@ class GeographicState(BaseState):
     def arc(self):
         return self["arc"]
     
-    @arc.setter
-    def arc(self,arc_length):
-        assert isinstance(arc_length,types.FloatType)
-        assert arc_length >= 0
-        assert arc_length < 180
-        
-        self["arc"] = arc_length
-    
     @property
     def long(self):        
         return self["long"]
     
-    @long.setter
-    def long(self,longitude):
-        assert isinstance(longitude,types.FloatType)
-        assert longitude >= 0
-        assert longitude < 360
-        
-        self["long"] = longitude
-    
     @property
     def lat(self):
         return self["lat"]
-    
-    @lat.setter
-    def lat(self,latitude):
-        assert isinstance(latitude,types.FloatType)
-        assert abs(latitude) <= 90
+
+
+class HorizontalState(BaseState):
+    def __init__(self,
+                 epoch,
+                 azimuth,
+                 elevation,
+                 range):
+        BaseState.__init__(self,epoch)
         
-        self["lat"] = latitude
+        assert isinstance(azimuth,types.FloatType)
+        assert azimuth >= 0
+        assert azimuth < 360
+        assert isinstance(elevation,types.FloatType)
+        assert abs(elevation) <= 90
+        assert isinstance(range,types.FloatType)
+        assert abs(range) >= 0
+             
+        self.az = azimuth
+        self.el = elevation
+        self.r = range
+    
+    @property
+    def az(self):
+        return self["az"]
+    
+    @property
+    def el(self):        
+        return self["el"]
+    
+    @property
+    def r(self):
+        return self["r"]

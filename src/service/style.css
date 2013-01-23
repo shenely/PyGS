@@ -44,6 +44,17 @@
   stroke: #a5967e;
 }
 
+.cover {
+  fill-opacity: 50%;
+  stroke: none;
+}
+
+.track {
+  fill: none;
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+
 /*li {
   list-style: none;
 }

@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 January 2013
+Modified:   21 January 2013
 
 Purpose:    
 """
@@ -24,7 +24,7 @@ from numpy import matrix
 
 #Internal libraries
 from . import coroutine
-from ..core import ObjectDict
+from ..core import *
 from ..core.state import BaseState,CartesianState
 from ..core.message import StateMessage
 #
@@ -84,13 +84,13 @@ def format(address,pipeline=None):
         assert isinstance(state,CartesianState)
         
         notice = StateMessage(state)
-        message = address,json.dumps(notice)
+        message = address,encoder(notice)
                         
         logging.info("Routine.State:  Formatted")
 
 @coroutine
-def process(pipeline=None):
-    """Process State Message"""
+def parse(pipeline=None):
+    """Parse State Message"""
     
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -100,26 +100,19 @@ def process(pipeline=None):
         
         assert isinstance(message,types.StringTypes)
         
-        notice = ObjectDict(json.loads(message))
+        notice = decoder(message)
         
         assert hasattr(notice,"method")
         assert notice.method == "state"
         assert hasattr(notice,"params")
-        assert isinstance(notice.params,types.DictType)
-        
-        notice.params = ObjectDict(notice.params)
-        
+        assert isinstance(notice.params,ObjectDict)        
         assert hasattr(notice.params,"epoch")
-        assert isinstance(notice.params.epoch,types.StringTypes)
+        assert isinstance(notice.params.epoch,datetime)
         assert hasattr(notice.params,"position")
-        assert isinstance(notice.params.position,types.ListType)
+        assert isinstance(notice.params.position,matrix)
         assert hasattr(notice.params,"velocity")
-        assert isinstance(notice.params.velocity,types.ListType)
+        assert isinstance(notice.params.velocity,matrix)
         
-        epoch = datetime.strptime(notice.params.epoch,EPOCH_FORMAT)
-        position = matrix(notice.params.position)
-        velocity = matrix(notice.params.velocity)
-        
-        state = CartesianState(epoch,position,velocity)
+        state = CartesianState(**notice.params)
                 
-        logging.info("Routine.State:  Processed as %s" % notice.params.epoch)
+        logging.info("Routine.State:  Parsed as %s" % notice.params.epoch)

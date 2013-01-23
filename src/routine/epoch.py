@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   11 January 2013
+Modified:   21 January 2013
 
 Purpose:    
 """
@@ -23,7 +23,7 @@ import json
 
 #Internal libraries
 from . import coroutine
-from ..core import ObjectDict
+from ..core import *
 from ..core.state import BaseState
 from ..core.message import EpochMessage
 #
@@ -147,13 +147,13 @@ def format(address,pipeline=None):
         assert isinstance(epoch,datetime)
         
         notice = EpochMessage(epoch)
-        message = address,json.dumps(notice)
+        message = address,encoder(notice)
         
-        logging.info("Routine.Epoch:  Formatted as %s" % notice.params)
+        logging.info("Routine.Epoch:  Formatted as %s" % notice.params.epoch)
 
 @coroutine
-def process(pipeline=None):
-    """Process Epoch Message"""
+def parse(pipeline=None):
+    """Parse Epoch Message"""
     
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -163,13 +163,15 @@ def process(pipeline=None):
         
         assert isinstance(message,types.StringTypes)
         
-        notice = ObjectDict(json.loads(message))
+        notice = decoder(message)
         
         assert hasattr(notice,"method")
         assert notice.method == "epoch"
         assert hasattr(notice,"params")
-        assert isinstance(notice.params,types.StringTypes)
+        assert isinstance(notice.params,ObjectDict)
+        assert hasattr(notice.params,"epoch")
+        assert isinstance(notice.params.epoch,datetime)
         
-        epoch = datetime.strptime(notice.params,EPOCH_FORMAT)
+        epoch = notice.params.epoch
                 
-        logging.info("Routine.Epoch:  Processed as %s" % notice.params)
+        logging.info("Routine.Epoch:  Parsed as %s" % notice.params.epoch)

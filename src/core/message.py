@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 December 2012
+Modified:   21 January 2013
 
 Purpose:    
 """
@@ -66,7 +66,7 @@ class EpochMessage(RequestMessage):
         
         RequestMessage.__init__(self,"epoch")
         
-        self.params = epoch.strftime(EPOCH_FORMAT)
+        self.params = ObjectDict(epoch=epoch)
 
 class StateMessage(RequestMessage):
     def __init__(self,state):
@@ -74,6 +74,4 @@ class StateMessage(RequestMessage):
         
         RequestMessage.__init__(self,"state",ObjectDict)        
         
-        self.params.epoch = state.epoch.strftime(EPOCH_FORMAT)
-        self.params.position = state.position.tolist()
-        self.params.velocity = state.velocity.tolist()
+        self.params = state

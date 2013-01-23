@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 January 2013
+Modified:   22 January 2013
 
 Purpose:    
 """
@@ -89,8 +89,8 @@ class SpaceSegment(object):
     def task_update_epoch(cls):
         split_tasks = control.split(None,cls.tasks)
         update_epoch = epoch.update(cls.physics,split_tasks)
-        process_epoch = epoch.process(update_epoch)
-        subscribe_epoch = socket.subscribe(cls.epoch_socket,process_epoch)
+        parse_epoch = epoch.parse(update_epoch)
+        subscribe_epoch = socket.subscribe(cls.epoch_socket,parse_epoch)
         
         cls.epoch_task = subscribe_epoch
         cls.scheduler.handler(cls.epoch_socket,cls.epoch_task)
@@ -123,7 +123,7 @@ def main():
                           45.0 * DEG_TO_RAD)
     aura = KeplerianState(physics.epoch,
                           7077.0,
-                          -45.0 * DEG_TO_RAD,
+                          315.0 * DEG_TO_RAD,
                           0.0012,
                           90.0 * DEG_TO_RAD,
                           98.2 * DEG_TO_RAD,
@@ -134,7 +134,7 @@ def main():
                            0.0012,
                            90.0 * DEG_TO_RAD,
                            98.2 * DEG_TO_RAD,
-                           -135.0 * DEG_TO_RAD)
+                           225.0 * DEG_TO_RAD)
     
     q = SpaceSegment("Aqua",aqua)
     r = SpaceSegment("Aura",aura)

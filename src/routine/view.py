@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   15 January 2013
+Modified:   22 January 2013
 
 Purpose:    
 """
@@ -23,8 +23,9 @@ import json
 
 #Internal libraries
 from . import coroutine
+from ..core import *
 from ..core.state import BaseState
-from ..core.view import GlobalView
+from ..core.view import *
 #
 ##################
 
@@ -32,7 +33,8 @@ from ..core.view import GlobalView
 ##################
 # Export section #
 #
-__all__ = ["generate"]
+__all__ = ["vglobal",
+           "vlocal"]
 #
 ##################
 
@@ -48,8 +50,8 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 @coroutine
-def generate(address,pipeline=None):
-    """Generate View Message"""
+def vglobal(address,pipeline=None):
+    """Global View Message"""
     
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
@@ -61,6 +63,25 @@ def generate(address,pipeline=None):
         #assert isinstance(system,BaseState)
         
         notice = GlobalView(states)
-        message = address,json.dumps(notice)
+        message = address,encoder(notice)
                         
-        logging.info("Routine.View:  Generated")
+        logging.info("Routine.View:  Global")
+
+
+@coroutine
+def vlocal(address,pipeline=None):
+    """Local View Message"""
+    
+    assert isinstance(address,types.StringTypes)
+    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    
+    message = None
+    while True:
+        states = yield message,pipeline
+        
+        #assert isinstance(system,BaseState)
+        
+        notice = LocalView(states)
+        message = address,encoder(notice)
+                        
+        logging.info("Routine.View:  Local")

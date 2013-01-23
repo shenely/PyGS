@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 January 2013
+Modified:   22 January 2013
 
 Purpose:    
 """
@@ -95,8 +95,8 @@ class UserSegment(object):
     def task_update_epoch(cls):
         split_tasks = control.split(None,cls.tasks)
         update_epoch = epoch.update(cls.physics,split_tasks)
-        process_epoch = epoch.process(update_epoch)
-        subscribe_epoch = socket.subscribe(cls.epoch_socket,process_epoch)
+        parse_epoch = epoch.parse(update_epoch)
+        subscribe_epoch = socket.subscribe(cls.epoch_socket,parse_epoch)
         
         cls.epoch_task = subscribe_epoch
         cls.scheduler.handler(cls.epoch_socket,cls.epoch_task)
@@ -104,7 +104,7 @@ class UserSegment(object):
     @classmethod
     def task_generate_view(cls):
         publish_view = socket.publish(cls.view_socket)
-        generate_view = view.generate(VIEW_ADDRESS,publish_view)
+        generate_view = view.vglobal(VIEW_ADDRESS,publish_view)
         merge_tasks = control.merge(cls.tasks,generate_view)
         
         cls.view_task = merge_tasks
@@ -112,8 +112,8 @@ class UserSegment(object):
     def task_update_state(self):
         enqueue_state = queue.put(self.state_queue)
         after_system = epoch.after(self.physics,ACCEPT_MARGIN,enqueue_state)
-        process_state = state.process(after_system)
-        subscribe_state = socket.subscribe(self.state_socket,process_state)
+        parse_state = state.parse(after_system)
+        subscribe_state = socket.subscribe(self.state_socket,parse_state)
         
         self.state_task = subscribe_state
         self.scheduler.handler(self.state_socket,self.state_task)
@@ -135,9 +135,9 @@ def main():
     """Main Function"""
 
     physics = BaseState(datetime(2010,1,1))
-    aqua = GeographicState(physics,0.0,0.0,0.0)
-    aura = GeographicState(physics,0.0,0.0,0.0)
-    terra = GeographicState(physics,0.0,0.0,0.0)
+    aqua = GeographicState(physics.epoch,0.0,0.0,0.0)
+    aura = GeographicState(physics.epoch,0.0,0.0,0.0)
+    terra = GeographicState(physics.epoch,0.0,0.0,0.0)
     
     q = UserSegment("Aqua",aqua)
     r = UserSegment("Aura",aura)
