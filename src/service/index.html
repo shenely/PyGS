@@ -4,19 +4,16 @@
     <meta charset="utf-8">
     <title>Mercator Projection</title>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.3/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="http://mrdoob.github.com/three.js/build/three.min.js"></script>
     <script src="http://d3js.org/d3.v3.min.js"></script>
     <script src="http://d3js.org/topojson.v0.min.js"></script>
     <script src="kepler.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body ng-app="kepler">
-    <earth style="float:left;">
-      <ul style="float:left;">
-        <li ng-repeat="object in objects">
-          <input type="checkbox" ng-model="object.visible" />
-          <span class="done-{{object.visible}}">{{object.name}}</span>
-        </li>
-      </ul>
-    </earth>
+    <svg-earth></svg-earth>
+    <canvas-earth></canvas-earth>
+    <webgl-earth></webgl-earth>
   </body>
 </html>

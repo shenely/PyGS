@@ -1,20 +1,35 @@
 angular.module("kepler", [])
-  .directive("earth", function() {
+  .directive("svgEarth", function() {
     return {
       restrict: 'E',
       scope: {},
-      controller: KeplerControl
+      controller: SVGControl
+    };
+  })
+  .directive("canvasEarth", function() {
+    return {
+      restrict: 'E',
+      scope: {},
+      controller: CanvasControl
+    };
+  })
+  .directive("webglEarth", function() {
+    return {
+      restrict: 'E',
+      scope: {},
+      controller: WebGLControl
     };
   });
 
-function KeplerControl( $scope, $element ) {  
+function SVGControl( $scope, $element ) {  
   var color = d3.scale.category10();
   
-  var width = 960,
+  var width = 1000,
       height = 500;
 
   var projection = d3.geo.equirectangular()
-      .scale(150);
+      .translate([ width / 2, height / 2])
+      .scale(500 / Math.PI);
 
   var path = d3.geo.path()
       .projection(projection);
@@ -42,14 +57,14 @@ function KeplerControl( $scope, $element ) {
       .attr("class", "foreground")
       .attr("d", path);
   
-  var objects = svg.append("g"),
+  var objects = svg.append("g");/*,
       night = objects.append("rect")
           .classed("night", true)
           .attr("width","100%")
           .attr("height","100%"),
       day = objects.append("mask")
           .classed("day", true)
-          .attr("id", "mask");
+          .attr("id", "mask");*/
   
   /*day.append("rect")
       .classed("dark", true)
@@ -102,108 +117,146 @@ function KeplerControl( $scope, $element ) {
         .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a.id !== b.id; }))
         .attr("class", "boundary")
         .attr("d", path);
-  });
-  /*$scope.objects = [
-    { "name": "sun", "visible": true, "lat": -23, "long": 160, "arc": 90 },
-    { "name": "goldstone", "visible": true, "lat": 35, "long": -116, "arc": 25 },
-    { "name": "madrid", "visible": true, "lat": 40, "long": -4, "arc": 25 },
-    { "name": "canberra", "visible": true, "lat": -35, "long": 148, "arc": 25 },
-    { "name": "svalbard", "visible": true, "lat": 78, "long": 15, "arc": 25 },
-    { "name": "poker flats", "visible": true, "lat": 65, "long": -147, "arc": 25 },
-    { "name": "prince albert", "visible": true, "lat": 53, "long": -105, "arc": 25 },
-    { "name": "sioux falls", "visible": true, "lat": 43, "long": -96, "arc": 25 },
-    { "name": "cachoeira paulista", "visible": true, "lat": -22, "long": -45, "arc": 25 },
-    { "name": "buenos aires", "visible": true, "lat": -34, "long": -58, "arc": 25 },
-    { "name": "alice springs", "visible": true, "lat": -23, "long": 133, "arc": 25 },
-    { "name": "hobert", "visible": true, "lat": -42, "long": 147, "arc": 25 }
-  ];
-  
-  var DEG_TO_RAD = Math.PI / 180,
-      RAD_TO_DEG = 180 / Math.PI,
-      cosd = function(x) { return Math.cos(DEG_TO_RAD * x); },
-      sind = function(x) { return Math.sin(DEG_TO_RAD * x); },
-      atand2 = function(y,x) { return RAD_TO_DEG * Math.atan2(y,x); };
-  
-  var earth = d3.select($element[0]).append("svg")
-          .attr("id", "earth"),
-      sea = earth.append("rect")
-          .classed("sea", true)
-          .attr("width", "100%")
-          .attr("height","100%"),
-      land = earth.append("g"),
-      objects = earth.append("g"),
-      night = objects.append("rect")
-          .classed("night", true)
-          .attr("width","100%")
-          .attr("height","100%"),
-      day = objects.append("mask")
-          .classed("day", true)
-          .attr("id", "mask");
-  
-  var projection = d3.geo.equirectangular()
-          .scale(150)
-          .translate( [ 480, 250 ] ),
-      path = d3.geo.path().projection(projection),
-      climate = d3.scale.linear()
-          .domain( [ -66-33/60-44/3600, -23-26/60-16/3600, 0, 23+26/60+16/3600, 66+33/60+44/3600 ] )
-          .range( [ "#fff", "#bb7", "#070", "#bb7", "#fff" ] ),
-      color = d3.scale.category10(),
-      coverage = function(d) {
-        return path(d3.geo.circle().origin([ d.long, d.lat ]).angle(d.arc)());
-      };
-  
-  day.append("rect")
-      .classed("dark", true)
-      .attr("width","100%")
-      .attr("height","100%");
-  
-  day.append("path")
-    .datum({ "name": "sun" })
-    .classed("light", true);
-  
-  var drag = d3.behavior.drag()
-      .on("drag", function(d) {
-        var coord = projection.invert([d3.event.x,d3.event.y]);
-        d.long = coord[0];
-        d.lat = coord[1];
-        
-        d3.select(this).attr("d",coverage);
-      });
-  var blah = objects.selectAll("path")
-      .data($scope.objects, function(d) { return d.name; } )
-      .attr("d",coverage)
-      .attr("visibility", function(d) { return d.visible ? "visible" : "hidden"; } )
-      .call(drag)
-      .on("dblclick", function(d) { 
-        $scope.$apply(function() {
-          d.visible = !d.visible;
-        });
-      });
-  
-  blah.enter().append("path")
-      .attr("d",coverage)
-      .attr("visibility", function(d) { return d.visible ? "visible" : "hidden"; } )
-      .style("fill", function(d,i) { return color(i); } )
-      .style("fill-opacity", 0.5)
-      .call(drag)
-      .on("dblclick", function(d) { 
-        $scope.$apply(function() {
-          d.visible = !d.visible;
-        });
-      });
-  
-  $scope.$watch("objects", function(newVal, oldVal) {
-    blah.attr("visibility", function(d) {
-      return d.visible ? "visible" : "hidden";
-    });
-  }, true);
+  })
+}
 
-  d3.json("readme.json", function(collection) {          
-    land.selectAll("path")
-        .data(collection.features)
-      .enter().append("path")
-        .classed("land", true)
-        .attr("d", path)
-        .style("fill", function(d,i) { return d == null ? "none" : climate(projection.invert(path.centroid(d))[1]); });
-  });*/
+function CanvasControl( $scope, $element ) {  
+  var color = d3.scale.category10();
+  
+  var width = 1000,
+      height = 500;
+
+  var canvas = d3.select($element[0]).append("canvas")
+      .attr("width", width)
+      .attr("height", height),
+      context = canvas.node().getContext("2d");
+
+  var projection = d3.geo.equirectangular()
+      .translate([ width / 2, height / 2])
+      .scale(500 / Math.PI);
+
+  var path = d3.geo.path()
+      .projection(projection)
+      .context(context);
+  
+  var redraw = null;
+
+  d3.json("world-110m.json", function(error, world) {    
+    var land = topojson.object(world, world.objects.land),
+        border = topojson.object(world, world.objects.countries),
+        graticule = d3.geo.graticule();
+    
+    redraw = function() {
+      context.lineWidth = 1.0;
+      
+      context.beginPath();
+      path(graticule.outline());
+      context.fillStyle = "#a4bac7";
+      context.fill();
+      
+      context.beginPath();
+      path(land);
+      context.fillStyle = "#d7c7ad";
+      context.fill();
+      
+      context.beginPath();
+      path(border);
+      context.strokeStyle = "#a5967e";
+      context.stroke();
+      
+      context.beginPath();
+      path(land);
+      context.strokeStyle = "#766951";
+      context.stroke();
+      
+      context.globalAlpha = 0.5;
+      context.beginPath();
+      graticule.lines().map(path);
+      context.strokeStyle = "#fff";
+      context.lineWidth = 0.5;
+      context.stroke();
+      
+      context.beginPath();
+      path(graticule.outline());
+      context.strokeStyle = "#fff";
+      context.lineWidth = 0.5;
+      context.stroke();
+      context.globalAlpha = 1.0;
+    };
+    
+    redraw();
+  });
+    
+  $scope.objects = [];
+  
+  var socket = new WebSocket("ws://localhost:8080/view");
+	socket.onmessage = function (event) {
+    var view = JSON.parse(event.data);
+    
+    redraw();
+    
+    view.params.states.map(function(d,i) {
+      if ($scope.objects.length <= i) $scope.objects.push([]);
+  	  $scope.objects[i].push([d.long, d.lat]);
+  	  $scope.objects[i].length > 200 ? $scope.objects[i].shift() : null;
+    	  
+      context.globalAlpha = 0.5;
+      context.beginPath();
+      path(d3.geo.circle().origin([ d.long, d.lat ]).angle(d.arc)());
+      context.fillStyle = color(i);
+      context.fill();
+      context.globalAlpha = 1.0;
+      
+      context.beginPath();
+      path( { "type": "LineString", "coordinates": $scope.objects[i] } );
+      context.strokeStyle = color(i);
+      context.lineWidth = 2.0;
+      context.stroke();
+    });
+  };
+}
+
+function WebGLControl( $scope, $element ) {  
+  var color = d3.scale.category10();
+  
+  var width = 960,
+      height = 500,
+      aspect = width / height,
+      angle = 70,
+      near = 1,
+      far = 1000;
+      
+  var texture = new THREE.Texture(d3.select("canvas-earth").select("canvas").node());
+
+  var scene = new THREE.Scene(),
+	    renderer = new THREE.WebGLRenderer( { antialias: true } ),
+	    camera = new THREE.PerspectiveCamera(angle, aspect, near, far);
+	
+	camera.position.z = 400;
+	scene.add(camera);
+	renderer.setSize(width, height);
+	$element[0].appendChild(renderer.domElement);
+    
+  var geometry = new THREE.SphereGeometry(200, 32, 32),
+      material = new THREE.MeshBasicMaterial({ map : texture }),
+      mesh = new THREE.Mesh(geometry, material),
+      light = new THREE.AmbientLight(0xababab);
+	
+	scene.add(mesh);
+	scene.add(light);
+  
+  var socket = new WebSocket("ws://localhost:8080/view");
+	socket.onmessage = function (event) {
+	  texture.needsUpdate = true;
+  };
+	
+	mesh.rotation.x = Math.PI / 4;
+	function animate() {
+	  renderer.render(scene, camera);
+	  requestAnimationFrame( animate );
+	  
+	  mesh.rotation.y += Math.PI / 360;
+	}
+	
+	animate();
 }
