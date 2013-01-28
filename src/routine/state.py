@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   21 January 2013
+Modified:   27 January 2013
 
 Purpose:    
 """
@@ -17,7 +17,6 @@ Purpose:
 from datetime import datetime
 import logging
 import types
-import json
 
 #External libraries
 from numpy import matrix
@@ -34,12 +33,9 @@ from ..core.message import StateMessage
 ##################
 # Export section #
 #
-__all__ = ["before",
-           "after",
-           "around",
-           "update",
+__all__ = ["update",
            "format",
-           "process"]
+           "parse"]
 #
 ##################
 
@@ -48,8 +44,6 @@ __all__ = ["before",
 # Constant section #
 #
 __version__ = "0.1"#current version [major.minor]
-
-EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 #
 ####################
 

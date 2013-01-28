@@ -1,7 +1,7 @@
 import logging
 
 from .core.scheduler import Scheduler
-from .segment import physics,space,user
+from .segment import physics,space,ground,user
 from .service import broker,web
 
 def main():
@@ -14,6 +14,7 @@ def main():
         
     physics.main()
     space.main()
+    ground.main()
     user.main()
     
     scheduler.start()

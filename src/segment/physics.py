@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 January 2013
+Modified:   27 January 2013
 
 Purpose:    
 """
@@ -40,7 +40,7 @@ from ..routine import epoch,socket,iterator
 #
 __version__ = "0.1"#current version [major.minor]
 
-EPOCH_ADDRESS = "Kepler.Physics.Epoch"
+EPOCH_ADDRESS = "Kepler.Epoch"
 EPOCH_SCALE = 60
 #
 ####################
@@ -64,7 +64,7 @@ class PhysicsSegment(object):
         iterate_epoch = iterator.caesium(self.epoch,EPOCH_SCALE,format_epoch)
         
         self.epoch_task = iterate_epoch
-        self.scheduler.periodic(self.epoch_task,100).start()
+        self.scheduler.periodic(self.epoch_task,200).start()
 
 def main():
     """Main Function"""

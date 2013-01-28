@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   22 January 2013
+Modified:   27 January 2013
 
 Purpose:    
 """
@@ -43,8 +43,8 @@ __version__ = "0.1"#current version [major.minor]
 
 EARTH_GRAVITION = 368400
 
-EPOCH_ADDRESS = "Kepler.Physics.Epoch"
-STATE_ADDRESS = "Kepler.Space.{name!s}.State"
+EPOCH_ADDRESS = "Kepler.Epoch"
+STATE_ADDRESS = "Kepler.{name!s}.State"
 VIEW_ADDRESS = "Kepler.View.Global"
 
 ACCEPT_MARGIN = timedelta(seconds=0)

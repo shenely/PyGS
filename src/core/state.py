@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   22 January 2013
+Modified:   27 January 2013
 
 Purpose:    
 """
@@ -49,7 +49,7 @@ DEG_TO_RAD = pi / 180
 RAD_TO_DEG = 180 / pi
 
 EARTH_RADIUS = 6378
-EARTH_GRAVITATION = 368400
+EARTH_GRAVITATION = 398600
 
 EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 #
@@ -289,6 +289,11 @@ class KeplerianState(BaseState):
     def M(self):
         """Keplerian Mean Anomaly (read-only)"""
         return self.E - self.e * sin(self.E)
+    
+    @property
+    def u(self):
+        """Keplerian Argument of Latitude (read-only)"""
+        return self.theta + self.omega
    
 
 class GeographicState(BaseState):

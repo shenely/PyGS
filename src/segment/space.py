@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   23 January 2013
+Modified:   27 January 2013
 
 Purpose:    
 """
@@ -17,7 +17,6 @@ Purpose:
 from math import pi
 from datetime import datetime,timedelta
 from Queue import PriorityQueue
-import logging
 
 #External libraries
 import zmq
@@ -47,11 +46,11 @@ RAD_TO_DEG = 180 / pi
 
 EARTH_GRAVITION = 398600
 
-EPOCH_ADDRESS = "Kepler.Physics.Epoch"
-STATE_ADDRESS = "Kepler.Space.{name!s}.State"
-COMMAND_ADDRESS = "Kepler.Space.{name!s}.Command"
-ACKNOWLEDGE_ADDRESS = "Kepler.Space.{name!s}.Acknowledge"
-RESULT_ADDRESS = "Kepler.Space.{name!s}.Result"
+EPOCH_ADDRESS = "Kepler.Epoch"
+STATE_ADDRESS = "Kepler.{name!s}.State"
+COMMAND_ADDRESS = "Kepler.{name!s}.Command"
+ACKNOWLEDGE_ADDRESS = "Kepler.{name!s}.Acknowledge"
+RESULT_ADDRESS = "Kepler.{name!s}.Result"
 
 ITERATE_MARGIN = timedelta(seconds=300)
 EXECUTE_MARGIN = timedelta(seconds=30)
@@ -86,7 +85,7 @@ class SpaceSegment(object):
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect("tcp://localhost:5555")
     
-        self.cmd_socket = context.socket(zmq.SUB)
+        self.cmd_socket = self.context.socket(zmq.SUB)
         self.cmd_socket.connect("tcp://localhost:5556")
         self.cmd_socket.setsockopt(zmq.SUBSCRIBE,COMMAND_ADDRESS.format(name=self.name))
 
@@ -128,7 +127,7 @@ class SpaceSegment(object):
         accept_cmd = command.accept(format_ack)
         enqueue_cmd = queue.put(self.cmd_queue,accept_cmd)
         reject_cmd = command.reject(format_ack)
-        after_epoch = epoch.before(self.physics,COMMAND_MARGIN,enqueue_cmd,reject_cmd)
+        after_epoch = epoch.after(self.physics,COMMAND_MARGIN,enqueue_cmd,reject_cmd)
         parse_cmd = command.parse(after_epoch)
         subscribe_cmd = socket.subscribe(self.cmd_socket,parse_cmd)
         
@@ -138,7 +137,7 @@ class SpaceSegment(object):
     def task_execute_command(self,elements):
         publish_result = socket.publish(self.socket)
         format_result = result.format(RESULT_ADDRESS.format(name=self.name),publish_result)
-        execute_cmd = command.execute(format_result)
+        execute_cmd = command.execute(elements,format_result)
         dequeue_cmd = queue.get(self.cmd_queue,execute_cmd)
         remove_cmd = queue.get(self.cmd_queue)
         after_state = epoch.after(elements,EXECUTE_MARGIN,None,dequeue_cmd)

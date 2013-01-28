@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   21 January 2013
+Modified:   27 January 2013
 
 Purpose:    
 """
@@ -23,6 +23,9 @@ from datetime import datetime
 #Internal libraries
 from . import ObjectDict
 from .state import CartesianState
+from .command import BaseCommand
+from .acknowledge import BaseAcknowledge
+from .result import BaseResult
 #
 ##################
 
@@ -31,7 +34,10 @@ from .state import CartesianState
 # Export section #
 #
 __all__ = ["EpochMessage",
-           "StateMessage"]
+           "StateMessage",
+           "CommandMessage",
+           "AcknowledgeMessage",
+           "ResultMessage"]
 #
 ##################
 
@@ -59,6 +65,16 @@ class RequestMessage(BaseMessage):
         
         self.method = method
         self.params = paramtype() if isinstance(paramtype,type) else None
+        
+class ResponseMessage(BaseMessage):
+    def __init__(self,error,resulttype=None):
+        assert isinstance(error,types.IntType) or error is None
+        assert isinstance(resulttype,type) or resulttype is None
+        
+        BaseMessage.__init__(self)
+        
+        self.error = error
+        self.params = resulttype() if isinstance(resulttype,type) else None
 
 class EpochMessage(RequestMessage):
     def __init__(self,epoch):
@@ -75,3 +91,30 @@ class StateMessage(RequestMessage):
         RequestMessage.__init__(self,"state",ObjectDict)        
         
         self.params = state
+
+class CommandMessage(RequestMessage):
+    def __init__(self,command):
+        assert isinstance(command,BaseCommand)
+        
+        RequestMessage.__init__(self,"command",ObjectDict)
+        
+        self.id = command.id
+        self.params = command
+
+class AcknowledgeMessage(ResponseMessage):
+    def __init__(self,acknowledge):
+        assert isinstance(acknowledge,BaseAcknowledge)
+        
+        ResponseMessage.__init__(self,None,ObjectDict)
+        
+        self.id = acknowledge.id
+        self.result = acknowledge
+
+class ResultMessage(ResponseMessage):
+    def __init__(self,result):
+        assert isinstance(result,BaseResult)
+        
+        ResponseMessage.__init__(self,None,ObjectDict)
+        
+        self.id = result.id
+        self.result = result
