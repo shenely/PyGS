@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   22 January 2013
+Modified:   29 January 2013
 
 Purpose:    
 """
@@ -52,7 +52,7 @@ DEG_TO_RAD = pi / 180
 RAD_TO_DEG = 180 / pi
 
 EARTH_RADIUS = 6378.1
-EARTH_GRAVITATION = 368400.4
+EARTH_GRAVITATION = 398600.4
 
 JULIAN_DAY = 86400
 
@@ -63,14 +63,14 @@ UNIT_VECTOR_Y = matrix([0,1,0]).T
 UNIT_VECTOR_Z = matrix([0,0,1]).T
 
 ROTATION_X_AXIS = lambda theta:matrix([[1,0,0],
-                       [0,cos(theta),-sin(theta)],
-                       [0,sin(theta),cos(theta)]])
+                                       [0,cos(theta),-sin(theta)],
+                                       [0,sin(theta),cos(theta)]])
 ROTATION_Y_AXIS = lambda theta:matrix([[cos(theta),0,sin(theta)],
-                       [0,1,0],
-                       [-sin(theta),0,cos(theta)]])
+                                       [0,1,0],
+                                       [-sin(theta),0,cos(theta)]])
 ROTATION_Z_AXIS = lambda theta:matrix([[cos(theta),-sin(theta),0],
-                       [sin(theta),cos(theta),0],
-                       [0,0,1]])
+                                       [sin(theta),cos(theta),0],
+                                       [0,0,1]])
 
 functools.wraps(cos)
 def cosd(x):
@@ -161,9 +161,9 @@ def keplerian2cartesian(pipeline):
         
         assert isinstance(state,KeplerianState)
 
-        R_OMEGA = ROTATION_Z_AXIS(- state.OMEGA)
-        R_i = ROTATION_X_AXIS(- state.i)
-        R_omega = ROTATION_Z_AXIS(- state.omega)
+        R_OMEGA = ROTATION_Z_AXIS(state.OMEGA)
+        R_i = ROTATION_X_AXIS(state.i)
+        R_omega = ROTATION_Z_AXIS(state.omega)
 
         Q = R_OMEGA * R_i * R_omega
 
@@ -217,7 +217,7 @@ def geographic2horizontal(point,pipeline):
         
         t = state.epoch
         az = atan2(sind(state.long - point.long),
-                   cosd(point.lat) * tand(lat2) -\
+                   cosd(point.lat) * tand(state.lat) -\
                    sind(point.lat) * cosd(state.long - point.long))
         el = asin(cosd(point.lat) * cosd(state.lat) * cosd(state.long - point.long) -\
                   sind(point.lat) * sind(state.lat))

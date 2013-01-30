@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   27 January 2013
+Modified:   29 January 2013
 
 Purpose:    
 """

@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   27 January 2013
+Modified:   29 January 2013
 
 Purpose:    
 """
@@ -49,6 +49,8 @@ ANOMALY_ERROR = 1e-15
 
 KEPLER_EQUATION = lambda E,M,e:E - e * sin(E) - M
 KEPLER_DERIVATIVE = lambda E,M,e:1 - e * cos(E)
+
+EARTH_GRAVITATION = 398600.4
 #
 ####################
 
@@ -93,18 +95,22 @@ class ManeuverCommand(BaseCommand):
         E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,state.e),ANOMALY_ERROR)
         state.theta = 2 * atan(sqrt((1 + state.e) / (1 - state.e)) * tan(E / 2))        
         
-        a = state.a
-        e = state.e
-        i = state.i + state.r * cos(state.u) * self.N / (state.n * state.a ** 2 * sqrt(1 - state.e ** 2))
-        omega = state.omega - state.r * sin(state.u) * self.N / (state.h * tan(state.i))
-        OMEGA = state.OMEGA - state.r * sin(state.u) * self.N / (state.n * state.a ** 2 * sqrt(1 - state.e ** 2) * sin(state.i))
+        a = state.a +\
+            2 * state.e * sin(state.theta) * self.R / (state.n * sqrt(1 - state.e ** 2)) +\
+            2 * (1 + state.e * cos(state.theta)) * self.T / (state.n * sqrt(1 - state.e ** 2))
+        e = state.e +\
+            sqrt(state.p / EARTH_GRAVITATION) * sin(state.theta) * self.R +\
+            sqrt(state.p / EARTH_GRAVITATION) * (cos(state.theta) + cos(state.E)) * self.T
+        i = state.i +\
+            state.r * cos(state.u) * self.N / state.h
+        omega = state.omega -\
+                state.r * sin(state.u) * self.N / (state.h * tan(state.i))
+        OMEGA = state.OMEGA +\
+                state.r * sin(state.u) * self.N / (state.h * sin(state.i))
         
         M = state.M - state.n * t
         E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,state.e),ANOMALY_ERROR)
         theta = 2 * atan(sqrt((1 + state.e) / (1 - state.e)) * tan(E / 2))
-        
-        theta %= 2 * pi
-        omega %= 2 * pi
         
         perturb = KeplerianState(state.epoch,a,theta,e,omega,i,OMEGA)
         

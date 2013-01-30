@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   27 January 2013
+Modified:   29 January 2013
 
 Purpose:    
 """
@@ -49,7 +49,7 @@ DEG_TO_RAD = pi / 180
 RAD_TO_DEG = 180 / pi
 
 EARTH_RADIUS = 6378
-EARTH_GRAVITATION = 398600
+EARTH_GRAVITATION = 398600.4
 
 EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 #
@@ -176,21 +176,23 @@ class KeplerianState(BaseState):
         
         assert isinstance(semi_major_axis,types.FloatType)
         assert semi_major_axis > EARTH_RADIUS
-        assert isinstance(true_anomaly,types.FloatType)
-        assert true_anomaly >= 0
-        assert true_anomaly <  2 * pi
         assert isinstance(eccentricity,types.FloatType)
-        assert eccentricity >= 0
+        if eccentricity < 0:
+            eccentricity = - eccentricity
+            #argument_of_perigee += pi
         assert eccentricity < 1
-        assert isinstance(argument_of_perigee,types.FloatType)
-        assert argument_of_perigee >= 0
-        assert argument_of_perigee < 2 * pi
         assert isinstance(inclination,types.FloatType)
-        assert inclination >= 0
+        inclination %= 2 * pi
+        if inclination < 0 or inclination >= pi:
+            inclination -= pi
+            argument_of_perigee += pi
         assert inclination < pi
+        assert isinstance(true_anomaly,types.FloatType)
+        true_anomaly %= 2 * pi
+        assert isinstance(argument_of_perigee,types.FloatType)
+        argument_of_perigee %= 2 * pi
         assert isinstance(longitude_of_ascending_node,types.FloatType)
-        assert longitude_of_ascending_node >= 0
-        assert longitude_of_ascending_node < 2 * pi
+        argument_of_perigee %= 2 * pi
         
         self.a = semi_major_axis
         self.theta = true_anomaly
@@ -248,7 +250,7 @@ class KeplerianState(BaseState):
     @property
     def r(self):
         """Keplerian Radius (read-only)"""
-        return self.a * (1 - self.e ** 2) / (1 + self.e * cos(self.theta))
+        return self.p / (1 + self.e * cos(self.theta))
     
     @property
     def p(self):

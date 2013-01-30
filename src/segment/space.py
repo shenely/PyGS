@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   27 January 2013
+Modified:   29 January 2013
 
 Purpose:    
 """
@@ -44,7 +44,7 @@ __version__ = "0.1"#current version [major.minor]
 DEG_TO_RAD = pi / 180
 RAD_TO_DEG = 180 / pi
 
-EARTH_GRAVITION = 398600
+EARTH_GRAVITION = 398600.4
 
 EPOCH_ADDRESS = "Kepler.Epoch"
 STATE_ADDRESS = "Kepler.{name!s}.State"
@@ -149,28 +149,28 @@ class SpaceSegment(object):
 def main():
     """Main Function"""
     
-    physics = BaseState(datetime(2010,1,1))
-    aqua = KeplerianState(physics.epoch,
+    epoch = datetime(2010,1,1)
+    aqua = KeplerianState(epoch,
                           7077.0,
                           0.0 * DEG_TO_RAD,
                           0.0012,
                           90.0 * DEG_TO_RAD,
                           98.2 * DEG_TO_RAD,
-                          45.0 * DEG_TO_RAD)
-    aura = KeplerianState(physics.epoch,
+                          22.5 * DEG_TO_RAD)
+    aura = KeplerianState(epoch,
                           7077.0,
                           315.0 * DEG_TO_RAD,
                           0.0012,
                           90.0 * DEG_TO_RAD,
                           98.2 * DEG_TO_RAD,
-                          45.0 * DEG_TO_RAD)
-    terra = KeplerianState(physics.epoch,
+                          22.5 * DEG_TO_RAD)
+    terra = KeplerianState(epoch,
                            7077.0,
                            45.0 * DEG_TO_RAD,
                            0.0012,
                            90.0 * DEG_TO_RAD,
                            98.2 * DEG_TO_RAD,
-                           225.0 * DEG_TO_RAD)
+                           157.5 * DEG_TO_RAD)
     
     q = SpaceSegment("Aqua",aqua)
     r = SpaceSegment("Aura",aura)

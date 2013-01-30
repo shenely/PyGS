@@ -134,10 +134,10 @@ class UserSegment(object):
 def main():
     """Main Function"""
 
-    physics = BaseState(datetime(2010,1,1))
-    aqua = GeographicState(physics.epoch,0.0,0.0,0.0)
-    aura = GeographicState(physics.epoch,0.0,0.0,0.0)
-    terra = GeographicState(physics.epoch,0.0,0.0,0.0)
+    epoch = datetime(2010,1,1)
+    aqua = GeographicState(epoch,0.0,0.0,0.0)
+    aura = GeographicState(epoch,0.0,0.0,0.0)
+    terra = GeographicState(epoch,0.0,0.0,0.0)
     
     q = UserSegment("Aqua",aqua)
     r = UserSegment("Aura",aura)

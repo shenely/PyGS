@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   27 January 2013
+Modified:   29 January 2013
 
 Purpose:    
 """
@@ -138,14 +138,14 @@ class GroundSegment(object):
 def main():
     """Main Function"""
     
-    physics = BaseState(datetime(2010,1,1,0,10,0))
-    terra = ManeuverCommand(physics.epoch,0.0,0.0,5.0)
+    epoch = datetime(2010,1,1,0,12,30)
+    aura = ManeuverCommand(epoch,0.0,1.0,0.0)
     
     q = GroundSegment("Aqua")
     r = GroundSegment("Aura")
     t = GroundSegment("Terra")
     
-    t.cmd_queue.put((0,terra))
+    r.cmd_queue.put((0,aura))
     
     #scheduler.start()
     
