@@ -64,7 +64,7 @@ class PhysicsSegment(object):
         iterate_epoch = iterator.caesium(self.epoch,EPOCH_SCALE,format_epoch)
         
         self.epoch_task = iterate_epoch
-        self.scheduler.periodic(self.epoch_task,200).start()
+        self.scheduler.periodic(self.epoch_task,100).start()
 
 def main():
     """Main Function"""

@@ -43,14 +43,10 @@ import tornado.websocket
 #
 __version__ = "0.1"#current version [major.minor]
 
-VIEW_ADDRESS = "Kepler.View.Global"
+VIEW_ADDRESS = "Kepler.View.{!s}"
 #
 ####################
 
-
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.render("index.html")
 
 class ZMQWebSocket(tornado.websocket.WebSocketHandler):
     sockets = dict()
@@ -60,12 +56,13 @@ class ZMQWebSocket(tornado.websocket.WebSocketHandler):
         
         self.write_message(message)
     
-    def open(self):
+    def open(self,view):
+        
         context = zmq.Context.instance()
         
         socket = context.socket(zmq.SUB)
         socket.connect("tcp://127.0.0.1:5556")
-        socket.setsockopt(zmq.SUBSCRIBE,VIEW_ADDRESS)
+        socket.setsockopt(zmq.SUBSCRIBE,VIEW_ADDRESS.format(view.capitalize()))
         
         stream = zmq.eventloop.zmqstream.ZMQStream(socket)
         stream.on_recv(self.send_message)
@@ -80,7 +77,7 @@ class ZMQWebSocket(tornado.websocket.WebSocketHandler):
 
 def main():
     app = tornado.web.Application([(r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "./src/service/"}),
-                                   (r"/view",ZMQWebSocket)])
+                                   (r"/view/(.*)",ZMQWebSocket)])
     app.listen(8080)
     
 if __name__ == '__main__':

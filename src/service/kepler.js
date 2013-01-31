@@ -29,7 +29,7 @@ function SVGControl( $scope, $element ) {
 
   var projection = d3.geo.equirectangular()
       .translate([ width / 2, height / 2])
-      .scale(500 / Math.PI);
+      .scale(height / Math.PI);
 
   var path = d3.geo.path()
       .projection(projection);
@@ -77,9 +77,9 @@ function SVGControl( $scope, $element ) {
     
   $scope.objects = {};
   
-  var socket = new WebSocket("ws://localhost:8080/view");
+  var socket = new WebSocket("ws://" + location.host + "/view/global2");
 	socket.onmessage = function (event) {
-    var view = JSON.parse(event.data);   
+    var view = JSON.parse(event.data);
     objects.selectAll("path.cover")
       .data(view.params.states)
       .attr("d", function(d,i) {
@@ -189,7 +189,7 @@ function CanvasControl( $scope, $element ) {
     
   $scope.objects = [];
   
-  var socket = new WebSocket("ws://localhost:8080/view");
+  var socket = new WebSocket("ws://" + location.host + "/view/global2");
 	socket.onmessage = function (event) {
     var view = JSON.parse(event.data);
     
@@ -229,15 +229,15 @@ function WebGLControl( $scope, $element ) {
   var texture = new THREE.Texture(d3.select("canvas-earth").select("canvas").node());
 
   var scene = new THREE.Scene(),
-	    renderer = new THREE.WebGLRenderer( { antialias: true } ),
+	    renderer = new THREE.WebGLRenderer( );//{ antialias: true } ),
 	    camera = new THREE.PerspectiveCamera(angle, aspect, near, far);
 	
-	camera.position.z = 400;
+	camera.position.z = 2;
 	scene.add(camera);
 	renderer.setSize(width, height);
 	$element[0].appendChild(renderer.domElement);
     
-  var geometry = new THREE.SphereGeometry(200, 32, 32),
+  var geometry = new THREE.SphereGeometry(1, 32, 32),
       material = new THREE.MeshBasicMaterial({ map : texture }),
       mesh = new THREE.Mesh(geometry, material),
       light = new THREE.AmbientLight(0xababab);
@@ -245,7 +245,7 @@ function WebGLControl( $scope, $element ) {
 	scene.add(mesh);
 	scene.add(light);
   
-  var socket = new WebSocket("ws://localhost:8080/view");
+  var socket = new WebSocket("ws://" + location.host + "/view/global3");
 	socket.onmessage = function (event) {
 	  texture.needsUpdate = true;
   };
