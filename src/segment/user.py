@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   27 January 2013
+Modified:   30 January 2013
 
 Purpose:    
 """
@@ -20,6 +20,7 @@ import logging
 
 #External libraries
 import zmq
+from numpy import matrix
 
 #Internal libraries
 from ..core.scheduler import Scheduler
@@ -103,11 +104,21 @@ class UserSegment(object):
     
     @classmethod
     def task_generate_view(cls):
-        publish_view = socket.publish(cls.view_socket)
-        generate_view = view.vglobal(VIEW_ADDRESS,publish_view)
-        merge_tasks = control.merge(cls.tasks,generate_view)
+        point = GeographicState(datetime(2010,1,1),0.0,0.0,0.0)
         
-        cls.view_task = merge_tasks
+        publish_view = socket.publish(cls.view_socket)
+        view_local = view.local(VIEW_ADDRESS,publish_view)
+        merge_tasks_local = control.merge(cls.tasks,view_local)
+        horizontal_transform = transform.geographic2horizontal(point,merge_tasks_local)
+        view_global2d = view.global2d(VIEW_ADDRESS,publish_view)
+        merge_tasks_global2d = control.merge(cls.tasks,view_global2d)
+        split_views_2d = control.split(None,[merge_tasks_global2d,horizontal_transform])
+        geographic_transform = transform.cartesian2geographic(split_views_2d)
+        view_global3d = view.global3d(VIEW_ADDRESS,publish_view)
+        merge_tasks3d = control.merge(cls.tasks,view_global3d)
+        split_views = control.split(None,[merge_tasks3d,geographic_transform])
+        
+        cls.view_task = split_views
 
     def task_update_state(self):
         enqueue_state = queue.put(self.state_queue)
@@ -121,7 +132,7 @@ class UserSegment(object):
     def task_interpolate_state(self,coords):
         update_state = state.update(coords,self.view_task)
         transform_state = transform.cartesian2geographic(update_state)
-        interpolate_state = interpolate.hermite(self.physics,istrue=transform_state)
+        interpolate_state = interpolate.hermite(self.physics,istrue=update_state)
         dequeue_state = queue.get(self.state_queue,interpolate_state)
         block_state = control.block(interpolate_state)
         remove_state = queue.get(self.state_queue,block_state)
@@ -135,9 +146,15 @@ def main():
     """Main Function"""
 
     epoch = datetime(2010,1,1)
-    aqua = GeographicState(epoch,0.0,0.0,0.0)
-    aura = GeographicState(epoch,0.0,0.0,0.0)
-    terra = GeographicState(epoch,0.0,0.0,0.0)
+    aqua = CartesianState(epoch,
+                          matrix([7000.0,0.0,0.0]).T,
+                          matrix([0.0,7.5,0.0]).T)
+    aura = CartesianState(epoch,
+                          matrix([7000.0,0.0,0.0]).T,
+                          matrix([0.0,7.5,0.0]).T)
+    terra = CartesianState(epoch,
+                          matrix([7000.0,0.0,0.0]).T,
+                          matrix([0.0,7.5,0.0]).T)
     
     q = UserSegment("Aqua",aqua)
     r = UserSegment("Aura",aura)

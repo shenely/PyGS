@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 January 2013
+Modified:   30 January 2013
 
 Purpose:    
 """
@@ -14,7 +14,7 @@ Purpose:
 # Import section #
 #
 #Built-in libraries
-from math import pi,sqrt,cos,sin,tan,acos,asin,atan,atan2
+from math import pi,sqrt,cos,sin,tan,acos,asin,atan2
 from datetime import datetime,time
 import types
 
@@ -284,12 +284,18 @@ class KeplerianState(BaseState):
     
     @property
     def E(self):
-        """Keplerian Eccentric Anomaly (read-only)"""
-        return 2 * atan(sqrt((1 - self.e) / (1 + self.e)) * tan(self.theta / 2))
+        """Keplerian Eccentric Anomaly"""
+        return 2 * atan2(sqrt(1 - self.e) * sin(self.theta / 2),
+                         sqrt(1 + self.e) * cos(self.theta / 2))
+    
+    @E.setter
+    def E(self,E):
+        self.theta = 2 * atan2(sqrt(1 + self.e) * sin(E / 2),
+                               sqrt(1 - self.e) * cos(E / 2))
     
     @property
     def M(self):
-        """Keplerian Mean Anomaly (read-only)"""
+        """Keplerian Mean Anomaly"""
         return self.E - self.e * sin(self.E)
     
     @property
@@ -310,8 +316,7 @@ class GeographicState(BaseState):
         assert arc_length >= 0
         assert arc_length < 180
         assert isinstance(longitude,types.FloatType)
-        assert longitude >= 0
-        assert longitude < 360
+        longitude %= 360
         assert isinstance(latitude,types.FloatType)
         assert abs(latitude) <= 90
              
@@ -341,8 +346,7 @@ class HorizontalState(BaseState):
         BaseState.__init__(self,epoch)
         
         assert isinstance(azimuth,types.FloatType)
-        assert azimuth >= 0
-        assert azimuth < 360
+        azimuth %= 360
         assert isinstance(elevation,types.FloatType)
         assert abs(elevation) <= 90
         assert isinstance(range,types.FloatType)

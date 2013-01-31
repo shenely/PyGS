@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   22 January 2013
+Modified:   30 January 2013
 
 Purpose:    
 """
@@ -33,8 +33,9 @@ from ..core.view import *
 ##################
 # Export section #
 #
-__all__ = ["vglobal",
-           "vlocal"]
+__all__ = ["global2d",
+           "global3d",
+           "local"]
 #
 ##################
 
@@ -50,8 +51,8 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 @coroutine
-def vglobal(address,pipeline=None):
-    """Global View Message"""
+def global2d(address,pipeline=None):
+    """Global 2D View Message"""
     
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
@@ -62,14 +63,33 @@ def vglobal(address,pipeline=None):
         
         #assert isinstance(system,BaseState)
         
-        notice = GlobalView(states)
+        notice = Global2DView(states)
         message = address,encoder(notice)
                         
-        logging.info("Routine.View:  Global")
+        logging.info("Routine.View:  Global 2D")
 
 
 @coroutine
-def vlocal(address,pipeline=None):
+def global3d(address,pipeline=None):
+    """Global 3D View Message"""
+    
+    assert isinstance(address,types.StringTypes)
+    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    
+    message = None
+    while True:
+        states = yield message,pipeline
+        
+        #assert isinstance(system,BaseState)
+        
+        notice = Global3DView(states)
+        message = address,encoder(notice)
+                        
+        logging.info("Routine.View:  Global 3D")
+
+
+@coroutine
+def local(address,pipeline=None):
     """Local View Message"""
     
     assert isinstance(address,types.StringTypes)

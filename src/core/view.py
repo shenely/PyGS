@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   22 January 2013
+Modified:   30 January 2013
 
 Purpose:    
 """
@@ -29,7 +29,8 @@ from .state import *
 ##################
 # Export section #
 #
-__all__ = ["GlobalView",
+__all__ = ["Global2DView",
+           "Global3DView",
            "LocalView"]
 #
 ##################
@@ -45,11 +46,21 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 ####################
 
 
-class GlobalView(RequestMessage):
+class Global2DView(RequestMessage):
     def __init__(self,states):
         assert filter(lambda state:isinstance(state,GeographicState),states)
         
-        RequestMessage.__init__(self,"global",ObjectDict)
+        RequestMessage.__init__(self,"global2d",ObjectDict)
+        
+        self.params.epoch = states[0].epoch.strftime(EPOCH_FORMAT) if len(states) > 0 else None 
+        self.params.states = states
+
+
+class Global3DView(RequestMessage):
+    def __init__(self,states):
+        assert filter(lambda state:isinstance(state,CartesianState),states)
+        
+        RequestMessage.__init__(self,"global3d",ObjectDict)
         
         self.params.epoch = states[0].epoch.strftime(EPOCH_FORMAT) if len(states) > 0 else None 
         self.params.states = states

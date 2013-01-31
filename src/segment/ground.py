@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 January 2013
+Modified:   30 January 2013
 
 Purpose:    
 """
@@ -138,8 +138,8 @@ class GroundSegment(object):
 def main():
     """Main Function"""
     
-    epoch = datetime(2010,1,1,0,12,30)
-    aura = ManeuverCommand(epoch,0.0,1.0,0.0)
+    epoch = datetime(2010,1,1,0,25,0)
+    aura = ManeuverCommand(epoch,0.01,0.01,1.0)
     
     q = GroundSegment("Aqua")
     r = GroundSegment("Aura")

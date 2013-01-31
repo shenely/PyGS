@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   22 January 2013
+Modified:   30 January 2013
 
 Purpose:    
 """
@@ -14,7 +14,7 @@ Purpose:
 # Import section #
 #
 #Built-in libraries
-from math import pi,sqrt,cos,sin,tan,atan
+from math import pi,sqrt,cos,sin,tan,atan2
 from datetime import datetime,timedelta
 import logging
 import types
@@ -73,12 +73,11 @@ def caesium(epoch=datetime.utcnow(),scale=1,pipeline=None):
         logging.info("Routine.Iterator:  Caesium iterated to %s" % epoch)
 
 @coroutine
-def kepler(state,margin,step=EPOCH_STEP_SIZE,error=ANOMALY_ERROR,pipeline=None):
+def kepler(state,step=EPOCH_STEP_SIZE,pipeline=None):
     """Kepler Iteration"""
     
     assert isinstance(state,KeplerianState)
     assert isinstance(step,timedelta)
-    assert isinstance(error,types.FloatType)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
     message = None
@@ -87,10 +86,11 @@ def kepler(state,margin,step=EPOCH_STEP_SIZE,error=ANOMALY_ERROR,pipeline=None):
 
         e = state.e
         M = (state.M + state.n * step.total_seconds()) % (2 * pi)
-        E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,e),error)
+        E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,e),ANOMALY_ERROR)
         
         state.epoch += step
-        state.theta = 2 * atan(sqrt((1 + e) / (1 - e)) * tan(E / 2))
+        state.theta = 2 * atan2(sqrt(1 + e) * sin(E / 2),
+                                sqrt(1 - e) * cos(E / 2))
                 
         message = copy.deepcopy(state)
                         

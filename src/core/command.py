@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 January 2013
+Modified:   30 January 2013
 
 Purpose:    
 """
@@ -14,7 +14,7 @@ Purpose:
 # Import section #
 #
 #Built-in libraries
-from math import pi,sqrt,cos,sin,tan,atan
+from math import pi,sqrt,cos,sin,tan,atan2
 from datetime import datetime
 import uuid
 import types
@@ -91,26 +91,36 @@ class ManeuverCommand(BaseCommand):
         assert isinstance(state,KeplerianState)
         
         t = (self.epoch - state.epoch).total_seconds()
-        M = state.M + state.n * t
-        E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,state.e),ANOMALY_ERROR)
-        state.theta = 2 * atan(sqrt((1 + state.e) / (1 - state.e)) * tan(E / 2))        
+        state.M += state.n * t
+        
+        c = cos(state.theta)
+        s = sin(state.theta)
+        A = 2 / (state.n * sqrt(1 - state.e ** 2))
+        B = state.h / EARTH_GRAVITATION
+        C = state.r / state.h
+        D = 1 / (state.n * state.a ** 2 * state.e)
         
         a = state.a +\
-            2 * state.e * sin(state.theta) * self.R / (state.n * sqrt(1 - state.e ** 2)) +\
-            2 * (1 + state.e * cos(state.theta)) * self.T / (state.n * sqrt(1 - state.e ** 2))
+            A * (state.e * s * self.R +\
+                 (1 + state.e * c) * self.T)
         e = state.e +\
-            sqrt(state.p / EARTH_GRAVITATION) * sin(state.theta) * self.R +\
-            sqrt(state.p / EARTH_GRAVITATION) * (cos(state.theta) + cos(state.E)) * self.T
+            B * (s * self.R +\
+                 (c + cos(state.E)) * self.T)
         i = state.i +\
-            state.r * cos(state.u) * self.N / state.h
+            C * cos(state.u) * self.N
         omega = state.omega -\
-                state.r * sin(state.u) * self.N / (state.h * tan(state.i))
+                B * (c / state.e) * self.R +\
+                C * ((s / state.e) * (2 + state.e * c) * self.T -\
+                     (sin(state.u) / tan(state.i)) * self.N)
         OMEGA = state.OMEGA +\
-                state.r * sin(state.u) * self.N / (state.h * sin(state.i))
+                C * (sin(state.u) / sin(state.i)) * self.N 
         
-        M = state.M - state.n * t
-        E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,state.e),ANOMALY_ERROR)
-        theta = 2 * atan(sqrt((1 + state.e) / (1 - state.e)) * tan(E / 2))
+        M = state.M - state.n * t +\
+            D * ((state.p * c - 2 * state.e * state.r) * self.R -\
+                 (state.p + state.r) * s * self.T)
+        E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,e),ANOMALY_ERROR)
+        theta = 2 * atan2(sqrt(1 + e) * sin(E / 2),
+                          sqrt(1 - e) * cos(E / 2))
         
         perturb = KeplerianState(state.epoch,a,theta,e,omega,i,OMEGA)
         

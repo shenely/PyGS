@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 January 2013
+Modified:   30 January 2013
 
 Purpose:    
 """
@@ -116,7 +116,7 @@ class SpaceSegment(object):
         after_lower = epoch.after(self.physics,REMOVE_MARGIN,after_upper,remove_state)
         inspect_state = queue.peek(self.queue,after_lower)
         enqueue_state = queue.put(self.queue,inspect_state)
-        iterate_state = iterator.kepler(elements,STEP_SIZE,pipeline=enqueue_state)
+        iterate_state = iterator.kepler(elements,STEP_SIZE,enqueue_state)
         before_state = epoch.before(elements,ITERATE_MARGIN,inspect_state,iterate_state)
         
         self.tasks.append(before_state)
