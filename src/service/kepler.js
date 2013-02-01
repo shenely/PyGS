@@ -21,25 +21,45 @@ angular.module("kepler", [])
     };
   });
 
+
+var width = 1000,
+    height = 500;
+
+var color = d3.scale.category10(),
+    climate = [
+               { "offset": 0.13, "color": "#fff" },
+               { "offset": 0.37, "color": "#ddb" },
+               { "offset": 0.50, "color": "#070" },
+               { "offset": 0.63, "color": "#ddb" },
+               { "offset": 0.87, "color": "#fff" }
+               ];
+
+var projection = d3.geo.equirectangular()
+	.translate([ width / 2, height / 2])
+	.scale(height / Math.PI);
+
+var graticule = d3.geo.graticule();
+
 function SVGControl( $scope, $element ) {  
-  var color = d3.scale.category10();
-  
-  var width = 1000,
-      height = 500;
-
-  var projection = d3.geo.equirectangular()
-      .translate([ width / 2, height / 2])
-      .scale(height / Math.PI);
-
   var path = d3.geo.path()
       .projection(projection);
-
-  var graticule = d3.geo.graticule();
 
   var svg = d3.select($element[0]).append("svg")
       .attr("width", width)
       .attr("height", height);
-
+  
+  svg.append("defs").append("linearGradient")
+  	.attr("id", "climate")
+  	.attr("x1", "0%")
+  	.attr("x2", "0%")
+  	.attr("y1", "0%")
+  	.attr("y2", "100%")
+  		.selectAll("stop")
+  			.data(climate)
+  		.enter().append("stop")
+  			.attr("offset", function(d,i) { return (100*d.offset).toString()+"%"; })
+  			.attr("stop-color", function(d,i) { return d.color; });
+  
   svg.append("path")
       .datum(graticule.outline)
       .attr("class", "background")
@@ -120,20 +140,14 @@ function SVGControl( $scope, $element ) {
   })
 }
 
-function CanvasControl( $scope, $element ) {  
-  var color = d3.scale.category10();
-  
-  var width = 1000,
-      height = 500;
-
+function CanvasControl( $scope, $element ) {
   var canvas = d3.select($element[0]).append("canvas")
       .attr("width", width)
       .attr("height", height),
       context = canvas.node().getContext("2d");
-
-  var projection = d3.geo.equirectangular()
-      .translate([ width / 2, height / 2])
-      .scale(500 / Math.PI);
+  
+	var linGrad = context.createLinearGradient(0,0,0,height);
+	climate.forEach(function(d,i) { linGrad.addColorStop(d.offset, d.color); });
 
   var path = d3.geo.path()
       .projection(projection)
@@ -147,41 +161,37 @@ function CanvasControl( $scope, $element ) {
         graticule = d3.geo.graticule();
     
     redraw = function() {
-      context.lineWidth = 1.0;
+      context.lineWidth = 0.5;
       
       context.beginPath();
       path(graticule.outline());
-      context.fillStyle = "#a4bac7";
+      context.fillStyle = "#037";
       context.fill();
       
       context.beginPath();
       path(land);
-      context.fillStyle = "#d7c7ad";
+      context.fillStyle = linGrad;
       context.fill();
       
       context.beginPath();
       path(border);
-      context.strokeStyle = "#a5967e";
+      context.strokeStyle = "#555";
       context.stroke();
       
       context.beginPath();
       path(land);
-      context.strokeStyle = "#766951";
+      context.strokeStyle = "#333";
       context.stroke();
       
-      context.globalAlpha = 0.5;
       context.beginPath();
       graticule.lines().map(path);
-      context.strokeStyle = "#fff";
-      context.lineWidth = 0.5;
+      context.strokeStyle = "#777";
       context.stroke();
       
       context.beginPath();
       path(graticule.outline());
-      context.strokeStyle = "#fff";
-      context.lineWidth = 0.5;
+      context.strokeStyle = "#777";
       context.stroke();
-      context.globalAlpha = 1.0;
     };
     
     redraw();
@@ -251,7 +261,7 @@ function WebGLControl( $scope, $element ) {
   };
 	
 	mesh.rotation.x = Math.PI / 4;
-	function animate() {
+    function animate() {
 	  renderer.render(scene, camera);
 	  requestAnimationFrame( animate );
 	  
