@@ -5,11 +5,22 @@ import json
 
 from numpy import matrix
 
-__all__= ["ObjectDict",
+__all__= ["coroutine",
+          "ObjectDict",
           "encoder",
           "decoder"]
 
 EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+def coroutine(func):
+    def wrapper(*args,**kw):
+        gen = func(*args, **kw)
+        gen.next()
+        return gen
+    wrapper.__name__ = func.__name__
+    wrapper.__dict__ = func.__dict__
+    wrapper.__doc__  = func.__doc__
+    return wrapper
 
 class ObjectDict(dict):
     def __getattr__(self,name):

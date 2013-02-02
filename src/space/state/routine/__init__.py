@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 
-"""Epoch routines
+"""State routines
 
 Author(s):  Sean Henely
 Language:   Python 2.x
@@ -19,11 +19,13 @@ import logging
 import types
 
 #External libraries
+from numpy import matrix
 
 #Internal libraries
 from core import ObjectDict,coroutine,encoder,decoder
-from . import EpochState
-from .message import EpochMessage
+from clock.epoch import EpochState
+from . import CartesianState
+from .message import StateMessage
 #
 ##################
 
@@ -33,7 +35,7 @@ from .message import EpochMessage
 #
 __all__ = ["update",
            "format",
-           "process"]
+           "parse"]
 #
 ##################
 
@@ -42,67 +44,69 @@ __all__ = ["update",
 # Constant section #
 #
 __version__ = "0.1"#current version [major.minor]
-
-EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 #
 ####################
 
 
 @coroutine
 def update(system,pipeline=None):
-    """Update System Epoch"""
+    """Update System State"""
     
     assert isinstance(system,EpochState)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
     while True:
-        epoch = yield system,pipeline
+        state = yield system,pipeline
         
-        assert isinstance(epoch,datetime)
+        assert isinstance(state,type(system))
         
-        system.epoch = epoch
+        system.update(state)
                         
-        logging.info("Ground.Epoch:  Updated to %s" % system.epoch)
+        logging.info("Space.State:  Updated to %s" % system.epoch)
 
 @coroutine
 def format(address,pipeline=None):
-    """Format Epoch Message"""
+    """Format State Message"""
     
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
     message = None
     while True:
-        epoch = yield message,pipeline
+        state = yield message,pipeline
         
-        assert isinstance(epoch,datetime)
+        assert isinstance(state,CartesianState)
         
-        notice = EpochMessage(epoch)
+        notice = StateMessage(state)
         message = address,encoder(notice)
-        
-        logging.info("Ground.Epoch:  Formatted as %s" % notice.params.epoch)
+                        
+        logging.info("Space.State:  Formatted")
 
 @coroutine
 def parse(pipeline=None):
-    """Parse Epoch Message"""
+    """Parse State Message"""
     
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
-    epoch = None
+    state = None
     while True:
-        address,message = yield epoch,pipeline
+        address,message = yield state,pipeline
         
         assert isinstance(message,types.StringTypes)
         
         notice = decoder(message)
         
         assert hasattr(notice,"method")
-        assert notice.method == "epoch"
+        assert notice.method == "state"
         assert hasattr(notice,"params")
-        assert isinstance(notice.params,ObjectDict)
+        assert isinstance(notice.params,ObjectDict)        
         assert hasattr(notice.params,"epoch")
         assert isinstance(notice.params.epoch,datetime)
+        assert hasattr(notice.params,"position")
+        assert isinstance(notice.params.position,matrix)
+        assert hasattr(notice.params,"velocity")
+        assert isinstance(notice.params.velocity,matrix)
         
-        epoch = notice.params.epoch
+        state = CartesianState(**notice.params)
                 
-        logging.info("Ground.Epoch:  Parsed as %s" % notice.params.epoch)
+        logging.info("Space.State:  Parsed as %s" % notice.params.epoch)

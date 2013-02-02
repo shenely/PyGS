@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 
-"""Epoch messages
+"""State message
 
 Author(s):  Sean Henely
 Language:   Python 2.x
@@ -19,7 +19,7 @@ Purpose:
 
 #Internal libraries
 from core.message import RequestMessage
-from . import EpochState
+from . import CartesianState
 #
 ##################
 
@@ -27,7 +27,7 @@ from . import EpochState
 ##################
 # Export section #
 #
-__all__ = ["EpochMessage"]
+__all__ = ["StateMessage"]
 #
 ##################
 
@@ -36,14 +36,16 @@ __all__ = ["EpochMessage"]
 # Constant section #
 #
 __version__ = "0.1"#current version [major.minor]
+
+EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 #
 ####################
-        
 
-class EpochMessage(RequestMessage):
-    def __init__(self,epoch):
-        assert isinstance(epoch,EpochState)
+
+class StateMessage(RequestMessage):
+    def __init__(self,state):
+        assert isinstance(state,CartesianState)
         
-        RequestMessage.__init__(self,"epoch")
+        RequestMessage.__init__(self,"state")        
         
-        self.params = epoch
+        self.params = state

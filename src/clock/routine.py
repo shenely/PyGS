@@ -43,7 +43,7 @@ __version__ = "0.1"#current version [major.minor]
 J2000 = datetime(2000,1,1,12)
 
 CLOCK_SCALE = 1.0
-CLOCK_STEP = timedelta(0,60)
+CLOCK_STEP = timedelta(seconds=60)
 #
 ####################
 
