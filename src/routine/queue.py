@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 January 2013
+Modified:   02 February 2013
 
 Purpose:    
 """
@@ -49,40 +49,52 @@ J2000 = datetime(2000,1,1,12)
 
 
 @coroutine
-def put(queue,pipeline=None):
+def put(queue,pipeline=None,full=None):
     """Put Message into Queue"""
     
     assert isinstance(queue,Queue)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
+    flag = True
     message = None
     while True:
-        message = yield message,pipeline
+        message = yield message,pipeline if flag else full
                 
         assert isinstance(message,BaseState)
         
-        priority = (message.epoch - J2000).total_seconds()
+        priority = (message.epoch - J2000).total_seconds()        
         
-        queue.put((priority,message))
-                
-        logging.info("Routine.Queue:  Put message with priority %s" % priority)
+        if not queue.full():
+            queue.put((priority,message))
+                    
+            logging.info("Routine.Queue:  Put message with priority %s" % priority)
+            
+            flag = True
+        else:
+            flag = False
 
 @coroutine
-def get(queue,pipeline=None):
+def get(queue,pipeline=None,empty=None):
     """Get Message from Queue"""
     
     assert isinstance(queue,Queue)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
+    flag = True
     message = None
     while True:
-        yield message,pipeline
+        message = yield message,pipeline if flag else empty
         
-        priority,message = queue.get()
-        
-        assert isinstance(priority,(types.IntType,types.FloatType))
-                
-        logging.info("Routine.Queue:  Got message with priority %s" % priority)
+        if not queue.empty(): 
+            priority,message = queue.get()
+            
+            assert isinstance(priority,(types.IntType,types.FloatType))
+                    
+            logging.info("Routine.Queue:  Got message with priority %s" % priority)
+            
+            flag = True
+        else:
+            flag = False
 
 def push():pass
 

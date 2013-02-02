@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 January 2013
+Modified:   02 February 2013
 
 Purpose:    
 """
@@ -64,7 +64,7 @@ class PhysicsSegment(object):
         iterate_epoch = iterator.caesium(self.epoch,EPOCH_SCALE,format_epoch)
         
         self.epoch_task = iterate_epoch
-        self.scheduler.periodic(self.epoch_task,100).start()
+        self.scheduler.periodic(self.epoch_task,200).start()
 
 def main():
     """Main Function"""

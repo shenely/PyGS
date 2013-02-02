@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   30 January 2013
+Modified:   02 February 2013
 
 Purpose:    
 """
@@ -287,11 +287,6 @@ class KeplerianState(BaseState):
         """Keplerian Eccentric Anomaly"""
         return 2 * atan2(sqrt(1 - self.e) * sin(self.theta / 2),
                          sqrt(1 + self.e) * cos(self.theta / 2))
-    
-    @E.setter
-    def E(self,E):
-        self.theta = 2 * atan2(sqrt(1 + self.e) * sin(E / 2),
-                               sqrt(1 - self.e) * cos(E / 2))
     
     @property
     def M(self):

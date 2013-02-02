@@ -1,5 +1,5 @@
 .background {
-  fill: #037;
+  fill: #a4bac7;
 }
 
 .foreground {
@@ -10,7 +10,7 @@
 
 .graticule {
   fill: none;
-  stroke: #777;
+  stroke: #fff;
   stroke-width: .5px;
 }
 
@@ -19,9 +19,8 @@
 }
 
 .land {
-  fill: url(#climate);
-  stroke: #333;
-  stroke-width: .5px;
+  fill: #d7c7ad;
+  stroke: #766951;
 }
 
 .night {
@@ -42,8 +41,7 @@
 
 .boundary {
   fill: none;
-  stroke: #555;
-  stroke-width: .5px;
+  stroke: #a5967e;
 }
 
 .cover {

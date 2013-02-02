@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   30 January 2013
+Modified:   02 February 2013
 
 Purpose:    
 """
@@ -118,7 +118,7 @@ class GroundSegment(object):
         remove_status = queue.get(self.status_queue)
         after_system = epoch.after(self.physics,STATUS_MARGIN,None,dequeue_status)
         before_system = epoch.before(self.physics,DISCARD_MARGIN,remove_status,after_system)
-        inspect_status = queue.peek(self.cmd_queue,before_system)
+        inspect_status = queue.peek(self.status_queue,before_system)
         
         self.tasks.append(inspect_status)
 
@@ -138,8 +138,8 @@ class GroundSegment(object):
 def main():
     """Main Function"""
     
-    epoch = datetime(2010,1,1,0,25,0)
-    aura = ManeuverCommand(epoch,0.01,0.01,1.0)
+    epoch = datetime(2010,1,1,0,37,30)
+    aura = ManeuverCommand(epoch,0.0,0.0,1.0)
     
     q = GroundSegment("Aqua")
     r = GroundSegment("Aura")
