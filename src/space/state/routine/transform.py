@@ -108,7 +108,7 @@ def identity(pipeline):
 
         assert isinstance(state,BaseState)
         
-        logging.info("Routine.Transform:  Identity")
+        logging.info("Transform.Identity")
 
 @coroutine
 def cartesian2keplerian(pipeline):
@@ -147,7 +147,7 @@ def cartesian2keplerian(pipeline):
 
         state = KeplerianState(t,a,theta,e,omega,i,OMEGA)
         
-        logging.info("Routine.Transform:  CartesianToKeplerian")
+        logging.info("Transform.CartesianToKeplerian")
 
 @coroutine
 def keplerian2cartesian(pipeline):
@@ -178,7 +178,7 @@ def keplerian2cartesian(pipeline):
 
         state = CartesianState(t,r,v)
                 
-        logging.info("Routine.Transform:  KeplerianToCartesian")
+        logging.info("Transform.KeplerianToCartesian")
 
 @coroutine
 def cartesian2geographic(pipeline):
@@ -200,7 +200,7 @@ def cartesian2geographic(pipeline):
 
         state = GeographicState(t,arc,long,lat)
         
-        logging.info("Routine.Transform:  CartesianToGeographic")
+        logging.info("Transform.CartesianToGeographic")
 
 @coroutine
 def geographic2horizontal(point,pipeline):
@@ -228,4 +228,4 @@ def geographic2horizontal(point,pipeline):
 
         state = HorizontalState(t,az,el,r)
         
-        logging.info("Routine.Transform:  GeographicToHorizontal")
+        logging.info("Transform.GeographicToHorizontal")
