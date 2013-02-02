@@ -28,7 +28,9 @@ from clock.epoch import routine as epoch
 from . import routine
 from .state import routine as state
 from .state.routine import transform
-#import command,acknowledge,result
+from ground.command import routine as command
+from .acknowledge import routine as acknowledge
+from .result import routine as result
 
 from clock.epoch import EpochState
 from .state import KeplerianState
@@ -100,8 +102,8 @@ class SpaceSegment(object):
         self.cmd_queue = PriorityQueue()
         
         self.task_iterate_state(elements)
-        #self.task_acknowledge_command()
-        #self.task_execute_command(elements)
+        self.task_acknowledge_command()
+        self.task_execute_command(elements)
 
     @classmethod
     def task_update_epoch(cls):
@@ -134,7 +136,7 @@ class SpaceSegment(object):
         accept_cmd = command.accept(format_ack)
         enqueue_cmd = queue.put(self.cmd_queue,accept_cmd)
         reject_cmd = command.reject(format_ack)
-        after_epoch = epoch.after(self.physics,COMMAND_MARGIN,enqueue_cmd,reject_cmd)
+        after_epoch = sequence.after(self.physics,COMMAND_MARGIN,enqueue_cmd,reject_cmd)
         parse_cmd = command.parse(after_epoch)
         subscribe_cmd = socket.subscribe(self.cmd_socket,parse_cmd)
         
@@ -147,8 +149,8 @@ class SpaceSegment(object):
         execute_cmd = command.execute(elements,format_result)
         dequeue_cmd = queue.get(self.cmd_queue,execute_cmd)
         remove_cmd = queue.get(self.cmd_queue)
-        after_state = epoch.after(elements,EXECUTE_MARGIN,None,dequeue_cmd)
-        before_state = epoch.before(elements,EXECUTE_MARGIN,remove_cmd,after_state)
+        after_state = sequence.after(elements,EXECUTE_MARGIN,None,dequeue_cmd)
+        before_state = sequence.before(elements,EXECUTE_MARGIN,remove_cmd,after_state)
         inspect_cmd = queue.peek(self.cmd_queue,before_state)
         
         self.tasks.append(inspect_cmd)
