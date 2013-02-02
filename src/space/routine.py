@@ -25,7 +25,7 @@ from scipy.optimize import newton
 
 #Internal libraries
 from core import coroutine
-from ..state import KeplerianState
+from .state import KeplerianState
 #
 ##################
 

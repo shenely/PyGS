@@ -14,6 +14,7 @@ Purpose:
 # Import section #
 #
 #Built-in libraries
+from datetime import datetime
 
 #External libraries
 
@@ -42,8 +43,8 @@ __version__ = "0.1"#current version [major.minor]
 
 class EpochMessage(RequestMessage):
     def __init__(self,epoch):
-        assert isinstance(epoch,EpochState)
+        assert isinstance(epoch,datetime)
         
         RequestMessage.__init__(self,"epoch")
         
-        self.params = epoch
+        self.params = EpochState(epoch)

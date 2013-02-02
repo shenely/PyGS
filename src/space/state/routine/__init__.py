@@ -24,8 +24,8 @@ from numpy import matrix
 #Internal libraries
 from core import ObjectDict,coroutine,encoder,decoder
 from clock.epoch import EpochState
-from . import CartesianState
-from .message import StateMessage
+from .. import CartesianState
+from ..message import StateMessage
 #
 ##################
 

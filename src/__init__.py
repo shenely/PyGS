@@ -1,8 +1,8 @@
 import logging
 
-from .core.scheduler import Scheduler
-from .segment import physics,space,ground,user
-from .service import broker,web
+from service.scheduler import Scheduler
+import clock,space
+from service import broker,web
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -12,10 +12,10 @@ def main():
     #broker.main()
     web.main()
         
-    physics.main()
+    clock.main()
     space.main()
-    ground.main()
-    user.main()
+    #ground.main()
+    #user.main()
     
     scheduler.start()
     
