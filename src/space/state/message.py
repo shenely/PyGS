@@ -43,9 +43,9 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 class StateMessage(RequestMessage):
-    def __init__(self,state):
-        assert isinstance(state,CartesianState)
+    def __init__(self,state,*args,**kwargs):
+        RequestMessage.__init__(self,method="state",*args,**kwargs)
         
-        RequestMessage.__init__(self,"state")        
+        assert isinstance(state,CartesianState)
         
         self.params = state

@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   03 February 2013
 
 Purpose:    
 """
@@ -18,6 +18,7 @@ Purpose:
 #External libraries
 
 #Internal libraries
+from core import ObjectDict
 from core.message import ResponseMessage
 from . import BaseAcknowledge
 #
@@ -41,10 +42,13 @@ __version__ = "0.1"#current version [major.minor]
         
 
 class AcknowledgeMessage(ResponseMessage):
-    def __init__(self,acknowledge):
-        assert isinstance(acknowledge,BaseAcknowledge)
+    def __init__(self,result,*args,**kwargs):
+        ResponseMessage.__init__(self,*args,**kwargs)
         
-        ResponseMessage.__init__(self,None)
+        assert isinstance(result,ObjectDict)
+        assert hasattr(result,"type")
         
-        self.id = acknowledge.id
-        self.result = acknowledge
+        if not isinstance(result,BaseAcknowledge):
+            result = BaseAcknowledge.registry[result.type](result)
+        
+        self.result = result

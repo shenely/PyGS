@@ -18,6 +18,7 @@ from datetime import datetime
 
 #External libraries
 import zmq
+from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
@@ -69,7 +70,7 @@ class ClockSegment(object):
 def main():
     """Main Function"""
     
-    epoch = datetime(2010,1,1)
+    epoch = datetime(2010,1,1,tzinfo=utc)
         
     c = ClockSegment(epoch)
             

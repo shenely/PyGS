@@ -56,8 +56,8 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 class CartesianState(EpochState):
-    def __init__(self,epoch,position,velocity):
-        EpochState.__init__(self,epoch)
+    def __init__(self,epoch,position,velocity,*args,**kwargs):
+        EpochState.__init__(self,epoch,*args,**kwargs)
         
         assert isinstance(position,matrix)
         assert position.dtype.type is float64
@@ -71,18 +71,14 @@ class CartesianState(EpochState):
         
         self.position = position
         self.velocity = velocity
+    
+    @staticmethod
+    def check(kwargs):
+        assert EpochState.check(kwargs)
+        assert hasattr(kwargs,"position")
+        assert hasattr(kwargs,"velocity")
         
-    @property
-    def position(self):
-        """Cartesian Position Vector"""
-        
-        return self["position"]
-        
-    @property
-    def velocity(self):
-        """Cartesian Velocity Vector"""
-        
-        return self["velocity"]
+        return True
     
     @property
     def x(self):
@@ -151,77 +147,47 @@ class CartesianState(EpochState):
 
 
 class KeplerianState(EpochState):
-    def __init__(self,epoch,
-                 semi_major_axis,
-                 true_anomaly,
-                 eccentricity,
-                 argument_of_perigee,
-                 inclination,
-                 longitude_of_ascending_node):
-        EpochState.__init__(self,epoch)
+    def __init__(self,epoch,a,theta,e,omega,i,OMEGA,*args,**kwargs):
+        EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(semi_major_axis,types.FloatType)
-        assert semi_major_axis > EARTH_RADIUS
-        assert isinstance(eccentricity,types.FloatType)
-        if eccentricity < 0:
-            eccentricity = - eccentricity
-            #argument_of_perigee += pi
-        assert eccentricity < 1
-        assert isinstance(inclination,types.FloatType)
-        inclination %= 2 * pi
-        if inclination < 0 or inclination >= pi:
-            inclination -= pi
-            argument_of_perigee += pi
-        assert inclination < pi
-        assert isinstance(true_anomaly,types.FloatType)
-        true_anomaly %= 2 * pi
-        assert isinstance(argument_of_perigee,types.FloatType)
-        argument_of_perigee %= 2 * pi
-        assert isinstance(longitude_of_ascending_node,types.FloatType)
-        argument_of_perigee %= 2 * pi
+        assert isinstance(a,types.FloatType)
+        assert a > EARTH_RADIUS
+        assert isinstance(e,types.FloatType)
+        if e < 0:
+            e = - e
+            omega += pi
+        assert e < 1
+        assert isinstance(i,types.FloatType)
+        i %= 2 * pi
+        if i < 0 or i >= pi:
+            i -= pi
+            omega += pi
+        assert i < pi
+        assert isinstance(theta,types.FloatType)
+        theta %= 2 * pi
+        assert isinstance(omega,types.FloatType)
+        omega %= 2 * pi
+        assert isinstance(OMEGA,types.FloatType)
+        OMEGA %= 2 * pi
         
-        self.a = semi_major_axis
-        self.theta = true_anomaly
-        self.e = eccentricity
-        self.omega = argument_of_perigee
-        self.i = inclination
-        self.OMEGA = longitude_of_ascending_node
+        self.a = a
+        self.theta = theta
+        self.e = e
+        self.omega = omega
+        self.i = i
+        self.OMEGA = OMEGA
     
-    @property
-    def a(self):
-        """Keplerian Semi-major Axis"""
+    @staticmethod
+    def check(kwargs):
+        assert EpochState.check(kwargs)
+        assert hasattr(kwargs,"a")
+        assert hasattr(kwargs,"theta")
+        assert hasattr(kwargs,"e")
+        assert hasattr(kwargs,"omega")
+        assert hasattr(kwargs,"i")
+        assert hasattr(kwargs,"OMEGA")
         
-        return self["a"]
-    
-    @property
-    def theta(self):
-        """Keplerian True Anomaly"""
-        
-        return self["theta"]
-    
-    @property
-    def e(self):
-        """Keplerian Eccentricity"""
-        
-        return self["e"]
-    
-    @property
-    def omega(self):
-        """Keplerian Argument of Perigee"""
-        
-        return self["omega"]
-    
-    @property
-    def i(self):
-        """Keplerian Inclination"""
-        
-        return self["i"]
-    
-    @property
-    def OMEGA(self):
-        """Keplerian Right Ascension of the Ascending Node"""
-        
-        return self["OMEGA"]
+        return True
     
     @property
     def epsilon(self):
@@ -286,65 +252,50 @@ class KeplerianState(EpochState):
    
 
 class GeographicState(EpochState):
-    def __init__(self,
-                 epoch,
-                 arc_length,
-                 longitude,
-                 latitude):   
-        EpochState.__init__(self,epoch)
+    def __init__(self, epoch,arc,long,lat,*args,**kwargs):   
+        EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(arc_length,types.FloatType)
-        assert arc_length >= 0
-        assert arc_length < 180
-        assert isinstance(longitude,types.FloatType)
-        longitude %= 360
-        assert isinstance(latitude,types.FloatType)
-        assert abs(latitude) <= 90
+        assert isinstance(arc,types.FloatType)
+        assert arc >= 0
+        assert arc < 180
+        assert isinstance(long,types.FloatType)
+        long %= 360
+        assert isinstance(lat,types.FloatType)
+        assert abs(lat) <= 90
              
-        self.arc = arc_length
-        self.long = longitude
-        self.lat = latitude
+        self.arc = arc
+        self.long = long
+        self.lat = lat
     
-    @property
-    def arc(self):
-        return self["arc"]
-    
-    @property
-    def long(self):        
-        return self["long"]
-    
-    @property
-    def lat(self):
-        return self["lat"]
-
+    @staticmethod
+    def check(kwargs):
+        assert EpochState.check(kwargs)
+        assert hasattr(kwargs,"arc")
+        assert hasattr(kwargs,"long")
+        assert hasattr(kwargs,"lat")
+        
+        return True
 
 class HorizontalState(EpochState):
-    def __init__(self,
-                 epoch,
-                 azimuth,
-                 elevation,
-                 range):
-        EpochState.__init__(self,epoch)
+    def __init__(self,epoch,R,az,el,*args,**kwargs):
+        EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(azimuth,types.FloatType)
-        azimuth %= 360
-        assert isinstance(elevation,types.FloatType)
-        assert abs(elevation) <= 90
-        assert isinstance(range,types.FloatType)
-        assert abs(range) >= 0
+        assert isinstance(R,types.FloatType)
+        assert abs(R) >= 0
+        assert isinstance(az,types.FloatType)
+        az %= 360
+        assert isinstance(el,types.FloatType)
+        assert abs(el) <= 90
              
-        self.az = azimuth
-        self.el = elevation
-        self.r = range
+        self.R = R
+        self.az = az
+        self.el = el
     
-    @property
-    def az(self):
-        return self["az"]
-    
-    @property
-    def el(self):        
-        return self["el"]
-    
-    @property
-    def r(self):
-        return self["r"]
+    @staticmethod
+    def check(kwargs):
+        assert EpochState.check(kwargs)
+        assert hasattr(kwargs,"R")
+        assert hasattr(kwargs,"az")
+        assert hasattr(kwargs,"el")
+        
+        return True

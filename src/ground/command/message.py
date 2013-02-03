@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   03 February 2013
 
 Purpose:    
 """
@@ -18,6 +18,7 @@ Purpose:
 #External libraries
 
 #Internal libraries
+from core import ObjectDict
 from core.message import RequestMessage
 from . import BaseCommand
 #
@@ -41,10 +42,13 @@ __version__ = "0.1"#current version [major.minor]
         
 
 class CommandMessage(RequestMessage):
-    def __init__(self,command):
-        assert isinstance(command,BaseCommand)
+    def __init__(self,params,*args,**kwargs):
+        RequestMessage.__init__(self,method="command")
         
-        RequestMessage.__init__(self,"command")
+        assert isinstance(params,ObjectDict)
+        assert hasattr(params,"type")
         
-        self.id = command.id
-        self.params = command
+        if not isinstance(params,BaseCommand):
+            params = BaseCommand.registry[params.type](params)
+        
+        self.params = params

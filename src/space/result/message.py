@@ -41,10 +41,9 @@ __version__ = "0.1"#current version [major.minor]
         
 
 class ResultMessage(ResponseMessage):
-    def __init__(self,result):
+    def __init__(self,result,*args,**kwargs):
+        ResponseMessage.__init__(self,*args,**kwargs)
+        
         assert isinstance(result,BaseResult)
         
-        ResponseMessage.__init__(self,None)
-        
-        self.id = result.id
         self.result = result

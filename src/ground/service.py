@@ -19,6 +19,7 @@ from Queue import PriorityQueue
 
 #External libraries
 import zmq
+from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
@@ -142,7 +143,7 @@ class GroundSegment(object):
 def main():
     """Main Function"""
     
-    epoch = datetime(2010,1,1,0,12,30)
+    epoch = datetime(2010,1,1,0,12,30,tzinfo=utc)
     aura = ManeuverCommand(epoch,0.0,0.0,1.0)
     
     q = GroundSegment("Aqua")

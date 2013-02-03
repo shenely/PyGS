@@ -43,17 +43,35 @@ __version__ = "0.1"#current version [major.minor]
 
 
 class BaseResult(EpochState):
-    def __init__(self,epoch,id=str(uuid.uuid4())):
-        EpochState.__init__(self,epoch)
+    def __init__(self,type,epoch,*args,**kwargs):
+        EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(id,types.StringTypes)
+        assert isinstance(type,types.StringTypes)
         
-        self.id = id
+        self.type = type
+    
+    @staticmethod
+    def check(kwargs):
+        assert EpochState.check(kwargs)
+        assert hasattr(kwargs,"type")
+        
+        return True
 
 class ManeuverResult(BaseResult):
-    def __init__(self,epoch,before,after,id=str(uuid.uuid4())):
-        BaseResult.__init__(self,epoch,id)
+    def __init__(self,epoch,before,after,*args,**kwargs):
+        BaseResult.__init__(self,"maneuver",epoch,*args,**kwargs)
         
         assert isinstance(before,EpochState)
         assert isinstance(after,EpochState)
+        
+        self.before = before
+        self.after = after
+    
+    @staticmethod
+    def check(kwargs):
+        assert ManeuverResult.check(kwargs)
+        assert hasattr(kwargs,"before")
+        assert hasattr(kwargs,"after")
+        
+        return True
         

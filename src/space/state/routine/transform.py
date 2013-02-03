@@ -23,9 +23,11 @@ import types
 #External libraries
 from numpy import matrix,dot,cross,roots
 from scipy.linalg import norm
+from bson.tz_util import utc
 
 #Internal libraries
 from core import coroutine
+from clock.epoch import EpochState
 from ...state import *
 #
 ##################
@@ -56,7 +58,7 @@ EARTH_GRAVITATION = 398600.4
 
 JULIAN_DAY = 86400
 
-J2000 = datetime(2000,1,1,12)
+J2000 = datetime(2000,1,1,12,tzinfo=utc)
 
 UNIT_VECTOR_X = matrix([1,0,0]).T
 UNIT_VECTOR_Y = matrix([0,1,0]).T
@@ -106,7 +108,7 @@ def identity(pipeline):
     while True:
         state = yield state,pipeline
 
-        assert isinstance(state,BaseState)
+        assert isinstance(state,EpochState)
         
         logging.info("Transform.Identity")
 
@@ -226,6 +228,6 @@ def geographic2horizontal(point,pipeline):
                        EARTH_RADIUS * (1 / cos(point.arc) ** 2 -\
                                        1 / cos(state.arc) ** 2)]))
 
-        state = HorizontalState(t,az,el,r)
+        state = HorizontalState(t,r,az,el)
         
         logging.info("Transform.GeographicToHorizontal")

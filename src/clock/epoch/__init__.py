@@ -19,7 +19,7 @@ from datetime import datetime
 #External libraries
 
 #Internal libraries
-from core import ObjectDict
+from core import ObjectDict,BaseObject
 #
 ##################
 
@@ -40,14 +40,17 @@ __version__ = "0.1"#current version [major.minor]
 ####################
 
 
-class EpochState(ObjectDict):
-    def __init__(self,epoch):
+class EpochState(BaseObject):
+    def __init__(self,epoch,*args,**kwargs):
+        BaseObject.__init__(self,*args,**kwargs)
+        
         assert isinstance(epoch,datetime)
         
         self.epoch = epoch
+    
+    @staticmethod
+    def check(kwargs):
+        assert BaseObject.check(kwargs)
+        assert hasattr(kwargs,"epoch")
         
-    @property
-    def epoch(self):
-        """State Epoch"""
-        
-        return self["epoch"]
+        return True

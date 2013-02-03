@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   03 February 2013
 
 Purpose:    
 """
@@ -59,12 +59,19 @@ EARTH_GRAVITATION = 398600.4
 class BaseCommand(EpochState):
     registry = dict()
     
-    def __init__(self,epoch,id=str(uuid.uuid4())):
-        EpochState.__init__(self,epoch)
+    def __init__(self,type,epoch,*args,**kwargs):
+        EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(id,types.StringTypes)
+        assert isinstance(type,types.StringTypes)
         
-        self.id = id
+        self.type = type
+    
+    @staticmethod
+    def check(kwargs):
+        assert EpochState.check(kwargs)
+        assert hasattr(kwargs,"type")
+        
+        return True
     
     @classmethod
     def register(cls,key):
@@ -73,39 +80,28 @@ class BaseCommand(EpochState):
             
             return value
         return wrapper
-    
-    @classmethod
-    def build(cls,params):
-        raise NotImplemented
         
-
 @BaseCommand.register("maneuver")
 class ManeuverCommand(BaseCommand):    
-    def __init__(self,epoch,radial,tangent,normal,id=str(uuid.uuid4())):
-        BaseCommand.__init__(self,epoch,id)
+    def __init__(self,epoch,R,T,N,type="maneuver",*args,**kwargs):
+        BaseCommand.__init__(self,type,epoch,*args,**kwargs)
 
-        assert isinstance(radial,types.FloatType)
-        assert isinstance(tangent,types.FloatType)
-        assert isinstance(normal,types.FloatType)
+        assert isinstance(R,types.FloatType)
+        assert isinstance(T,types.FloatType)
+        assert isinstance(N,types.FloatType)
         
-        self.type = "maneuver"
-        self.R = radial
-        self.T = tangent
-        self.N = normal
+        self.R = R
+        self.T = T
+        self.N = N
     
-    @classmethod
-    def build(cls,params):
-        assert isinstance(params,ObjectDict)
-        assert hasattr(params,"R")
-        assert isinstance(params.R,types.FloatType)
-        assert hasattr(params,"T")
-        assert isinstance(params.T,types.FloatType)
-        assert hasattr(params,"N")
-        assert isinstance(params.N,types.FloatType)
+    @staticmethod
+    def check(kwargs):
+        assert BaseCommand.check(kwargs)
+        assert hasattr(kwargs,"R")
+        assert hasattr(kwargs,"T")
+        assert hasattr(kwargs,"N")
         
-        return cls(params.epoch,
-                   params.R,params.T,params.N,
-                   params.id)
+        return True
     
     def execute(self,state):
         assert isinstance(state,KeplerianState)
@@ -146,7 +142,7 @@ class ManeuverCommand(BaseCommand):
         
         perturb = KeplerianState(state.epoch,a,theta,e,omega,i,OMEGA)
         
-        result = ManeuverResult(self.epoch,copy.deepcopy(state),perturb,id=self.id)
+        result = ManeuverResult(self.epoch,copy.deepcopy(state),perturb,_id=self._id)
         
         state.update(perturb)
         

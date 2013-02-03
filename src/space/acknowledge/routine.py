@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   03 February 2013
 
 Purpose:    
 """
@@ -74,21 +74,8 @@ def parse(pipeline=None):
         address,message = yield command,pipeline
         
         assert isinstance(message,types.StringTypes)
-        
-        notice = decoder(message)
-        
-        assert hasattr(notice,"id")
-        assert hasattr(notice,"result")
-        assert hasattr(notice,"error")
-        assert notice.error is None
-        assert isinstance(notice.result,ObjectDict)
-        assert hasattr(notice.result,"type")
-        assert isinstance(notice.result.type,types.StringTypes)
-        assert hasattr(notice.result,"epoch")
-        assert isinstance(notice.result.epoch,datetime)
-        assert hasattr(notice.result,"id")
-        assert isinstance(notice.result.id,types.StringTypes)
-        
-        command = BaseAcknowledge.registry[notice.result.message](notice.result)
+
+        notice = AcknowledgeMessage.build(decoder(message))
+        acknowledge = notice.params
                 
         logging.info("Acknowledge.Parsed")

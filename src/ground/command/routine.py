@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   03 February 2013
 
 Purpose:    
 """
@@ -63,7 +63,7 @@ def accept(pipeline=None):
         
         assert isinstance(command,BaseCommand)
         
-        acknowledge = AcceptAcknowledge(command.epoch,command.id)
+        acknowledge = AcceptAcknowledge(command.epoch,_id=command._id)
                         
         logging.info("Command.Accept")
 
@@ -79,7 +79,7 @@ def reject(pipeline=None):
         
         assert isinstance(command,BaseCommand)
         
-        acknowledge = RejectAcknowledge(command.epoch,command.id)
+        acknowledge = RejectAcknowledge(command.epoch,_id=command._id)
                         
         logging.info("Command.Reject")
 
@@ -131,20 +131,8 @@ def parse(pipeline=None):
         address,message = yield command,pipeline
         
         assert isinstance(message,types.StringTypes)
-        
-        notice = decoder(message)
-        
-        assert hasattr(notice,"id")
-        assert hasattr(notice,"method")
-        assert hasattr(notice,"params")
-        assert isinstance(notice.params,ObjectDict)
-        assert hasattr(notice.params,"type")
-        assert isinstance(notice.params.type,types.StringTypes)
-        assert hasattr(notice.params,"epoch")
-        assert isinstance(notice.params.epoch,datetime)
-        assert hasattr(notice.params,"id")
-        assert isinstance(notice.params.id,types.StringTypes)
-        
-        command = BaseCommand.registry[notice.params.type](notice.params)
+                
+        notice = CommandMessage.build(decoder(message))
+        command = notice.params
                 
         logging.info("Command.Parsed")

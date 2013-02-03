@@ -4,6 +4,8 @@ import types
 import json
 
 from numpy import matrix
+from bson import json_util
+from bson.objectid import ObjectId
 
 __all__= ["coroutine",
           "ObjectDict",
@@ -34,27 +36,50 @@ class ObjectDict(dict):
     
     def __delattr__(self,name):
         del self[name]
+
+class BaseObject(ObjectDict):
+    def __init__(self,_id=ObjectId(),object=None):
+        ObjectDict.__init__(self)
         
-def object_hook(obj):
-    obj = ObjectDict(obj)
+        assert isinstance(_id,ObjectId)
+        assert isinstance(object,ObjectId) or object is None
+        
+        self._id = _id
+        if object is not None:self.object = object
     
-    if hasattr(obj,"epoch"):
-        obj.epoch = datetime.strptime(obj.epoch,EPOCH_FORMAT)
+    @staticmethod
+    def check(kwargs):
+        assert isinstance(kwargs,ObjectDict)
+        assert hasattr(kwargs,"_id")
+        
+        return True
     
-    if hasattr(obj,"position"):
-        obj.position = matrix(obj.position)
-    if hasattr(obj,"velocity"):
-        obj.velocity = matrix(obj.velocity)
+    @classmethod
+    def build(cls,kwargs):
+        assert cls.check(kwargs)
+        
+        return cls(**kwargs)
+        
+def object_hook(dct):
+    dct = json_util.object_hook(dct)
     
+    if isinstance(dct,types.DictType):
+        dct = ObjectDict(dct)
+        
+        if hasattr(dct,"position"):
+            dct.position = matrix(dct.position).T
+        if hasattr(dct,"velocity"):
+            dct.velocity = matrix(dct.velocity).T
+    
+    return dct
+
+def default(obj):
+    if isinstance(obj,matrix):
+        obj = obj.T.tolist()
+    else:
+        obj = json_util.default(obj)
+        
     return obj
 
-def object_default(obj):
-    if isinstance(obj,datetime):
-        obj = datetime.strftime(obj,EPOCH_FORMAT)
-    elif isinstance(obj,matrix):
-        obj = obj.tolist()
-        
-    return obj
-
-encoder = functools.partial(json.dumps,default=object_default)
+encoder = functools.partial(json.dumps,default=default)
 decoder = functools.partial(json.loads,object_hook=object_hook)

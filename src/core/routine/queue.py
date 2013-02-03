@@ -20,6 +20,7 @@ import logging
 import types
 
 #External libraries
+from bson.tz_util import utc
 
 #Internal libraries
 from .. import coroutine
@@ -43,7 +44,7 @@ __all__ = ["put",
 #
 __version__ = "0.1"#current version [major.minor]
 
-J2000 = datetime(2000,1,1,12)
+J2000 = datetime(2000,1,1,12,tzinfo=utc)
 #
 ####################
 

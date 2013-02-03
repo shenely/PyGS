@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   03 February 2013
 
 Purpose:    
 """
@@ -47,12 +47,19 @@ __version__ = "0.1"#current version [major.minor]
 class BaseAcknowledge(EpochState):
     registry = dict()
     
-    def __init__(self,epoch,id=str(uuid.uuid4())):
-        EpochState.__init__(self,epoch)
+    def __init__(self,type,epoch,*args,**kwargs):
+        EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(id,types.StringTypes)
+        assert isinstance(type,types.StringTypes)
         
-        self.id = id
+        self.type = type
+    
+    @staticmethod    
+    def check(kwargs):
+        assert EpochState.check(kwargs)
+        assert hasattr(kwargs,"type")
+        
+        return True
     
     @classmethod
     def register(cls,key):
@@ -61,23 +68,15 @@ class BaseAcknowledge(EpochState):
             
             return value
         return wrapper
-    
-    @classmethod    
-    def build(cls,result):
-        return cls(result.epoch,result.id)
         
 
 @BaseAcknowledge.register("accept")
 class AcceptAcknowledge(BaseAcknowledge):
-    def __init__(self,epoch,id=str(uuid.uuid4())):
-        BaseAcknowledge.__init__(self,epoch,id)
-        
-        self.message = "accept"
+    def __init__(self,epoch,type="accept",*args,**kwargs):
+        BaseAcknowledge.__init__(self,type,epoch,*args,**kwargs)
 
 @BaseAcknowledge.register("reject")
 class RejectAcknowledge(BaseAcknowledge):
-    def __init__(self,epoch,id=str(uuid.uuid4())):
-        BaseAcknowledge.__init__(self,epoch,id)
-        
-        self.message = "reject"
+    def __init__(self,epoch,type="accept",*args,**kwargs):
+        BaseAcknowledge.__init__(self,type,epoch,*args,**kwargs)
         

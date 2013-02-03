@@ -21,7 +21,7 @@ from datetime import datetime
 #External libraries
 
 #Internal libraries
-from .. import ObjectDict
+from . import ObjectDict,BaseObject
 #
 ##################
 
@@ -45,26 +45,24 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 ####################
 
 
-class BaseMessage(ObjectDict):
-    def __init__(self):
-        self.id = str(uuid.uuid4())
+class BaseMessage(BaseObject):pass
         
 class RequestMessage(BaseMessage):
-    def __init__(self,method,paramtype=None):
+    def __init__(self,method,paramtype=None,*args,**kwargs):
+        BaseMessage.__init__(self,*args,**kwargs)
+        
         assert isinstance(method,types.StringTypes)
         assert isinstance(paramtype,type) or paramtype is None
-        
-        BaseMessage.__init__(self)
         
         self.method = method
         self.params = paramtype() if isinstance(paramtype,type) else None
         
 class ResponseMessage(BaseMessage):
-    def __init__(self,error,resulttype=None):
+    def __init__(self,error=0,resulttype=None,*args,**kwargs):
+        BaseMessage.__init__(self,*args,**kwargs)
+        
         assert isinstance(error,types.IntType) or error is None
         assert isinstance(resulttype,type) or resulttype is None
         
-        BaseMessage.__init__(self)
-        
         self.error = error
-        self.params = resulttype() if isinstance(resulttype,type) else None
+        self.result = resulttype() if isinstance(resulttype,type) else None
