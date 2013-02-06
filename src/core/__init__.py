@@ -66,16 +66,14 @@ def object_hook(dct):
     if isinstance(dct,types.DictType):
         dct = ObjectDict(dct)
         
-        if hasattr(dct,"position"):
-            dct.position = matrix(dct.position).T
-        if hasattr(dct,"velocity"):
-            dct.velocity = matrix(dct.velocity).T
+        if hasattr(dct,"$matrix"):
+            dct = matrix(getattr(dct,"$matrix"))
     
     return dct
 
 def default(obj):
     if isinstance(obj,matrix):
-        obj = obj.T.tolist()
+        obj = { "$matrix": obj.tolist() }
     else:
         obj = json_util.default(obj)
         

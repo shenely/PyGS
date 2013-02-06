@@ -134,9 +134,9 @@ class SpaceSegment(object):
     def task_acknowledge_command(self):
         publish_ack = socket.publish(self.socket)
         format_ack = acknowledge.format(ACKNOWLEDGE_ADDRESS.format(name=self.name),publish_ack)
-        accept_cmd = command.accept(format_ack)
+        accept_cmd = acknowledge.accept(format_ack)
         enqueue_cmd = queue.put(self.cmd_queue,accept_cmd)
-        reject_cmd = command.reject(format_ack)
+        reject_cmd = acknowledge.reject(format_ack)
         after_epoch = sequence.after(self.physics,COMMAND_MARGIN,enqueue_cmd,reject_cmd)
         parse_cmd = command.parse(after_epoch)
         subscribe_cmd = socket.subscribe(self.cmd_socket,parse_cmd)

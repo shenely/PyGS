@@ -56,6 +56,8 @@ class RequestMessage(BaseMessage):
         
         self.method = method
         self.params = paramtype() if isinstance(paramtype,type) else None
+    
+    #TODO: implement object validation
         
 class ResponseMessage(BaseMessage):
     def __init__(self,error=0,resulttype=None,*args,**kwargs):
@@ -63,6 +65,8 @@ class ResponseMessage(BaseMessage):
         
         assert isinstance(error,types.IntType) or error is None
         assert isinstance(resulttype,type) or resulttype is None
+    
+    #TODO: implement object validation
         
         self.error = error
         self.result = resulttype() if isinstance(resulttype,type) else None
