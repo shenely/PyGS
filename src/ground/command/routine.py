@@ -90,7 +90,7 @@ def execute(system,pipeline=None):
     
     result = None
         
-    logging.debug("Command.Execute:  Stating")
+    logging.debug("Command.Execute:  Starting")
     while True:
         try:
             command = yield result,pipeline
@@ -140,7 +140,7 @@ def format(address,pipeline=None):
     
     message = None
         
-    logging.debug("Command.Format:  Stating")
+    logging.debug("Command.Format:  Starting")
     while True:
         try:
             command = yield message,pipeline
@@ -186,7 +186,7 @@ def parse(pipeline=None):
     
     command = None
         
-    logging.debug("Command.Parse:  Stating")
+    logging.debug("Command.Parse:  Starting")
     while True:
         try:
             address,message = yield command,pipeline

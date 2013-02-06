@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   06 February 2013
 
 Provides routines for state interpolation.
 
@@ -16,7 +16,7 @@ hermite -- Cubic Hermite spline
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-02-06    shenely         1.0         Promoted to version 1.0
 
 """
 
@@ -142,7 +142,7 @@ def hermite(system,prev=None,next=None,istrue=None,isfalse=None):
     
     state,pipeline = None,None
         
-    logging.debug("State.Kepler:  Stating at %s" % system.epoch)
+    logging.debug("State.Kepler:  Starting at %s" % system.epoch)
     while True:
         try:
             state = yield state,pipeline

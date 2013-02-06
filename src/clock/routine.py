@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   06 February 2013
 
 Provides routines for driving the simulation clock.
 
@@ -17,7 +17,7 @@ discrete   -- Discrete clock routine
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-02-06    shenely         1.0         Promoted to version 1.0
 
 """
 
@@ -100,7 +100,7 @@ def continuous(epoch=J2000,scale=CLOCK_SCALE,pipeline=None):
     
     now = datetime.utcnow()
         
-    logging.debug("Clock.Continuous:  Stating at %s" % epoch)
+    logging.debug("Clock.Continuous:  Starting at %s" % epoch)
     while True:
         try:
             message = yield epoch,pipeline
@@ -159,7 +159,7 @@ def discrete(epoch=J2000,step=CLOCK_STEP,pipeline=None):
     assert isinstance(step,timedelta)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
         
-    logging.debug("Clock.Discrete:  Stating at %s" % epoch)
+    logging.debug("Clock.Discrete:  Starting at %s" % epoch)
     while True:
         try:
             message = yield epoch,pipeline

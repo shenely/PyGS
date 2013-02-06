@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   06 February 2013
 
 Provides routines for acknowledging commands.
 
@@ -20,7 +20,7 @@ parse  -- Parse acknowledge message
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-02-06    shenely         1.0         Promoted to version 1.0
 
 """
 
@@ -89,7 +89,7 @@ def accept(pipeline=None):
     
     acknowledge = None
         
-    logging.debug("Acknowledge.Reject:  Stating")
+    logging.debug("Acknowledge.Reject:  Starting")
     while True:
         try:
             command = yield acknowledge,pipeline
@@ -134,7 +134,7 @@ def reject(pipeline=None):
     
     acknowledge = None
         
-    logging.debug("Acknowledge.Reject:  Stating")
+    logging.debug("Acknowledge.Reject:  Starting")
     while True:
         try:
             command = yield acknowledge,pipeline
@@ -181,7 +181,7 @@ def format(address,pipeline=None):
     
     message = None
         
-    logging.debug("Acknowledge.Parse:  Stating")
+    logging.debug("Acknowledge.Parse:  Starting")
     while True:
         try:
             acknowledge = yield message,pipeline
@@ -227,7 +227,7 @@ def parse(pipeline=None):
     
     command = None
         
-    logging.debug("Acknowledge.Parse:  Stating")
+    logging.debug("Acknowledge.Parse:  Starting")
     while True:
         try:
             address,message = yield command,pipeline

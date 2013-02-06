@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   06 February 2013
 
 Provides routines for command results.
 
@@ -18,7 +18,7 @@ parse  -- Parse result message
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-02-06    shenely         1.0         Promoted to version 1.0
 
 """
 
@@ -85,7 +85,7 @@ def format(address,pipeline=None):
     
     message = None
         
-    logging.debug("Result.Format:  Stating")
+    logging.debug("Result.Format:  Starting")
     while True:
         try:
             result = yield message,pipeline
@@ -131,7 +131,7 @@ def parse(pipeline=None):
     
     result = None
         
-    logging.debug("Result.Parse:  Stating")
+    logging.debug("Result.Parse:  Starting")
     while True:
         try:
             address,message = yield result,pipeline

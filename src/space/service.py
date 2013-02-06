@@ -26,9 +26,8 @@ from bson.tz_util import utc
 from core.service.scheduler import Scheduler
 from core.routine import control,queue,socket,sequence
 from clock.epoch import routine as epoch
-from . import routine
 from .state import routine as state
-from .state.routine import transform
+from .state.routine import transform,propagate
 from ground.command import routine as command
 from .acknowledge import routine as acknowledge
 from .result import routine as result
@@ -126,7 +125,7 @@ class SpaceSegment(object):
         after_lower = sequence.after(self.physics,REMOVE_MARGIN,after_upper,remove_state)
         inspect_state = queue.peek(self.queue,after_lower)
         enqueue_state = queue.put(self.queue,inspect_state)
-        iterate_state = routine.kepler(elements,STEP_SIZE,enqueue_state)
+        iterate_state = propagate.kepler(elements,STEP_SIZE,enqueue_state)
         before_state = sequence.before(elements,ITERATE_MARGIN,inspect_state,iterate_state)
         
         self.tasks.append(before_state)
