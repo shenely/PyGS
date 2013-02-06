@@ -118,7 +118,7 @@ class SpaceSegment(object):
     def task_iterate_state(self,elements):
         publish_state = socket.publish(self.socket)
         format_state = state.format(STATE_ADDRESS.format(name=self.name),publish_state)
-        transform_state = transform.keplerian2cartesian(format_state)
+        transform_state = transform.keplerian2inertial(format_state)
         dequeue_state = queue.get(self.queue,transform_state)
         remove_state = queue.get(self.queue)
         after_upper = sequence.after(self.physics,PUBLISH_MARGIN,None,dequeue_state)

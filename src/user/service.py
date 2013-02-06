@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   06 February 2013
 
 Purpose:    
 """
@@ -119,7 +119,7 @@ class UserSegment(object):
         view_global2d = view.global2d(VIEW_ADDRESS.format("Global2"),publish_view)
         merge_tasks_global2d = control.merge(cls.tasks,view_global2d)
         split_views_2d = control.split(None,[merge_tasks_global2d,horizontal_transform])
-        geographic_transform = transform.cartesian2geographic(split_views_2d)
+        geographic_transform = transform.inertial2geographic(split_views_2d)
         view_global3d = view.global3d(VIEW_ADDRESS.format("Global3"),publish_view)
         merge_tasks3d = control.merge(cls.tasks,view_global3d)
         split_views = control.split(None,[merge_tasks3d,geographic_transform])
