@@ -44,29 +44,21 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 #
 ####################
 
-
-class BaseMessage(BaseObject):pass
         
-class RequestMessage(BaseMessage):
-    def __init__(self,method,paramtype=None,*args,**kwargs):
-        BaseMessage.__init__(self,*args,**kwargs)
+class RequestMessage(BaseObject):
+    def __init__(self,method,params=None,*args,**kwargs):
+        BaseObject.__init__(self,*args,**kwargs)
         
         assert isinstance(method,types.StringTypes)
-        assert isinstance(paramtype,type) or paramtype is None
         
         self.method = method
-        self.params = paramtype() if isinstance(paramtype,type) else None
+        self.params = params
+        
+class ResponseMessage(BaseObject):
+    def __init__(self,result,error=0,*args,**kwargs):
+        BaseObject.__init__(self,*args,**kwargs)
+        
+        assert isinstance(error,types.IntType)
     
-    #TODO: implement object validation
-        
-class ResponseMessage(BaseMessage):
-    def __init__(self,error=0,resulttype=None,*args,**kwargs):
-        BaseMessage.__init__(self,*args,**kwargs)
-        
-        assert isinstance(error,types.IntType) or error is None
-        assert isinstance(resulttype,type) or resulttype is None
-    
-    #TODO: implement object validation
-        
+        self.result = result
         self.error = error
-        self.result = resulttype() if isinstance(resulttype,type) else None

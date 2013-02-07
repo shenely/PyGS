@@ -35,8 +35,8 @@ import types
 
 #Internal libraries
 from core import coroutine,encoder,decoder
+from core.message import ResponseMessage
 from . import BaseResult
-from .message import ResultMessage
 #
 ##################
 
@@ -100,7 +100,7 @@ def format(address,pipeline=None):
             #input validation
             assert isinstance(result,BaseResult)
             
-            notice = ResultMessage(result)
+            notice = ResponseMessage(result)
             message = address,encoder(notice)
                             
             logging.info("Result.Format:  Formatted")
@@ -143,16 +143,13 @@ def parse(pipeline=None):
             
             return
         else:
-            assert isinstance(message,types.StringTypes)
-            
-            notice = decoder(message)
-            
             #input validation
-            assert hasattr(notice,"id")
-            assert hasattr(notice,"result")
-            assert hasattr(notice,"error")
-            assert notice.error is None
+            assert isinstance(message,types.StringTypes)
+    
+            notice = ResponseMessage(**decoder(message))
             
-            result = BaseResult(notice.id,**notice.result)
+            #output validation
+            assert notice.error == 0
+            result = BaseResult(**notice.result)
                     
             logging.info("Result.Parse:  Parsed")

@@ -35,7 +35,8 @@ import types
 
 #Internal libraries
 from core import coroutine,encoder
-from .message import *
+from . import BaseView
+from space.state import *
 #
 ##################
 
@@ -98,7 +99,10 @@ def global2d(address,pipeline=None):
             
             return
         else:
-            notice = Global2DView(states)
+            #input validation
+            assert filter(lambda state:isinstance(state,GeographicState),states)
+            
+            notice = BaseView(states[0].epoch,states,"global2d")
             message = address,encoder(notice)
                             
             logging.info("View.Global2D  Generated for %s" % address)
@@ -144,7 +148,10 @@ def global3d(address,pipeline=None):
             
             return
         else:
-            notice = Global3DView(states)
+            #input validation
+            assert filter(lambda state:isinstance(state,CartesianState),states)
+            
+            notice = BaseView(states[0].epoch,states,"global3d")
             message = address,encoder(notice)
                             
             logging.info("View.Global3D  Generated for %s" % address)
@@ -190,7 +197,10 @@ def local(address,pipeline=None):
             
             return
         else:
-            notice = LocalView(states)
+            #input validation
+            assert filter(lambda state:isinstance(state,HorizontalState),states)
+            
+            notice = BaseView(states[0].epoch,states,"local")
             message = address,encoder(notice)
                             
             logging.info("View.Local:  Generated for %s" % address)

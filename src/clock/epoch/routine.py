@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   06 February 2013
 
 Provides routines for manipulating epoch data.
 
@@ -36,8 +36,8 @@ import types
 
 #Internal libraries
 from core import ObjectDict,coroutine,encoder,decoder
+from core.message import RequestMessage
 from . import EpochState
-from .message import EpochMessage
 #
 ##################
 
@@ -128,7 +128,7 @@ def format(address,pipeline=None):
     
     """
     
-    #Configuration validation
+    #configuration validation
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -149,7 +149,7 @@ def format(address,pipeline=None):
             #input validation
             assert isinstance(epoch,datetime)
             
-            notice = EpochMessage(epoch)
+            notice = RequestMessage("epoch",EpochState(epoch))
             message = address,encoder(notice)
                             
             logging.info("Epoch.Format:  Formatted as %s" % notice.params.epoch)
@@ -175,7 +175,7 @@ def parse(pipeline=None):
     
     """
     
-    #Configuration validation
+    #configuration validation
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
     epoch = None
@@ -191,20 +191,15 @@ def parse(pipeline=None):
             pipeline.close() if pipeline is not None else None
             
             return
-        else:        
+        else:
+            #input validation
             assert isinstance(message,types.StringTypes)
         
-            notice = decoder(message)
+            notice = RequestMessage(**decoder(message))
             
-            #Output validation
-            #NOTE:  this should be handled by the RequestMessage class
-            assert hasattr(notice,"method")
+            #output validation
             assert notice.method == "epoch"
-            assert hasattr(notice,"params")
-            assert isinstance(notice.params,ObjectDict)
-            assert hasattr(notice.params,"epoch")
-            assert isinstance(notice.params.epoch,datetime)
-            
-            epoch = notice.params.epoch
+            state = EpochState.build(notice.params)
+            epoch = state.epoch
                             
             logging.info("Epoch.Parse:  Parsed as %s" % notice.params.epoch)

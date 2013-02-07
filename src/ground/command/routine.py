@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   06 February 2013
 
 Provides routines for command execution.
 
@@ -20,6 +20,7 @@ parse   -- Parse command message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-02-06    shenely         1.1         Using generic RequestMessage
 
 """
 
@@ -36,10 +37,10 @@ import types
 
 #Internal libraries
 from core import coroutine,encoder,decoder
+from core.message import RequestMessage
 from clock.epoch import EpochState
 from . import BaseCommand
 from space.result import BaseResult
-from .message import CommandMessage
 #
 ##################
 
@@ -155,7 +156,7 @@ def format(address,pipeline=None):
             #input validation
             assert isinstance(command,BaseCommand)
             
-            notice = CommandMessage(command)
+            notice = RequestMessage("command",command)
             message = address,encoder(notice)
                             
             logging.info("Command.Format:  Formatted")
@@ -201,7 +202,10 @@ def parse(pipeline=None):
             #input validation
             assert isinstance(message,types.StringTypes)
                     
-            notice = CommandMessage.build(decoder(message))
-            command = notice.params
+            notice = RequestMessage(**decoder(message))
+            
+            #output validation
+            assert notice.method == "command"
+            command = BaseCommand.registry[notice.params.type](notice.params)
                     
             logging.info("Command.Parse:  Parsed")

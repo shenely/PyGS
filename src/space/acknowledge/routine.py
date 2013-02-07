@@ -37,9 +37,9 @@ import types
 
 #Internal libraries
 from core import coroutine,encoder,decoder
+from core.message import ResponseMessage
 from . import BaseAcknowledge,AcceptAcknowledge,RejectAcknowledge
 from ground.command import BaseCommand
-from .message import AcknowledgeMessage
 #
 ##################
 
@@ -196,7 +196,7 @@ def format(address,pipeline=None):
             #input validation
             assert isinstance(acknowledge,BaseAcknowledge)
             
-            notice = AcknowledgeMessage(acknowledge)
+            notice = ResponseMessage(acknowledge)
             message = address,encoder(notice)
                             
             logging.info("Acknowledge.Format:  Formatted")
@@ -225,12 +225,12 @@ def parse(pipeline=None):
     #configuration validation
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
-    command = None
+    acknowledge = None
         
     logging.debug("Acknowledge.Parse:  Starting")
     while True:
         try:
-            address,message = yield command,pipeline
+            address,message = yield acknowledge,pipeline
         except GeneratorExit:
             logging.warn("Acknowledge.Parse:  Stopping")
             
@@ -242,7 +242,10 @@ def parse(pipeline=None):
             #input validation
             assert isinstance(message,types.StringTypes)
     
-            notice = AcknowledgeMessage.build(decoder(message))
-            acknowledge = notice.params
+            notice = ResponseMessage(**decoder(message))
+            
+            #output validation
+            assert notice.error == 0
+            acknowledge = BaseAcknowledge.registry[notice.result.type](notice.result)
                     
             logging.info("Acknowledge.Parse:  Parsed")
