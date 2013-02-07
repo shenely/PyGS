@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" ng-app="kepler">
+<head>
+  <meta charset="utf-8">
+  <title>kepler.js</title>
+  <link rel="stylesheet" href="css/app.css"/>
+  <script src="lib/angular/angular.js"></script>
+  <script src="lib/d3/d3.js"></script>
+  <script src="lib/d3/topojson.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/services.js"></script>
+  <script src="js/controllers.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/directives.js"></script>
+</head>
+<body>
+  <ul class="menu">
+    <li><a href="#/global2d">Global 2D</a></li>
+    <li><a href="#/global3d">Global 3D</a></li>
+    <li><a href="#/local">Local</a></li>
+  </ul>
+
+  <div ng-view></div>
+</body>
+</html>

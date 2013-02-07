@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   06 February 2013
 
 Purpose:    
 """
@@ -76,7 +76,7 @@ class ZMQWebSocket(tornado.websocket.WebSocketHandler):
         del self.sockets[self]
 
 def main():
-    app = tornado.web.Application([(r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "./core/service/"}),
+    app = tornado.web.Application([(r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "./view/service/"}),
                                    (r"/view/(.*)",ZMQWebSocket)])
     app.listen(8080)
     

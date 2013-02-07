@@ -1,0 +1,90 @@
+/* app css stylesheet */
+
+.menu {
+  list-style: none;
+  border-bottom: 0.1em solid black;
+  margin-bottom: 2em;
+  padding: 0 0 0.5em;
+}
+
+.menu:before {
+  content: "[";
+}
+
+.menu:after {
+  content: "]";
+}
+
+.menu > li {
+  display: inline;
+}
+
+.menu > li:before {
+  content: "|";
+  padding-right: 0.3em;
+}
+
+.menu > li:nth-child(1):before {
+  content: "";
+  padding: 0;
+}
+
+
+.background {
+	fill: #a4bac7;
+}
+
+.foreground {
+	fill: none;
+	stroke: #333;
+	stroke-width: 1.5px;
+}
+
+.graticule {
+	fill: none;
+	stroke: #fff;
+	stroke-width: .5px;
+}
+
+.graticule :nth-child(2n) {
+	stroke-dasharray: 2, 2;
+}
+
+.land {
+	fill: #d7c7ad;
+	stroke: #766951;
+}
+
+.night {
+	fill: #000;
+	fill-opacity: 50%;
+	mask: url(#mask);
+}
+
+.day {
+	
+}
+
+.dark {
+	fill: #fff;
+}
+
+.light {
+	fill: #000;
+}
+
+.boundary {
+	fill: none;
+	stroke: #a5967e;
+}
+
+.cover {
+	fill-opacity: 50%;
+	stroke: none;
+}
+
+.track {
+	fill: none;
+	stroke-width: 2px;
+	stroke-linecap: round;
+}

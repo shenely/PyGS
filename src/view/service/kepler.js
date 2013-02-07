@@ -21,7 +21,7 @@ angular.module("kepler", [])
     };
   });
 
-function SVGControl( $scope, $element ) {  
+function SVGControl( $scope ) {  
   var color = d3.scale.category10();
   
   var width = 1000,

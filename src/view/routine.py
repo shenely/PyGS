@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   07 February 2013
 
 Provides routines for generating views.
 
@@ -19,7 +19,7 @@ local    -- Local (horizontal) view
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-06    shenely         1.0         Promoted to version 1.0
+2013-02-07    shenely         1.0         Promoted to version 1.0
 
 """
 
@@ -35,6 +35,7 @@ import types
 
 #Internal libraries
 from core import coroutine,encoder
+from core.message import RequestMessage
 from . import BaseView
 from space.state import *
 #
@@ -102,7 +103,8 @@ def global2d(address,pipeline=None):
             #input validation
             assert filter(lambda state:isinstance(state,GeographicState),states)
             
-            notice = BaseView(states[0].epoch,states,"global2d")
+            view = BaseView(states[0].epoch,states,"global2d")
+            notice = RequestMessage("view",view)
             message = address,encoder(notice)
                             
             logging.info("View.Global2D  Generated for %s" % address)
@@ -151,7 +153,8 @@ def global3d(address,pipeline=None):
             #input validation
             assert filter(lambda state:isinstance(state,CartesianState),states)
             
-            notice = BaseView(states[0].epoch,states,"global3d")
+            view = BaseView(states[0].epoch,states,"global3d")
+            notice = RequestMessage("view",view)
             message = address,encoder(notice)
                             
             logging.info("View.Global3D  Generated for %s" % address)
@@ -200,7 +203,8 @@ def local(address,pipeline=None):
             #input validation
             assert filter(lambda state:isinstance(state,HorizontalState),states)
             
-            notice = BaseView(states[0].epoch,states,"local")
+            view = BaseView(states[0].epoch,states,"local")
+            notice = RequestMessage("view",view)
             message = address,encoder(notice)
                             
             logging.info("View.Local:  Generated for %s" % address)
