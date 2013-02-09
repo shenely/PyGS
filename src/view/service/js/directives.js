@@ -3,19 +3,67 @@
 /* Directives */
 
 
-angular.module('kepler.directives', []).
-  directive('global2d', ['version', function(version) {
-    return function(scope, elm, attrs) {
-      elm.text(version);
-    };
-  }]).
-  directive('global3d', ['version', function(version) {
-    return function(scope, elm, attrs) {
-      elm.text(version);
-    };
-  }]).
-  directive('local', ['version', function(version) {
-    return function(scope, elm, attrs) {
-      elm.text(version);
-    };
-  }]);
+angular.module('kepler.directives', [])
+	.directive('universe', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: UniverseControl
+		};
+	})
+    .directive('sun', function() {
+        return {
+            restrict: 'A',
+            scope: true,
+            controller: SunControl
+        };
+    })
+	.directive('earth', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: EarthControl
+		};
+	})
+	.directive('sea', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: SeaControl
+		};
+	})
+	.directive('land', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: LandControl
+		};
+	})
+	.directive('countries', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: CountriesControl
+		};
+	})
+	.directive('graticule', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: GraticuleControl
+		};
+	})
+	.directive('footPrint', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: FootPrintControl
+		};
+	})
+	.directive('groundTrack', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: GroundTrackControl
+		};
+	});
