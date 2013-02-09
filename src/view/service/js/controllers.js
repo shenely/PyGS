@@ -56,9 +56,8 @@ function EarthControl( $scope, $element, cartograph ) {
     
 	var canvas = d3.select($element[0])
 		    .attr("width", $scope.width)
-		    .attr("height", $scope.height)
-		    .node(),
-		context = canvas.getContext("2d");
+		    .attr("height", $scope.height),
+		context = canvas.node().getContext("2d");
 	
 	$scope.canvases = [];
 	
@@ -66,54 +65,56 @@ function EarthControl( $scope, $element, cartograph ) {
 		$scope.path.context(context);
 		
     	context.clearRect(0,0,$scope.width,$scope.height);
-		
-		$scope.canvases.sort(function(a,b) { return a.z - b.z; });
-		
-		$scope.canvases.forEach(function(d,i) {
-			context.drawImage(d.canvas,0,0);
-		});
+    	
+    	canvas.select("canvas[background]")
+    	   .each(function(d,i) { context.drawImage(this,0,0); });
+        
+        canvas.select("canvas[foreground]")
+           .each(function(d,i) { context.drawImage(this,0,0); });
 	};
 }
 
-function SunControl( $scope, $element, global2d ) {
+function BackgroundControl( $scope, $element ) {
     var canvas = d3.select($element[0])
             .attr("width", $scope.width)
-            .attr("height", $scope.height)
-            .node(),
-        sun = d3.geo.circle().angle(90),
-        context = canvas.getContext("2d");
+            .attr("height", $scope.height),
+        context = canvas.node().getContext("2d");
     
-    $scope.setAlpha = function(alpha) {     
-        context.globalAlpha = alpha;
-    };
-    
-    $scope.update = function() {
+    $scope.redraw = function() {
         $scope.path.context(context);
         
         context.clearRect(0,0,$scope.width,$scope.height);
         
-        context.fillStyle = "#000";
+        canvas.selectAll("canvas")
+           .sort(function(a,b) { return a - b; })
+           .each(function(d,i) { context.drawImage(this,0,0); });
         
-        context.beginPath();
-        $scope.path(sun());
-        context.fill();
-        
-        $scope.redraw();
+        $scope.$parent.redraw();
     };
-    
-    global2d.epoch(function(epoch) {        
-        sun.origin([ 360 * (epoch / 1000 % 86400) / 86400,
-                    180 * Math.asin(Math.sin(Math.PI * 23.4 / 180) * Math.cos(2 * Math.PI * epoch / 1000 / 86400 / 365.25)) / Math.PI]);
-        
-        $scope.update();
-    });
+}
 
-    $scope.canvases.push({ z: 20, canvas: canvas });
-    $scope.setAlpha(0.5);
+function ForegroundControl( $scope, $element ) {
+    var canvas = d3.select($element[0])
+            .attr("width", $scope.width)
+            .attr("height", $scope.height),
+        context = canvas.node().getContext("2d");
+    
+    $scope.redraw = function() {
+        $scope.path.context(context);
+        
+        context.clearRect(0,0,$scope.width,$scope.height);
+        
+        canvas.selectAll("canvas")
+           .sort(function(a,b) { return a - b; })
+           .each(function(d,i) { context.drawImage(this,0,0); });
+        
+        $scope.$parent.redraw();
+    };
 }
 
 function SeaControl( $scope, $element ) {
 	var canvas = d3.select($element[0])
+	        .datum(-1)
 		    .attr("width", $scope.width)
 		    .attr("height", $scope.height)
 		    .node(),
@@ -122,24 +123,24 @@ function SeaControl( $scope, $element ) {
 	$scope.setColor = function(color) {		
 		context.fillStyle = color;
 		
-		$scope.update();
+		$scope.redraw();
 	};
 	
-	$scope.update = function() {
+	$scope.redraw = function() {
 		$scope.path.context(context);
 		
 		context.fillRect(0,0,$scope.width,$scope.height);
 		
-		$scope.redraw();
+		$scope.$parent.redraw();
 	};
 
-	$scope.canvases.push({ z: -1, canvas: canvas });
 	$scope.setColor("rgba(164,186,199,1.0)");
 }
 
 function LandControl( $scope, $element, world ) {
 	var land = null,
 		canvas = d3.select($element[0])
+            .datum(-0)
 		    .attr("width", $scope.width)
 		    .attr("height", $scope.height)
 		    .node(),
@@ -149,10 +150,10 @@ function LandControl( $scope, $element, world ) {
 		context.fillStyle = fill;
 		context.strokeStyle = stroke;
 		
-		$scope.update();
+		$scope.redraw();
 	};
 	
-	$scope.update = function() {
+	$scope.redraw = function() {
 		$scope.path.context(context);
 		
     	context.clearRect(0,0,$scope.width,$scope.height);
@@ -163,15 +164,13 @@ function LandControl( $scope, $element, world ) {
 		$scope.path(land);
 		context.fill();
 		context.stroke();
-		
-		$scope.redraw();
+        
+        $scope.$parent.redraw();
 	};
 	
 	world.success(function(d) {
 		land = topojson.object(d, d.objects.land);
-		
-		$scope.canvases.push({ z: 0, canvas: canvas });
-		
+				
 		$scope.setColor("rgba(215,199,173,1.0)","rgba(0,0,0,1.0)");
 	});
 }
@@ -179,6 +178,7 @@ function LandControl( $scope, $element, world ) {
 function CountriesControl( $scope, $element, world ) {
 	var countries = null,
 		canvas = d3.select($element[0])
+            .datum(1)
 		    .attr("width", $scope.width)
 		    .attr("height", $scope.height)
 		    .node(),
@@ -187,10 +187,10 @@ function CountriesControl( $scope, $element, world ) {
 	$scope.setColor = function(color) {		
 		context.strokeStyle = color;
 		
-		$scope.update();
+		$scope.redraw();
 	};
 	
-	$scope.update = function() {
+	$scope.redraw = function() {
 		$scope.path.context(context);
 		
     	context.clearRect(0,0,$scope.width,$scope.height);
@@ -200,15 +200,13 @@ function CountriesControl( $scope, $element, world ) {
 		context.beginPath();
 		$scope.path(countries);
 		context.stroke();
-		
-		$scope.redraw();
+        
+        $scope.$parent.redraw();
 	};
 	
 	world.success(function(d) {
 		countries = topojson.mesh(d, d.objects.countries, function(a, b) { return a.id !== b.id; });
-		
-		$scope.canvases.push({ z: 1, canvas: canvas });
-		
+				
 		$scope.setColor("rgba(0,0,0,1.0)");
 	});
 }
@@ -216,6 +214,7 @@ function CountriesControl( $scope, $element, world ) {
 function GraticuleControl( $scope, $element ) {
     var graticule = d3.geo.graticule(),
     	canvas = d3.select($element[0])
+            .datum(5)
 		    .attr("width", $scope.width)
 		    .attr("height", $scope.height)
 		    .node(),
@@ -224,10 +223,10 @@ function GraticuleControl( $scope, $element ) {
     $scope.setColor = function(color) {    	
     	context.strokeStyle = color;
     	
-    	$scope.update();
+    	$scope.redraw();
     };
     
-    $scope.update = function() {
+    $scope.redraw = function() {
 		$scope.path.context(context);
 		
     	context.clearRect(0,0,$scope.width,$scope.height);
@@ -241,17 +240,17 @@ function GraticuleControl( $scope, $element ) {
         context.beginPath();
         $scope.path(graticule.outline());
         context.stroke();
-		
-		$scope.redraw();
+        
+        $scope.$parent.redraw();
     	
     };
 
-	$scope.canvases.push({ z: 5, canvas: canvas });
 	$scope.setColor("rgba(0,0,0,1.0)");
 }
 
 function FootPrintControl( $scope, $element, global2d ) {
     var canvas = d3.select($element[0])
+            .datum(20)
 		    .attr("width", $scope.width)
 		    .attr("height", $scope.height)
 		    .node(),
@@ -263,7 +262,7 @@ function FootPrintControl( $scope, $element, global2d ) {
     	context.globalAlpha = 0.5;
     };
 	
-	$scope.update = function() {
+	$scope.redraw = function() {
 		$scope.path.context(context);
 		
 		context.clearRect(0,0,$scope.width,$scope.height);
@@ -276,8 +275,8 @@ function FootPrintControl( $scope, $element, global2d ) {
 			context.fillStyle = color(i);
 			context.fill();
 		});
-		
-		$scope.redraw();
+        
+        $scope.$parent.redraw();
 	};
 	
 	global2d.states(function(states) {
@@ -288,15 +287,15 @@ function FootPrintControl( $scope, $element, global2d ) {
 			return feet[i].origin([ d.long, d.lat ]).angle(d.arc);
 		});
 		
-		$scope.update();
+		$scope.redraw();
 	});
 	
-	$scope.canvases.push({ z: 10, canvas: canvas });
 	$scope.setAlpha(0.5);
 }
 
 function GroundTrackControl( $scope, $element, global2d ) {
     var canvas = d3.select($element[0])
+            .datum(10)
 		    .attr("width", $scope.width)
 		    .attr("height", $scope.height)
 		    .node(),
@@ -308,7 +307,7 @@ function GroundTrackControl( $scope, $element, global2d ) {
     	context.globalAlpha = alpha;
     };
 	
-	$scope.update = function() {
+	$scope.redraw = function() {
 		$scope.path.context(context);
 		
 		context.clearRect(0,0,$scope.width,$scope.height);
@@ -321,8 +320,8 @@ function GroundTrackControl( $scope, $element, global2d ) {
 		    context.strokeStyle = color(i);
 			context.stroke();
 		});
-		
-		$scope.redraw();
+        
+        $scope.$parent.redraw();
 	};
 	
 	global2d.states(function(states) {
@@ -333,9 +332,8 @@ function GroundTrackControl( $scope, $element, global2d ) {
 			return tracks[i].push([ d.long, d.lat ]);
 		});
 		
-		$scope.update();
+		$scope.redraw();
 	});
 	
-	$scope.canvases.push({ z: 5, canvas: canvas });
 	$scope.setAlpha(1.0);
 }

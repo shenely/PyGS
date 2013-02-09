@@ -11,13 +11,6 @@ angular.module('kepler.directives', [])
 			controller: UniverseControl
 		};
 	})
-    .directive('sun', function() {
-        return {
-            restrict: 'A',
-            scope: true,
-            controller: SunControl
-        };
-    })
 	.directive('earth', function() {
 		return {
 			restrict: 'A',
@@ -25,6 +18,20 @@ angular.module('kepler.directives', [])
 			controller: EarthControl
 		};
 	})
+    .directive('background', function() {
+        return {
+            restrict: 'A',
+            scope: true,
+            controller: BackgroundControl
+        };
+    })
+    .directive('foreground', function() {
+        return {
+            restrict: 'A',
+            scope: true,
+            controller: ForegroundControl
+        };
+    })
 	.directive('sea', function() {
 		return {
 			restrict: 'A',
