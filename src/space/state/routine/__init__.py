@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   10 February 2013
 
 Provides routines for manipulating states.
 
@@ -20,6 +20,7 @@ parse  -- Parse state message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-06    shenely         1.0         Promoted to version 1.0
+2013-02-10                                Using InertialState now
 
 """
 
@@ -39,7 +40,7 @@ from numpy import matrix
 from core import ObjectDict,coroutine,encoder,decoder
 from core.message import RequestMessage
 from clock.epoch import EpochState
-from .. import CartesianState
+from .. import InertialState
 #
 ##################
 
@@ -145,7 +146,7 @@ def format(address,pipeline=None):
             
             return
         else:
-            assert isinstance(state,CartesianState)
+            assert isinstance(state,InertialState)
             
             notice = RequestMessage("state",state)
             message = address,encoder(notice)
@@ -197,6 +198,6 @@ def parse(pipeline=None):
             
             #output validation
             assert notice.method == "state"
-            state = CartesianState(**notice.params)
+            state = InertialState(**notice.params)
                     
             logging.info("Space.State:  Parsed")

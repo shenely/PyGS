@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   10 February 2013
 
 Provides routines for state interpolation.
 
@@ -17,6 +17,7 @@ hermite -- Cubic Hermite spline
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-06    shenely         1.0         Promoted to version 1.0
+2013-02-10                                Using InertialState now
 
 """
 
@@ -33,7 +34,7 @@ import types
 #Internal libraries
 from core import coroutine
 from clock.epoch import EpochState
-from .. import CartesianState
+from .. import InertialState
 #
 ##################
 
@@ -110,7 +111,7 @@ def hermite(system,prev=None,next=None,istrue=None,isfalse=None):
     WHEN a state value is requested upstream
         AND the previous state is defined
         AND the next state is defined
-        AND a Cartesian state is received from upstream
+        AND a inertial state is received from upstream
     THEN the next state SHALL be set to undefined
         AND the previous SHALL shall be set to the received state
         AND a blank message SHALL be sent downstream
@@ -118,7 +119,7 @@ def hermite(system,prev=None,next=None,istrue=None,isfalse=None):
     Scenario 3:  Previous state undefined
     WHEN a state value is requested upstream
         AND the previous state is not defined
-        AND a Cartesian state is received from upstream
+        AND a inertial state is received from upstream
     THEN the next state SHALL be set to undefined
         AND the previous SHALL shall be set to the received state
         AND an interpolated state SHALL be requested
@@ -126,7 +127,7 @@ def hermite(system,prev=None,next=None,istrue=None,isfalse=None):
     Scenario 4:  Next state undefined
     WHEN a state value is requested upstream
         AND the next state is not defined
-        AND a Cartesian state is received from upstream
+        AND a inertial state is received from upstream
     THEN the next state SHALL be set to undefined
         AND the previous state SHALL be set to the received state
         AND an interpolated state SHALL be requested
@@ -135,8 +136,8 @@ def hermite(system,prev=None,next=None,istrue=None,isfalse=None):
     
     #configuration validation
     assert isinstance(system,EpochState)
-    assert isinstance(prev,CartesianState) or prev is None
-    assert isinstance(next,CartesianState) or next is None
+    assert isinstance(prev,InertialState) or prev is None
+    assert isinstance(next,InertialState) or next is None
     assert isinstance(istrue,types.GeneratorType) or istrue is None
     assert isinstance(isfalse,types.GeneratorType) or isfalse is None
     
@@ -155,7 +156,7 @@ def hermite(system,prev=None,next=None,istrue=None,isfalse=None):
             return
         else:
             #input validation
-            assert isinstance(state,CartesianState) or state is None
+            assert isinstance(state,InertialState) or state is None
             
             #cycle the states if a new state is received
             if state is not None:
@@ -186,7 +187,7 @@ def hermite(system,prev=None,next=None,istrue=None,isfalse=None):
                 p = h00 * p0 + h10 * m0 + h01 * p1 + h11 * m1
                 m = (1 - t) * m0 + t * m1#FIXME:  doesn't use spline
                 
-                state = CartesianState(x,p,m / dx)
+                state = InertialState(x,p,m / dx)
             
                 logging.info("Interpolate.Hermite:  Interpolated to %s" % state.epoch)
             else:

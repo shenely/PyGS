@@ -5,7 +5,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   10 February 2013
 
 Provides routines for state transformation.
 
@@ -13,7 +13,7 @@ Functions:
 identity              -- Identity transform
 inertial2keplerian    -- Inertial to Keplerian
 keplerian2inertial    -- Keplerian to inertial
-inertial2geographic   -- Cartesian to geographic
+inertial2geographic   -- Inertial to geographic
 geographic2horizontal -- Geographic to horizontal
 
 """
@@ -23,6 +23,7 @@ geographic2horizontal -- Geographic to horizontal
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-06    shenely         1.0         Promoted to version 1.0
+2013-02-10                                Using InertialState now
 
 """
 
@@ -172,7 +173,7 @@ def inertial2keplerian(pipeline=None):
     GIVEN a downstream pipeline (default null)
         
     Scenario 1:  Upstream state received
-    WHEN a Cartesian state is received from upstream
+    WHEN a inertial state is received from upstream
     THEN the state SHALL be converted to orbital elements:
                 a=-μ/ε/2
                 e=|e|
@@ -202,7 +203,7 @@ def inertial2keplerian(pipeline=None):
             return
         else:
             #input validation
-            assert isinstance(state,CartesianState)
+            assert isinstance(state,InertialState)
 
             t = state.epoch
 
@@ -301,7 +302,7 @@ def keplerian2inertial(pipeline=None):
             r = Q * r
             v = Q * v
 
-            state = CartesianState(t,r,v)
+            state = InertialState(t,r,v)
                     
             logging.info("Transform.KeplerianToInertial")
 
@@ -320,7 +321,7 @@ def inertial2geographic(pipeline=None):
     GIVEN a downstream pipeline (default null)
         
     Scenario 1:  Upstream state received
-    WHEN a Cartesian state is received from upstream
+    WHEN a inertial state is received from upstream
     THEN the state SHALL be converted to geographic coordinates:
                 cos(σ)=R[e]/R
                 λ=α+(t-J2000.0)/86400
@@ -348,7 +349,7 @@ def inertial2geographic(pipeline=None):
             return
         else:        
             #input validation
-            assert isinstance(state,CartesianState)
+            assert isinstance(state,InertialState)
             
             t = state.epoch
             arc = acosd(EARTH_RADIUS / state.R)
@@ -375,7 +376,7 @@ def geographic2horizontal(point,pipeline=None):
     GIVEN a downstream pipeline (default null)
         
     Scenario 1:  Upstream state received
-    WHEN a Cartesian state is received from upstream
+    WHEN a inertial state is received from upstream
     THEN all coordinates SHALL be converted to radians
         AND the state SHALL be converted to geographic coordinates:
                 tan(A)=sin(λ1-λ0)/(cos(φ0)tan(φ1)-sin(φ0)cos(λ1-λ0))

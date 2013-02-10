@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   10 February 2013
 
 Purpose:    
 """
@@ -31,7 +31,7 @@ from clock.epoch import EpochState
 ##################
 # Export section #
 #
-__all__ = ["CartesianState",
+__all__ = ["InertialState",
            "KeplerianState",
            "GeographicState",
            "HorizontalState"]
@@ -55,7 +55,7 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 ####################
 
 
-class CartesianState(EpochState):
+class InertialState(EpochState):
     def __init__(self,epoch,position,velocity,*args,**kwargs):
         EpochState.__init__(self,epoch,*args,**kwargs)
         
@@ -82,67 +82,67 @@ class CartesianState(EpochState):
     
     @property
     def x(self):
-        """Cartesian X (read-only)"""
+        """Inertial X (read-only)"""
         return self.position[0,0]
     
     @property
     def y(self):
-        """Cartesian Y (read-only)"""
+        """Inertial Y (read-only)"""
         return self.position[1,0]
     
     @property
     def z(self):
-        """Cartesian Z (read-only)"""
+        """Inertial Z (read-only)"""
         return self.position[2,0]
     
     @property
     def u(self):
-        """Cartesian U (read-only)"""
+        """Inertial U (read-only)"""
         return self.velocity[0,0]
     
     @property
     def v(self):
-        """Cartesian V (read-only)"""
+        """Inertial V (read-only)"""
         return self.velocity[1,0]
     
     @property
     def w(self):
-        """Cartesian W (read-only)"""
+        """Inertial W (read-only)"""
         return self.velocity[2,0]
     
     @property
     def R(self):
-        """Cartesian Radius (read-only)"""
+        """Inertial Radius (read-only)"""
         return norm(self.position)
     
     @property
     def V(self):
-        """Cartesian U (read-only)"""
+        """Inertial U (read-only)"""
         return norm(self.velocity)
     
     @property
     def alpha(self):
-        """Cartesian Right Ascension (read-only)"""
+        """Inertial Right Ascension (read-only)"""
         return atan2(self.position[1,0],self.position[0,0])
     
     @property
     def delta(self):
-        """Cartesian Declination (read-only)"""
+        """Inertial Declination (read-only)"""
         return asin(self.position[2,0] / self.R)
     
     @property
     def epsilon(self):
-        """Cartesian Specific Energy (read-only)"""
+        """Inertial Specific Energy (read-only)"""
         return self.V ** 2 / 2 - EARTH_GRAVITATION / self.R
     
     @property
     def h(self):
-        """Cartesian Specific Angular Momentum (read-only)"""
+        """Inertial Specific Angular Momentum (read-only)"""
         return cross(self.position,self.velocity)
     
     @property
     def e(self):
-        """Cartesian Eccentricity Vector (read-only)"""
+        """Inertial Eccentricity Vector (read-only)"""
         return cross(self.position,self.h) / EARTH_GRAVITATION - self.position / self.R
 
 

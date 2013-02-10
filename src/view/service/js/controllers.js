@@ -16,13 +16,12 @@ function UniverseControl( $scope, $element, global2d ) {
 	var texture = new THREE.Texture(d3.select("canvas[earth]").node());
 	
 	var scene = new THREE.Scene(),
-	    renderer = new THREE.WebGLRenderer( ),//{ antialias: true } ),
+	    renderer = new THREE.WebGLRenderer( { canvas: $element[0] } ),//{ antialias: true } ),
 	    camera = new THREE.PerspectiveCamera(angle, aspect, near, far);
 	
 	camera.position.z = 2;
 	scene.add(camera);
 	renderer.setSize(width, height);
-	$element[0].appendChild(renderer.domElement);
     
 	var geometry = new THREE.SphereGeometry(1, 32, 32),
 	    material = new THREE.MeshBasicMaterial({ map : texture }),

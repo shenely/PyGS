@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   10 February 2013
 
 Purpose:    
 """
@@ -30,7 +30,7 @@ from space.state import routine as state
 from space.state.routine import transform,interpolate
 from view import routine as view
 from clock.epoch import EpochState
-from space.state import CartesianState,GeographicState
+from space.state import InertialState,GeographicState
 #
 ##################
 
@@ -150,15 +150,15 @@ def main():
     """Main Function"""
 
     epoch = datetime(2010,1,1,tzinfo=utc)
-    aqua = CartesianState(epoch,
-                          matrix([7000.0,0.0,0.0]).T,
-                          matrix([0.0,7.5,0.0]).T)
-    aura = CartesianState(epoch,
-                          matrix([7000.0,0.0,0.0]).T,
-                          matrix([0.0,7.5,0.0]).T)
-    terra = CartesianState(epoch,
-                          matrix([7000.0,0.0,0.0]).T,
-                          matrix([0.0,7.5,0.0]).T)
+    aqua = InertialState(epoch,
+                         matrix([7000.0,0.0,0.0]).T,
+                         matrix([0.0,7.5,0.0]).T)
+    aura = InertialState(epoch,
+                         matrix([7000.0,0.0,0.0]).T,
+                         matrix([0.0,7.5,0.0]).T)
+    terra = InertialState(epoch,
+                         matrix([7000.0,0.0,0.0]).T,
+                         matrix([0.0,7.5,0.0]).T)
     
     q = UserSegment("Aqua",aqua)
     r = UserSegment("Aura",aura)

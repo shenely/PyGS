@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   07 February 2013
+Modified:   10 February 2013
 
 Provides routines for generating views.
 
@@ -20,6 +20,7 @@ local    -- Local (horizontal) view
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-07    shenely         1.0         Promoted to version 1.0
+2013-02-10                                Using InertialState now
 
 """
 
@@ -126,7 +127,7 @@ def global3d(address,pipeline=None):
         AND a downstream pipeline (default null)
         
     Scenario 1:  Upstream states received
-    WHEN Cartesian states are received from upstream
+    WHEN inertial states are received from upstream
     THEN the a global (3D) view SHALL be generated
         AND the view SHALL be sent downstream
     
@@ -151,7 +152,7 @@ def global3d(address,pipeline=None):
             return
         else:
             #input validation
-            assert filter(lambda state:isinstance(state,CartesianState),states)
+            assert filter(lambda state:isinstance(state,InertialState),states)
             
             view = BaseView(states[0].epoch,states,"global3d")
             notice = RequestMessage("view",view)
