@@ -3,53 +3,99 @@
 /* Controllers */
 
 
-function UniverseControl( $scope, $element, global2d ) {  
+function UniverseControl( $scope, $element, inertial ) {  
 	var color = d3.scale.category10();
 	  
 	var width = 960,
 	    height = 500,
 	    aspect = width / height,
 	    angle = 70,
-	    near = 1,
-	    far = 1000;
+	    near = 1000,
+	    far = 40000;
 	      
-	var texture = new THREE.Texture(d3.select("canvas[earth]").node());
+	var texture = new THREE.Texture(d3.select("canvas[earth]").node()),
+	    normal = THREE.ImageUtils.loadTexture( "img/srtm_ramp2.world.5400x2700.jpg" );
+        //normal = THREE.ImageUtils.loadTexture( "img/gebco_bathy.5400x2700.jpg" );
 	
 	var scene = new THREE.Scene(),
-	    renderer = new THREE.WebGLRenderer( { canvas: $element[0] } ),//{ antialias: true } ),
-	    camera = new THREE.PerspectiveCamera(angle, aspect, near, far);
+	    renderer = new THREE.WebGLRenderer( { canvas: $element[0], antialias: true } ),
+	    camera = new THREE.PerspectiveCamera(angle, aspect, near, far),
+        ambient = new THREE.AmbientLight(0x333333),
+        light = new THREE.PointLight(0xffffff);
 	
-	camera.position.z = 2;
-	scene.add(camera);
+	camera.position.z = 16000;
+	camera.add(light);
+    scene.add(ambient);
+    scene.add(camera);
 	renderer.setSize(width, height);
+	
+	var controls = new THREE.TrackballControls( camera );
+
+    controls.rotateSpeed = 1.0;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;
+
+    controls.noZoom = false;
+    controls.noPan = false;
+
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
+
+    controls.keys = [ 65, 83, 68 ];
+
+    controls.addEventListener( 'change', render );
     
-	var geometry = new THREE.SphereGeometry(1, 32, 32),
-	    material = new THREE.MeshBasicMaterial({ map : texture }),
+	var geometry = new THREE.SphereGeometry(6378, 32, 32),
+	    material = new THREE.MeshPhongMaterial({ map : texture, bumpMap: normal, bumpScale: 100 }),
 	    mesh = new THREE.Mesh(geometry, material),
-	    light = new THREE.AmbientLight(0xababab);
+		particles = new THREE.Geometry(),
+		pMaterial = new THREE.ParticleBasicMaterial({color: 0x000000,size: 500}),
+		pSystem = new THREE.ParticleSystem(particles,pMaterial);
+	
+	particles.vertices = [new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,0)];
+	pSystem.dynamic = true;
 
 	scene.add(mesh);
-	scene.add(light);
-  
-	global2d.epoch(function (event) {
+	scene.add(pSystem);
+	
+	var vector
+	inertial.states(function (states) {
+		states.forEach(function(d,i) {
+			if (i >= particles.vertices.length) {
+				vector = new THREE.Vector3(d.position.$matrix[0][0],d.position.$matrix[0][1],d.position.$matrix[0][2]);
+				particles.vertices.push(vector);
+			} else {
+				pSystem.geometry.vertices[i].x = d.position.$matrix[0][0];
+				pSystem.geometry.vertices[i].y = d.position.$matrix[0][2];
+				pSystem.geometry.vertices[i].z = -d.position.$matrix[0][1];
+			}
+		});
+		
+		pSystem.geometry.verticesNeedUpdate = true;
 		texture.needsUpdate = true;
 	});
 	
-	mesh.rotation.x = Math.PI / 4;
-    mesh.rotation.y = -Math.PI / 2;
+	//mesh.rotation.x = Math.PI / 4;
+    //mesh.rotation.y = -Math.PI / 2;
 	function animate() {
 		renderer.render(scene, camera);
 		requestAnimationFrame( animate );
-		  
-		//mesh.rotation.y += Math.PI / 360;
-	}
-	
+          
+        //mesh.rotation.y += Math.PI / 360;
+
+        controls.update();
+    }
+
+    function render() {
+        renderer.render( scene, camera );
+    }
+
 	animate();
 }
 
 function EarthControl( $scope, $element, cartograph ) {
-    $scope.width = 1000;
-    $scope.height = 500;
+    $scope.width = 2000;
+    $scope.height = 1000;
     
     $scope.path = cartograph($scope.width, $scope.height);
     
@@ -247,7 +293,7 @@ function GraticuleControl( $scope, $element ) {
 	$scope.setColor("rgba(0,0,0,1.0)");
 }
 
-function FootPrintControl( $scope, $element, global2d ) {
+function FootPrintControl( $scope, $element, geographic ) {
     var canvas = d3.select($element[0])
             .datum(20)
 		    .attr("width", $scope.width)
@@ -278,7 +324,7 @@ function FootPrintControl( $scope, $element, global2d ) {
         $scope.$parent.redraw();
 	};
 	
-	global2d.states(function(states) {
+	geographic.states(function(states) {
 		states.forEach(function(d,i) {
 			if (i >= feet.length) {
 				feet.push(d3.geo.circle());
@@ -292,7 +338,7 @@ function FootPrintControl( $scope, $element, global2d ) {
 	$scope.setAlpha(0.5);
 }
 
-function GroundTrackControl( $scope, $element, global2d ) {
+function GroundTrackControl( $scope, $element, geographic ) {
     var canvas = d3.select($element[0])
             .datum(10)
 		    .attr("width", $scope.width)
@@ -313,7 +359,7 @@ function GroundTrackControl( $scope, $element, global2d ) {
 		
 		context.lineWidth = 2.0;
 		
-		tracks.forEach(function(d,i) {			 
+		tracks.forEach(function(d,i) {
 			context.beginPath();
 			$scope.path( { "type": "LineString", "coordinates": d } );
 		    context.strokeStyle = color(i);
@@ -323,12 +369,15 @@ function GroundTrackControl( $scope, $element, global2d ) {
         $scope.$parent.redraw();
 	};
 	
-	global2d.states(function(states) {
+	geographic.states(function(states) {
 		states.forEach(function(d,i) {
 			if (i >= tracks.length) {
 				tracks.push([]);
 			}
-			return tracks[i].push([ d.long, d.lat ]);
+			tracks[i].push([ d.long, d.lat ]);
+			if (tracks[i].length > 100) {
+			    tracks[i].shift();
+			}
 		});
 		
 		$scope.redraw();

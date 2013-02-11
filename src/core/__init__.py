@@ -67,13 +67,13 @@ def object_hook(dct):
         dct = ObjectDict(dct)
         
         if hasattr(dct,"$matrix"):
-            dct = matrix(getattr(dct,"$matrix"))
+            dct = matrix(getattr(dct,"$matrix")).T
     
     return dct
 
 def default(obj):
     if isinstance(obj,matrix):
-        obj = { "$matrix": obj.tolist() }
+        obj = { "$matrix": obj.T.tolist() }
     else:
         obj = json_util.default(obj)
         

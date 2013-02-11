@@ -5,12 +5,13 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   10 February 2013
 
 Provides routines for state propagation.
 
 Functions:
-kepler -- Kepler propagation
+kepler    -- Kepler propagation
+ephemeris -- Ephemeris propagation
 """
 
 """Change log:
@@ -18,6 +19,7 @@ kepler -- Kepler propagation
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-06    shenely         1.0         Promoted to version 1.0
+2013-02-10                    1.1         Ephemeris propagation started
 
 """
 
@@ -38,6 +40,7 @@ from scipy.optimize import newton
 #Internal libraries
 from core import coroutine
 from .. import KeplerianState
+from model.ephemeris import BaseEphemeris
 #
 ##################
 
@@ -45,7 +48,8 @@ from .. import KeplerianState
 ##################
 # Export section #
 #
-__all__ = ["kepler"]
+__all__ = ["kepler",
+           "ephemeris"]
 #
 ##################
 
@@ -53,7 +57,7 @@ __all__ = ["kepler"]
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 
 CLOCK_STEP = timedelta(seconds=60)#Clock step (default to 60 seconds)
 
@@ -90,7 +94,7 @@ def kepler(state,step=CLOCK_STEP,pipeline=None):
                 M=E-e*sin(E)
         AND the true anomaly SHALL be calculated from eccentric anomaly:
                 tan(θ/2)=√((1+e)/(1-e))tan(E/2)
-        AND the message SHALL be sent downstream
+        AND the state SHALL be sent downstream
     
     """
     
@@ -125,3 +129,47 @@ def kepler(state,step=CLOCK_STEP,pipeline=None):
             message = copy.deepcopy(state)
                             
             logging.info("Propagate.Kepler:  Propagated to %s" % state.epoch)
+
+
+@coroutine
+def ephemeris(ephemeris,pipeline=None):
+    """Story:  Ephemeris propagation
+    
+    IN ORDER TO generating messages to results for a ground segment
+    AS A space segment
+    I WANT TO encode a result in a defined string format
+        
+    """
+    
+    u"""Specification:  Ephemeris propagation
+    
+    GIVEN an ephemeris
+        AND a downstream pipeline (default null)
+        
+    Scenario 1:  State propagation requested
+    WHEN a state value is requested from upstream
+    THEN the next state from the ephemeris SHALL be sent downstream
+    
+    """
+        
+    #configuration validation
+    assert isinstance(ephemeris,BaseEphemeris)
+    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    
+    message = None
+        
+    logging.debug("Propagate.Ephemeris:  Starting at %s" % ephemeris.epoch.start)
+    for state in ephemeris.states:
+        try:
+            yield message,pipeline
+        except GeneratorExit:
+            logging.warn("Propagate.Ephemeris:  Stopping at %s" % state.epoch)
+            
+            #close downstream routine (if it exists)
+            pipeline.close() if pipeline is not None else None
+            
+            return
+        else:                    
+            message = state
+                            
+            logging.info("Propagate.Ephemeris:  Propagated to %s" % state.epoch)

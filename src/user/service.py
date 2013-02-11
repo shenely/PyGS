@@ -112,14 +112,14 @@ class UserSegment(object):
         point = GeographicState(datetime(2010,1,1),0.0,0.0,0.0)
         
         publish_view = socket.publish(cls.view_socket)
-        view_local = view.local(VIEW_ADDRESS.format("Local"),publish_view)
+        view_local = view.horizontal(VIEW_ADDRESS.format("Horizontal"),publish_view)
         merge_tasks_local = control.merge(cls.tasks,view_local)
         horizontal_transform = transform.geographic2horizontal(point,merge_tasks_local)
-        view_global2d = view.global2d(VIEW_ADDRESS.format("Global2"),publish_view)
+        view_global2d = view.geographic(VIEW_ADDRESS.format("Geographic"),publish_view)
         merge_tasks_global2d = control.merge(cls.tasks,view_global2d)
         split_views_2d = control.split(None,[merge_tasks_global2d,horizontal_transform])
         geographic_transform = transform.inertial2geographic(split_views_2d)
-        view_global3d = view.global3d(VIEW_ADDRESS.format("Global3"),publish_view)
+        view_global3d = view.inertial(VIEW_ADDRESS.format("Inertial"),publish_view)
         merge_tasks3d = control.merge(cls.tasks,view_global3d)
         split_views = control.split(None,[merge_tasks3d,geographic_transform])
         
