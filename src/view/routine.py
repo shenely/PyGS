@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   10 February 2013
+Modified:   11 February 2013
 
 Provides routines for generating views.
 
@@ -21,6 +21,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-07    shenely         1.0         Promoted to version 1.0
 2013-02-10                                Using InertialState now
+2013-02-11                                Replaced states with assets
 
 """
 
@@ -38,6 +39,7 @@ import types
 from core import coroutine,encoder
 from core.message import RequestMessage
 from . import BaseView
+from space import Spacecraft
 from space.state import *
 #
 ##################
@@ -61,8 +63,10 @@ __version__ = "1.0"#current version [major.minor]
 ####################
 
 
+#TODO:  update documentation to mention assets (not states)
+
 @coroutine
-def inertial(address,pipeline=None):
+def inertial(assets,address,pipeline=None):
     """Story:  Inertial view
     
     IN ORDER TO view the inertial location of a spacecraft
@@ -73,7 +77,8 @@ def inertial(address,pipeline=None):
     
     """Specification:  Inertial view
     
-    GIVEN an address for the message envelope
+    GIVEN a list of spacecraft
+        AND an address for the message envelope
         AND a downstream pipeline (default null)
         
     Scenario 1:  Upstream states received
@@ -84,6 +89,8 @@ def inertial(address,pipeline=None):
     """
     
     #configuration validation
+    assert isinstance(assets,types.ListType)
+    assert filter(lambda asset:isinstance(asset,Spacecraft),assets)
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -104,14 +111,17 @@ def inertial(address,pipeline=None):
             #input validation
             assert filter(lambda state:isinstance(state,InertialState),states)
             
-            view = BaseView(states[0].epoch,states,"inertial")
+            for i in range(len(assets)):
+                assets[i].state = states[i]
+            
+            view = BaseView(states[0].epoch,assets,"inertial")
             notice = RequestMessage("view",view)
             message = address,encoder(notice)
                             
             logging.info("View.Inertial  Generated for %s" % address)
 
 @coroutine
-def geographic(address,pipeline=None):
+def geographic(assets,address,pipeline=None):
     """Story:  Geographic view
     
     IN ORDER TO view the geographic location of a spacecraft
@@ -122,7 +132,8 @@ def geographic(address,pipeline=None):
     
     """Specification:  Geographic view
     
-    GIVEN an address for the message envelope
+    GIVEN a list of spacecraft
+        AND an address for the message envelope
         AND a downstream pipeline (default null)
         
     Scenario 1:  Upstream states received
@@ -133,6 +144,8 @@ def geographic(address,pipeline=None):
     """
 
     #configuration validation
+    assert isinstance(assets,types.ListType)
+    assert filter(lambda asset:isinstance(asset,Spacecraft),assets)
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -153,14 +166,17 @@ def geographic(address,pipeline=None):
             #input validation
             assert filter(lambda state:isinstance(state,GeographicState),states)
             
-            view = BaseView(states[0].epoch,states,"geographic")
+            for i in range(len(assets)):
+                assets[i].state = states[i]
+            
+            view = BaseView(states[0].epoch,assets,"geographic")
             notice = RequestMessage("view",view)
             message = address,encoder(notice)
                             
             logging.info("View.Geographic  Generated for %s" % address)
 
 @coroutine
-def horizontal(address,pipeline=None):
+def horizontal(assets,address,pipeline=None):
     """Story:  Horizontal view
     
     IN ORDER TO view the horizontal location of a spacecraft
@@ -171,7 +187,8 @@ def horizontal(address,pipeline=None):
     
     """Specification:  Horizontal view
     
-    GIVEN an address for the message envelope
+    GIVEN a list of spacecraft
+        AND an address for the message envelope
         AND a downstream pipeline (default null)
         
     Scenario 1:  Upstream states received
@@ -182,6 +199,8 @@ def horizontal(address,pipeline=None):
     """
     
     #configuration validation
+    assert isinstance(assets,types.ListType)
+    assert filter(lambda asset:isinstance(asset,Spacecraft),assets)
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -202,7 +221,10 @@ def horizontal(address,pipeline=None):
             #input validation
             assert filter(lambda state:isinstance(state,HorizontalState),states)
             
-            view = BaseView(states[0].epoch,states,"horizontal")
+            for i in range(len(assets)):
+                assets[i].state = states[i]
+                        
+            view = BaseView(states[0].epoch,assets,"horizontal")
             notice = RequestMessage("view",view)
             message = address,encoder(notice)
                             

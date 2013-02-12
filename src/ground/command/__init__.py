@@ -16,7 +16,6 @@ Purpose:
 #Built-in libraries
 from math import pi,sqrt,cos,sin,tan,acos,asin,atan2
 from datetime import datetime
-import uuid
 import types
 import copy
 

@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   10 February 2013
+Modified:   11 February 2013
 
 Purpose:    
 """
@@ -27,9 +27,12 @@ from core.service.scheduler import Scheduler
 from core.routine import control,queue,socket,sequence
 from clock.epoch import routine as epoch
 from space.state import routine as state
+from ground.status import routine as status
 from space.state.routine import transform,interpolate
 from view import routine as view
+from space import Spacecraft
 from clock.epoch import EpochState
+from ground.status import BaseStatus
 from space.state import InertialState,GeographicState
 #
 ##################
@@ -51,10 +54,12 @@ EARTH_GRAVITION = 398600.4
 
 EPOCH_ADDRESS = "Kepler.Epoch"
 STATE_ADDRESS = "Kepler.{name!s}.State"
+STATUS_ADDRESS = "Kepler.{name!s}.Status"
 VIEW_ADDRESS = "Kepler.View.{!s}"
 
 ACCEPT_MARGIN = timedelta(seconds=0)
 INTERPOLATE_MARGIN = timedelta(seconds=60)
+STATUS_MARGIN = timedelta(seconds=60)
 REMOVE_MARGIN = timedelta(seconds=0)
 
 EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -75,27 +80,36 @@ class UserSegment(object):
     
     physics = EpochState(datetime.utcnow())
     tasks = []
+    spacecraft = []
     
-    def __init__(self,name,coords):
-        if not hasattr(self,"epoch_task"):
-            self.task_update_epoch()
-            self.task_generate_view()
-        
-        self.name = name
-        
+    def __init__(self,spacecraft):        
+        self.spacecraft.append(spacecraft)
+                
         self.state_socket = self.context.socket(zmq.SUB)
         self.state_socket.connect("tcp://localhost:5556")
-        self.state_socket.setsockopt(zmq.SUBSCRIBE,STATE_ADDRESS.format(name=self.name))
+        self.state_socket.setsockopt(zmq.SUBSCRIBE,STATE_ADDRESS.format(name=spacecraft.name))
 
         self.state_queue = PriorityQueue()
+                
+        self.status_socket = self.context.socket(zmq.SUB)
+        self.status_socket.connect("tcp://localhost:5556")
+        self.status_socket.setsockopt(zmq.SUBSCRIBE,STATUS_ADDRESS.format(name=spacecraft.name))
+
+        self.status_queue = PriorityQueue()
         
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect("tcp://localhost:5555")
 
         self.queue = PriorityQueue()
         
+        if not hasattr(self,"epoch_task"):
+            self.task_update_epoch()
+            self.task_generate_view()
+        
         self.task_update_state()
-        self.task_interpolate_state(coords)
+        self.task_subscribe_status()
+        self.task_interpolate_state(spacecraft.state)
+        self.task_update_status(spacecraft.status)
 
     @classmethod
     def task_update_epoch(cls):
@@ -112,14 +126,14 @@ class UserSegment(object):
         point = GeographicState(datetime(2010,1,1),0.0,0.0,0.0)
         
         publish_view = socket.publish(cls.view_socket)
-        view_local = view.horizontal(VIEW_ADDRESS.format("Horizontal"),publish_view)
+        view_local = view.horizontal(cls.spacecraft,VIEW_ADDRESS.format("Horizontal"),publish_view)
         merge_tasks_local = control.merge(cls.tasks,view_local)
         horizontal_transform = transform.geographic2horizontal(point,merge_tasks_local)
-        view_global2d = view.geographic(VIEW_ADDRESS.format("Geographic"),publish_view)
+        view_global2d = view.geographic(cls.spacecraft,VIEW_ADDRESS.format("Geographic"),publish_view)
         merge_tasks_global2d = control.merge(cls.tasks,view_global2d)
         split_views_2d = control.split(None,[merge_tasks_global2d,horizontal_transform])
         geographic_transform = transform.inertial2geographic(split_views_2d)
-        view_global3d = view.inertial(VIEW_ADDRESS.format("Inertial"),publish_view)
+        view_global3d = view.inertial(cls.spacecraft,VIEW_ADDRESS.format("Inertial"),publish_view)
         merge_tasks3d = control.merge(cls.tasks,view_global3d)
         split_views = control.split(None,[merge_tasks3d,geographic_transform])
         
@@ -133,6 +147,15 @@ class UserSegment(object):
         
         self.state_task = subscribe_state
         self.scheduler.handler(self.state_socket,self.state_task)
+
+    def task_subscribe_status(self):
+        enqueue_status = queue.put(self.status_queue)
+        after_system = sequence.after(self.physics,ACCEPT_MARGIN,enqueue_status)
+        parse_status = status.parse(after_system)
+        subscribe_status = socket.subscribe(self.status_socket,parse_status)
+        
+        self.status_task = subscribe_status
+        self.scheduler.handler(self.status_socket,self.status_task)
     
     def task_interpolate_state(self,coords):
         update_state = state.update(coords,self.view_task)
@@ -145,24 +168,43 @@ class UserSegment(object):
         inspect_state = queue.peek(self.state_queue,after_lower)
         
         self.tasks.append(inspect_state)
+    
+    def task_update_status(self,color):
+        update_status = status.update(color)
+        dequeue_status = queue.get(self.status_queue,update_status)
+        remove_status = queue.get(self.status_queue)
+        after_upper = sequence.after(self.physics,STATUS_MARGIN,None,dequeue_status)
+        after_lower = sequence.after(self.physics,REMOVE_MARGIN,after_upper,remove_status)
+        inspect_status = queue.peek(self.status_queue,after_lower)
+        
+        self.tasks.append(inspect_status)
         
 def main():
     """Main Function"""
 
     epoch = datetime(2010,1,1,tzinfo=utc)
-    aqua = InertialState(epoch,
-                         matrix([7000.0,0.0,0.0]).T,
-                         matrix([0.0,7.5,0.0]).T)
-    aura = InertialState(epoch,
-                         matrix([7000.0,0.0,0.0]).T,
-                         matrix([0.0,7.5,0.0]).T)
-    terra = InertialState(epoch,
-                         matrix([7000.0,0.0,0.0]).T,
-                         matrix([0.0,7.5,0.0]).T)
+    aqua = Spacecraft("Aqua",
+                      "#007777",
+                      BaseStatus("blue",epoch),
+                      InertialState(epoch,
+                                    matrix([7000.0,0.0,0.0]).T,
+                                    matrix([0.0,7.5,0.0]).T))
+    aura = Spacecraft("Aura",
+                      "#ff7700",
+                      BaseStatus("blue",epoch),
+                      InertialState(epoch,
+                                    matrix([7000.0,0.0,0.0]).T,
+                                    matrix([0.0,7.5,0.0]).T))
+    terra = Spacecraft("Terra",
+                      "#007700",
+                      BaseStatus("blue",epoch),
+                      InertialState(epoch,
+                                    matrix([7000.0,0.0,0.0]).T,
+                                    matrix([0.0,7.5,0.0]).T))
     
-    q = UserSegment("Aqua",aqua)
-    r = UserSegment("Aura",aura)
-    t = UserSegment("Terra",terra)
+    q = UserSegment(aqua)
+    r = UserSegment(aura)
+    t = UserSegment(terra)
     
     #scheduler.start()
     

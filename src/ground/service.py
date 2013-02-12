@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   11 February 2013
 
 Purpose:    
 """
@@ -26,11 +26,12 @@ from core.service.scheduler import Scheduler
 from core.routine import control,queue,socket,sequence
 from clock.epoch import routine as epoch
 from .command import routine as command
-#from .status import routine as status
+from .status import routine as status
 #from space.acknowledge import routine as acknowledge
 #from space.result import routine as result
 from clock.epoch import EpochState
 from .command import ManeuverCommand
+from .status import BaseStatus
 #
 ##################
 
@@ -92,8 +93,8 @@ class GroundSegment(object):
         self.status_queue = PriorityQueue()
         
         self.task_request_command()
-        #self.task_publish_status()
-        self.task_schedule_event()
+        self.task_publish_status()
+        #self.task_schedule_event()
 
     @classmethod
     def task_update_epoch(cls):
@@ -144,13 +145,18 @@ def main():
     """Main Function"""
     
     epoch = datetime(2010,1,1,0,12,30,tzinfo=utc)
-    aura = ManeuverCommand(epoch,0.0,0.0,1.0)
     
-    q = GroundSegment("Aqua")
-    r = GroundSegment("Aura")
-    t = GroundSegment("Terra")
+    aqua = GroundSegment("Aqua")
+    aura = GroundSegment("Aura")
+    terra = GroundSegment("Terra")
     
-    r.cmd_queue.put((0,aura))
+    aqua.cmd_queue.put((0,ManeuverCommand(epoch,0.0,0.0,1.0)))
+    aura.cmd_queue.put((0,ManeuverCommand(epoch,0.0,0.1,0.0)))
+    terra.cmd_queue.put((0,ManeuverCommand(epoch,0.1,0.0,0.0)))
+    
+    aqua.status_queue.put((0,BaseStatus("green",epoch)))
+    aura.status_queue.put((0,BaseStatus("yellow",epoch)))
+    terra.status_queue.put((0,BaseStatus("red",epoch)))
     
     #scheduler.start()
     

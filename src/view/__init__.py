@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   11 February 2013
 
 Purpose:    
 """
@@ -21,6 +21,7 @@ import types
 
 #Internal libraries
 from clock.epoch import EpochState
+from space import Spacecraft
 #
 ##################
 
@@ -42,23 +43,23 @@ __version__ = "0.1"#current version [major.minor]
 
 
 class BaseView(EpochState):
-    def __init__(self,epoch,states,type=None,*args,**kwargs):        
+    def __init__(self,epoch,assets,type=None,*args,**kwargs):        
         EpochState.__init__(self,epoch,*args,**kwargs)
         
         assert isinstance(type,types.StringTypes) or type is None
-        assert isinstance(states,types.ListType)
-        assert filter(lambda state:isinstance(state,EpochState),states)
+        assert isinstance(assets,types.ListType)
+        assert filter(lambda asset:isinstance(asset,Spacecraft),assets)
         
         self.type = type
-        self.states = states
+        self.assets = assets
     
     @staticmethod
     def check(kwargs):
         assert EpochState.check(kwargs)
         assert hasattr(kwargs,"type")
         assert isinstance(kwargs.type,types.StringTypes) or type is None
-        assert hasattr(kwargs,"states")
-        assert isinstance(kwargs.states,types.ListType)
-        assert filter(lambda state:isinstance(state,EpochState),kwargs.states)
+        assert hasattr(kwargs,"assets")
+        assert isinstance(kwargs.assets,types.ListType)
+        assert filter(lambda asset:isinstance(asset,Spacecraft),kwargs.assets)
         
         return True

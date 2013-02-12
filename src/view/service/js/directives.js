@@ -11,11 +11,27 @@ angular.module('kepler.directives', [])
 			controller: UniverseControl
 		};
 	})
+	.directive('planet', function() {
+		return {
+			restrict: 'E',
+			scope: true,
+			priority: 1,
+			controller: PlanetControl
+		};
+	})
 	.directive('earth', function() {
 		return {
 			restrict: 'A',
 			scope: true,
+			priority: 10,
 			controller: EarthControl
+		};
+	})
+	.directive('ground', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: GroundControl
 		};
 	})
     .directive('background', function() {
@@ -72,5 +88,26 @@ angular.module('kepler.directives', [])
 			restrict: 'A',
 			scope: true,
 			controller: GroundTrackControl
+		};
+	})
+	.directive('space', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: SpaceControl
+		};
+	})
+	.directive('trailPath', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: TrailPathControl
+		};
+	})
+	.directive('spaceCraft', function() {
+		return {
+			restrict: 'A',
+			scope: true,
+			controller: SpaceCraftControl
 		};
 	});
