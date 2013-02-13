@@ -25,7 +25,7 @@ angular.module('kepler.services', [])
 		
 		var view = null;
 		socket.onmessage = function(event) {
-			view = JSON.parse(event.data).params;
+			view = JSON.parse(event.data);
 			
 			epoch.forEach(function(callback) { return callback(view.epoch.$date); });
 			assets.forEach(function(callback) { return callback(view.assets); });
@@ -43,7 +43,7 @@ angular.module('kepler.services', [])
 		
 		var view = null;
 		socket.onmessage = function(event) {
-			view = JSON.parse(event.data).params;
+			view = JSON.parse(event.data);
 			
 			epoch.forEach(function(callback) { return callback(view.epoch.$date); });
 			assets.forEach(function(callback) { return callback(view.assets); });

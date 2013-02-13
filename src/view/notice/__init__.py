@@ -21,7 +21,7 @@ import types
 
 #Internal libraries
 from clock.epoch import EpochState
-from space import Spacecraft
+from model.asset import SpaceAsset
 #
 ##################
 
@@ -48,7 +48,7 @@ class BaseView(EpochState):
         
         assert isinstance(type,types.StringTypes) or type is None
         assert isinstance(assets,types.ListType)
-        assert filter(lambda asset:isinstance(asset,Spacecraft),assets)
+        assert filter(lambda asset:isinstance(asset,SpaceAsset),assets)
         
         self.type = type
         self.assets = assets
@@ -60,6 +60,6 @@ class BaseView(EpochState):
         assert isinstance(kwargs.type,types.StringTypes) or type is None
         assert hasattr(kwargs,"assets")
         assert isinstance(kwargs.assets,types.ListType)
-        assert filter(lambda asset:isinstance(asset,Spacecraft),kwargs.assets)
+        assert filter(lambda asset:isinstance(asset,SpaceAsset),kwargs.assets)
         
         return True

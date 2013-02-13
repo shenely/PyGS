@@ -30,7 +30,7 @@ from space.state import routine as state
 from ground.status import routine as status
 from space.state.routine import transform,interpolate
 from view.notice import routine as notice
-from space import Spacecraft
+from model.asset import SpaceAsset
 from clock.epoch import EpochState
 from ground.status import BaseStatus
 from space.state import InertialState,GeographicState
@@ -183,24 +183,25 @@ def main():
     """Main Function"""
 
     epoch = datetime(2010,1,1,tzinfo=utc)
-    aqua = Spacecraft("Aqua",
-                      "#007777",
-                      BaseStatus("blue",epoch),
-                      InertialState(epoch,
-                                    matrix([7000.0,0.0,0.0]).T,
-                                    matrix([0.0,7.5,0.0]).T))
-    aura = Spacecraft("Aura",
-                      "#ff7700",
-                      BaseStatus("blue",epoch),
-                      InertialState(epoch,
-                                    matrix([7000.0,0.0,0.0]).T,
-                                    matrix([0.0,7.5,0.0]).T))
-    terra = Spacecraft("Terra",
-                      "#007700",
-                      BaseStatus("blue",epoch),
-                      InertialState(epoch,
-                                    matrix([7000.0,0.0,0.0]).T,
-                                    matrix([0.0,7.5,0.0]).T))
+    aqua = SpaceAsset("Aqua",
+                      "#007777")
+    aqua.status = BaseStatus("blue",epoch)
+    aqua.state = InertialState(epoch,
+                               matrix([7000.0,0.0,0.0]).T,
+                               matrix([0.0,7.5,0.0]).T)
+    
+    aura = SpaceAsset("Aura",
+                      "#ff7700")
+    aura.status = BaseStatus("blue",epoch)
+    aura.state = InertialState(epoch,
+                               matrix([7000.0,0.0,0.0]).T,
+                               matrix([0.0,7.5,0.0]).T)
+    terra = SpaceAsset("Terra",
+                      "#007700")
+    terra.status = BaseStatus("blue",epoch)
+    terra.state = InertialState(epoch,
+                                matrix([7000.0,0.0,0.0]).T,
+                                matrix([0.0,7.5,0.0]).T)
     
     q = UserSegment(aqua)
     r = UserSegment(aura)

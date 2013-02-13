@@ -40,7 +40,7 @@ import types
 from core import coroutine,encoder
 from core.message import RequestMessage
 from . import BaseView
-from space import Spacecraft
+from model.asset import SpaceAsset
 from space.state import *
 #
 ##################
@@ -91,7 +91,7 @@ def inertial(assets,address,pipeline=None):
     
     #configuration validation
     assert isinstance(assets,types.ListType)
-    assert filter(lambda asset:isinstance(asset,Spacecraft),assets)
+    assert filter(lambda asset:isinstance(asset,SpaceAsset),assets)
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -116,7 +116,6 @@ def inertial(assets,address,pipeline=None):
                 assets[i].state = states[i]
             
             notice = BaseView(states[0].epoch,assets,"inertial")
-            notice = RequestMessage("notice",notice)
             message = address,encoder(notice)
                             
             logging.info("Notice.Inertial  Generated for %s" % address)
@@ -146,7 +145,7 @@ def geographic(assets,address,pipeline=None):
 
     #configuration validation
     assert isinstance(assets,types.ListType)
-    assert filter(lambda asset:isinstance(asset,Spacecraft),assets)
+    assert filter(lambda asset:isinstance(asset,SpaceAsset),assets)
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -171,7 +170,6 @@ def geographic(assets,address,pipeline=None):
                 assets[i].state = states[i]
             
             notice = BaseView(states[0].epoch,assets,"geographic")
-            notice = RequestMessage("notice",notice)
             message = address,encoder(notice)
                             
             logging.info("Notice.Geographic  Generated for %s" % address)
@@ -201,7 +199,7 @@ def horizontal(assets,address,pipeline=None):
     
     #configuration validation
     assert isinstance(assets,types.ListType)
-    assert filter(lambda asset:isinstance(asset,Spacecraft),assets)
+    assert filter(lambda asset:isinstance(asset,SpaceAsset),assets)
     assert isinstance(address,types.StringTypes)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
@@ -226,7 +224,6 @@ def horizontal(assets,address,pipeline=None):
                 assets[i].state = states[i]
                         
             notice = BaseView(states[0].epoch,assets,"horizontal")
-            notice = RequestMessage("notice",notice)
             message = address,encoder(notice)
                             
             logging.info("Notice.Horizontal:  Generated for %s" % address)

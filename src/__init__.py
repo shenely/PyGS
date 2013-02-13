@@ -8,7 +8,7 @@ from ground import service as ground
 from user import service as user
 
 def main():
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     
     scheduler = Scheduler()
     

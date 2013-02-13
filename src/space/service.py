@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   12 February 2013
 
 Purpose:    
 """
@@ -24,7 +24,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
-from core.routine import control,queue,socket,sequence
+from core.routine import control,queue,socket,sequence,database
 from clock.epoch import routine as epoch
 from .state import routine as state
 from .state.routine import transform,propagate
@@ -60,6 +60,8 @@ STATE_ADDRESS = "Kepler.{name!s}.State"
 COMMAND_ADDRESS = "Kepler.{name!s}.Command"
 ACKNOWLEDGE_ADDRESS = "Kepler.{name!s}.Acknowledge"
 RESULT_ADDRESS = "Kepler.{name!s}.Result"
+ASSET_ADDRESS = "Kepler.Model.Asset"
+EPHEMERIS_ADDRESS = "Kepler.Model.Ephemeris"
 
 ITERATE_MARGIN = timedelta(seconds=300)
 EXECUTE_MARGIN = timedelta(seconds=30)
@@ -78,9 +80,20 @@ class SpaceSegment(object):
     scheduler = Scheduler()
     context = zmq.Context(1)
     
+    #connection = MongoClient()
+    #database = connection["Kepler"]
+    
     epoch_socket = context.socket(zmq.SUB)
     epoch_socket.connect("tcp://localhost:5556")
     epoch_socket.setsockopt(zmq.SUBSCRIBE,EPOCH_ADDRESS)
+    
+    asset_socket = context.socket(zmq.SUB)
+    asset_socket.connect("tcp://localhost:5556")
+    asset_socket.setsockopt(zmq.SUBSCRIBE,ASSET_ADDRESS)
+    
+    ephem_socket = context.socket(zmq.SUB)
+    ephem_socket.connect("tcp://localhost:5556")
+    ephem_socket.setsockopt(zmq.SUBSCRIBE,EPHEMERIS_ADDRESS)
     
     physics = EpochState(datetime.utcnow())
     tasks = []
@@ -88,6 +101,7 @@ class SpaceSegment(object):
     def __init__(self,name,elements):
         if not hasattr(self,"epoch_task"):
             self.task_update_epoch()
+            #self.task_update_system()
         
         self.name = name
         
@@ -154,6 +168,30 @@ class SpaceSegment(object):
         inspect_cmd = queue.peek(self.cmd_queue,before_state)
         
         self.tasks.append(inspect_cmd)
+    
+    @classmethod
+    def task_publish_system(cls):
+        save_asset = database.save(cls.database["asset"])
+        parse_asset = asset.parse(save_asset)
+        subscribe_asset = socket.subscribe(cls.asset_socket,parse_asset)
+        
+        cls.asset_task = subscribe_asset
+        cls.scheduler.handler(cls.asset_socket,cls.asset_task)
+        
+        publish_system = socket.publish(cls.socket)
+        format_system = system.format(publish_system)
+        merge_ephem = control.merge([None,None],format_system)
+        find_asset = database.find(cls.database["asset"],merge_ephem)
+        query_asset = asset.query(find_asset,find_asset)
+        save_ephem = database.save(cls.database["ephemeris"],merge_ephem)
+        split_ephem = control.split(None,[save_ephem,query_asset])
+        parse_ephem = ephemeris.parse(split_ephem)
+        subscribe_ephem = socket.subscribe(cls.ephem_socket,parse_ephem)
+        
+        cls.ephem_task = subscribe_ephem
+        cls.scheduler.handler(cls.ephem_task,cls.ephem_task)
+        
+    
                 
 def main():
     """Main Function"""
