@@ -1,12 +1,12 @@
 #!/usr/bin/env python2.7
 
-"""View routines
+"""Notice routines
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   11 February 2013
+Modified:   12 February 2013
 
-Provides routines for generating views.
+Provides routines for generating notices.
 
 Functions:
 inertial   -- Inertial view
@@ -20,8 +20,9 @@ horizontal -- Horizontal view
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-07    shenely         1.0         Promoted to version 1.0
-2013-02-10                                Using InertialState now
-2013-02-11                                Replaced states with assets
+2013-02-10                    1.1         Using InertialState now
+2013-02-11                    1.2         Replaced states with assets
+2013-02-12                    1.3         Renaming as notices
 
 """
 
@@ -58,7 +59,7 @@ __all__ = ["inertial",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 #
 ####################
 
@@ -67,15 +68,15 @@ __version__ = "1.0"#current version [major.minor]
 
 @coroutine
 def inertial(assets,address,pipeline=None):
-    """Story:  Inertial view
+    """Story:  Inertial notice
     
     IN ORDER TO view the inertial location of a spacecraft
     AS A user segment
-    I WANT TO generate a global (3D) view
+    I WANT TO generate a global (3D) notice
     
     """
     
-    """Specification:  Inertial view
+    """Specification:  Inertial notice
     
     GIVEN a list of spacecraft
         AND an address for the message envelope
@@ -83,7 +84,7 @@ def inertial(assets,address,pipeline=None):
         
     Scenario 1:  Upstream states received
     WHEN inertial states are received from upstream
-    THEN the a global (3D) view SHALL be generated
+    THEN the a global (3D) notice SHALL be generated
         AND the view SHALL be sent downstream
     
     """
@@ -96,12 +97,12 @@ def inertial(assets,address,pipeline=None):
     
     message = None
     
-    logging.debug("View.Inertial:  Starting")
+    logging.debug("Notice.Inertial:  Starting")
     while True:
         try:
             states = yield message,pipeline
         except GeneratorExit:
-            logging.warn("View.Inertial:  Stopping")
+            logging.warn("Notice.Inertial:  Stopping")
             
             #close downstream routine (if it exists)
             pipeline.close() if pipeline is not None else None
@@ -114,23 +115,23 @@ def inertial(assets,address,pipeline=None):
             for i in range(len(assets)):
                 assets[i].state = states[i]
             
-            view = BaseView(states[0].epoch,assets,"inertial")
-            notice = RequestMessage("view",view)
+            notice = BaseView(states[0].epoch,assets,"inertial")
+            notice = RequestMessage("notice",notice)
             message = address,encoder(notice)
                             
-            logging.info("View.Inertial  Generated for %s" % address)
+            logging.info("Notice.Inertial  Generated for %s" % address)
 
 @coroutine
 def geographic(assets,address,pipeline=None):
-    """Story:  Geographic view
+    """Story:  Geographic notice
     
     IN ORDER TO view the geographic location of a spacecraft
     AS A user segment
-    I WANT TO generate a global (2D) view
+    I WANT TO generate a global (2D) notice
     
     """
     
-    """Specification:  Geographic view
+    """Specification:  Geographic notice
     
     GIVEN a list of spacecraft
         AND an address for the message envelope
@@ -138,8 +139,8 @@ def geographic(assets,address,pipeline=None):
         
     Scenario 1:  Upstream states received
     WHEN geographic states are received from upstream
-    THEN the a global (2D) view SHALL be generated
-        AND the view SHALL be sent downstream
+    THEN the a global (2D) notice SHALL be generated
+        AND the notice SHALL be sent downstream
     
     """
 
@@ -151,12 +152,12 @@ def geographic(assets,address,pipeline=None):
     
     message = None
     
-    logging.debug("View.Geographic:  Starting")
+    logging.debug("Notice.Geographic:  Starting")
     while True:
         try:
             states = yield message,pipeline
         except GeneratorExit:
-            logging.warn("View.Geographic:  Stopping")
+            logging.warn("Notice.Geographic:  Stopping")
             
             #close downstream routine (if it exists)
             pipeline.close() if pipeline is not None else None
@@ -169,23 +170,23 @@ def geographic(assets,address,pipeline=None):
             for i in range(len(assets)):
                 assets[i].state = states[i]
             
-            view = BaseView(states[0].epoch,assets,"geographic")
-            notice = RequestMessage("view",view)
+            notice = BaseView(states[0].epoch,assets,"geographic")
+            notice = RequestMessage("notice",notice)
             message = address,encoder(notice)
                             
-            logging.info("View.Geographic  Generated for %s" % address)
+            logging.info("Notice.Geographic  Generated for %s" % address)
 
 @coroutine
 def horizontal(assets,address,pipeline=None):
-    """Story:  Horizontal view
+    """Story:  Horizontal notice
     
     IN ORDER TO view the horizontal location of a spacecraft
     AS A user segment
-    I WANT TO generate a local view
+    I WANT TO generate a local notice
     
     """
     
-    """Specification:  Horizontal view
+    """Specification:  Horizontal notice
     
     GIVEN a list of spacecraft
         AND an address for the message envelope
@@ -193,8 +194,8 @@ def horizontal(assets,address,pipeline=None):
         
     Scenario 1:  Upstream states received
     WHEN horizontal states are received from upstream
-    THEN the a local view SHALL be generated
-        AND the view SHALL be sent downstream
+    THEN the a local notice SHALL be generated
+        AND the notice SHALL be sent downstream
     
     """
     
@@ -206,12 +207,12 @@ def horizontal(assets,address,pipeline=None):
     
     message = None
     
-    logging.debug("View.Horizontal:  Starting")
+    logging.debug("Notice.Horizontal:  Starting")
     while True:
         try:
             states = yield message,pipeline
         except GeneratorExit:
-            logging.warn("View.Horizontal:  Stopping")
+            logging.warn("Notice.Horizontal:  Stopping")
             
             #close downstream routine (if it exists)
             pipeline.close() if pipeline is not None else None
@@ -224,8 +225,8 @@ def horizontal(assets,address,pipeline=None):
             for i in range(len(assets)):
                 assets[i].state = states[i]
                         
-            view = BaseView(states[0].epoch,assets,"horizontal")
-            notice = RequestMessage("view",view)
+            notice = BaseView(states[0].epoch,assets,"horizontal")
+            notice = RequestMessage("notice",notice)
             message = address,encoder(notice)
                             
-            logging.info("View.Horizontal:  Generated for %s" % address)
+            logging.info("Notice.Horizontal:  Generated for %s" % address)

@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   12 February 2013
 
 Purpose:    
 """
@@ -43,7 +43,7 @@ import tornado.websocket
 #
 __version__ = "0.1"#current version [major.minor]
 
-VIEW_ADDRESS = "Kepler.View.{!s}"
+VIEW_ADDRESS = "Kepler.Notice.{!s}"
 #
 ####################
 
@@ -77,7 +77,7 @@ class ZMQWebSocket(tornado.websocket.WebSocketHandler):
 
 def main():
     app = tornado.web.Application([(r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "./view/service/"}),
-                                   (r"/view/(.*)",ZMQWebSocket)])
+                                   (r"/notice/(.*)",ZMQWebSocket)])
     app.listen(8080)
     
 if __name__ == '__main__':

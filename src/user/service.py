@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   11 February 2013
+Modified:   12 February 2013
 
 Purpose:    
 """
@@ -29,7 +29,7 @@ from clock.epoch import routine as epoch
 from space.state import routine as state
 from ground.status import routine as status
 from space.state.routine import transform,interpolate
-from view import routine as view
+from view.notice import routine as notice
 from space import Spacecraft
 from clock.epoch import EpochState
 from ground.status import BaseStatus
@@ -55,7 +55,7 @@ EARTH_GRAVITION = 398600.4
 EPOCH_ADDRESS = "Kepler.Epoch"
 STATE_ADDRESS = "Kepler.{name!s}.State"
 STATUS_ADDRESS = "Kepler.{name!s}.Status"
-VIEW_ADDRESS = "Kepler.View.{!s}"
+NOTICE_ADDRESS = "Kepler.Notice.{!s}"
 
 ACCEPT_MARGIN = timedelta(seconds=0)
 INTERPOLATE_MARGIN = timedelta(seconds=60)
@@ -126,14 +126,14 @@ class UserSegment(object):
         point = GeographicState(datetime(2010,1,1),0.0,0.0,0.0)
         
         publish_view = socket.publish(cls.view_socket)
-        view_local = view.horizontal(cls.spacecraft,VIEW_ADDRESS.format("Horizontal"),publish_view)
+        view_local = notice.horizontal(cls.spacecraft,NOTICE_ADDRESS.format("Horizontal"),publish_view)
         merge_tasks_local = control.merge(cls.tasks,view_local)
         horizontal_transform = transform.geographic2horizontal(point,merge_tasks_local)
-        view_global2d = view.geographic(cls.spacecraft,VIEW_ADDRESS.format("Geographic"),publish_view)
+        view_global2d = notice.geographic(cls.spacecraft,NOTICE_ADDRESS.format("Geographic"),publish_view)
         merge_tasks_global2d = control.merge(cls.tasks,view_global2d)
         split_views_2d = control.split(None,[merge_tasks_global2d,horizontal_transform])
         geographic_transform = transform.inertial2geographic(split_views_2d)
-        view_global3d = view.inertial(cls.spacecraft,VIEW_ADDRESS.format("Inertial"),publish_view)
+        view_global3d = notice.inertial(cls.spacecraft,NOTICE_ADDRESS.format("Inertial"),publish_view)
         merge_tasks3d = control.merge(cls.tasks,view_global3d)
         split_views = control.split(None,[merge_tasks3d,geographic_transform])
         

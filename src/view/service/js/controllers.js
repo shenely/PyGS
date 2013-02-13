@@ -68,7 +68,7 @@ function EarthControl( $scope, $element, inertial ) {
     
     $scope.mesh = new THREE.Mesh(geometry, material);
     
-    inertial.epoch(function (epoch) {        
+    inertial.epoch(function (epoch) {
         texture.needsUpdate = true;
     });
 }
@@ -111,8 +111,9 @@ function BackgroundControl( $scope, $element ) {
         context.clearRect(0,0,$scope.width,$scope.height);
         
         canvas.selectAll("canvas")
-           .sort(function(a,b) { return a - b; })
-           .each(function(d,i) { context.drawImage(this,0,0); });
+            .filter(function(d,i) { return d != undefined ? d.visible : null; })
+            .sort(function(a,b) { return a.z - b.z; })
+            .each(function(d,i) { context.drawImage(this,0,0); });
         
         $scope.$parent.redraw();
     };
@@ -130,7 +131,8 @@ function ForegroundControl( $scope, $element ) {
         context.clearRect(0,0,$scope.width,$scope.height);
         
         canvas.selectAll("canvas")
-           .sort(function(a,b) { return a - b; })
+           .filter(function(d,i) { return d != undefined ? d.visible : null; })
+           .sort(function(a,b) { return a.z - b.z; })
            .each(function(d,i) { context.drawImage(this,0,0); });
         
         $scope.$parent.redraw();
@@ -139,7 +141,7 @@ function ForegroundControl( $scope, $element ) {
 
 function SeaControl( $scope, $element ) {
     var canvas = d3.select($element[0])
-            .datum(-1)
+            .datum({ z: -1, visible: true })
             .attr("width", $scope.width)
             .attr("height", $scope.height)
             .node(),
@@ -165,7 +167,7 @@ function SeaControl( $scope, $element ) {
 function LandControl( $scope, $element, world ) {
     var land = null,
         canvas = d3.select($element[0])
-            .datum(-0)
+            .datum({ z: 0, visible: true })
             .attr("width", $scope.width)
             .attr("height", $scope.height)
             .node(),
@@ -203,7 +205,7 @@ function LandControl( $scope, $element, world ) {
 function CountriesControl( $scope, $element, world ) {
     var countries = null,
         canvas = d3.select($element[0])
-            .datum(1)
+            .datum({ z: 1, visible: true })
             .attr("width", $scope.width)
             .attr("height", $scope.height)
             .node(),
@@ -231,7 +233,7 @@ function CountriesControl( $scope, $element, world ) {
     
     world.success(function(d) {
         countries = topojson.mesh(d, d.objects.countries, function(a, b) { return a.id !== b.id; });
-                
+        
         $scope.setColor("rgba(0,0,0,1.0)");
     });
 }
@@ -239,7 +241,7 @@ function CountriesControl( $scope, $element, world ) {
 function GraticuleControl( $scope, $element ) {
     var graticule = d3.geo.graticule(),
         canvas = d3.select($element[0])
-            .datum(5)
+            .datum({ z: 5, visible: true })
             .attr("width", $scope.width)
             .attr("height", $scope.height)
             .node(),
@@ -275,7 +277,7 @@ function GraticuleControl( $scope, $element ) {
 
 function FootPrintControl( $scope, $element, geographic ) {
     var canvas = d3.select($element[0])
-            .datum(20)
+            .datum({ z: 20, visible: true })
             .attr("width", $scope.width)
             .attr("height", $scope.height)
             .node(),
@@ -306,9 +308,8 @@ function FootPrintControl( $scope, $element, geographic ) {
     
     geographic.assets(function(assets) {
     	assets.forEach(function(d,i) {
-            if ((d.name in feet) == false) {
-                feet[d.name] = { circle: d3.geo.circle() };
-            }
+            if ((d.name in feet) == false) { feet[d.name] = { circle: d3.geo.circle() }; }
+            
             feet[d.name].data = d;
             feet[d.name].circle.origin([ d.state.long, d.state.lat ]).angle(d.state.arc);
         });
@@ -321,7 +322,7 @@ function FootPrintControl( $scope, $element, geographic ) {
 
 function GroundTrackControl( $scope, $element, geographic ) {
     var canvas = d3.select($element[0])
-            .datum(10)
+            .datum({ z: 10, visible: true })
             .attr("width", $scope.width)
             .attr("height", $scope.height)
             .node(),
@@ -406,24 +407,37 @@ function TrailPathControl( $scope, $element, inertial ) {
 function SpaceCraftControl( $scope, $element, inertial ) {
     var color = d3.scale.category10();
     
-    var sprite = THREE.ImageUtils.loadTexture( "img/sc-sprite.png" ),
-    	material = new THREE.SpriteMaterial( { map: sprite, useScreenCoordinates: false, color: 0xffffff } );
+    var status = THREE.ImageUtils.loadTexture( "img/status-sprite.png" ),
+        state = THREE.ImageUtils.loadTexture( "img/state-sprite.png" ),
+    	material1 = new THREE.SpriteMaterial( { map: status, useScreenCoordinates: false, color: 0xffffff } ),
+    	material2 = new THREE.SpriteMaterial( { map: state, useScreenCoordinates: false, color: 0xffffff } );
     
     var spacecraft = {};
     inertial.assets(function (assets) {
     	assets.forEach(function(d,i) {
             if ((d.name in spacecraft) == false) {
-            	spacecraft[d.name] = { sprite: new THREE.Sprite( material.clone() ) };
-            	spacecraft[d.name].sprite.scale.set( 400, 400 );
+                spacecraft[d.name] = {
+                        status: new THREE.Sprite( material1.clone() ),
+                        state: new THREE.Sprite( material2.clone() ),
+                        object: new THREE.Object3D()
+                };
+
+                spacecraft[d.name].state.scale.set( 400, 400 );
+                spacecraft[d.name].state.material.color.setStyle(d.color);
                 
-                $scope.scene.add(spacecraft[d.name].sprite);
+                spacecraft[d.name].status.scale.set( 400, 400 );
+
+                spacecraft[d.name].object.add(spacecraft[d.name].state);
+                spacecraft[d.name].object.add(spacecraft[d.name].status);
+                $scope.scene.add(spacecraft[d.name].object);
+                
             }
 
             spacecraft[d.name].data = d;
-        	spacecraft[d.name].sprite.material.color.setStyle(d.status.type);
-            spacecraft[d.name].sprite.position.x = d.state.position.$matrix[0][0];
-            spacecraft[d.name].sprite.position.y = d.state.position.$matrix[0][2];
-            spacecraft[d.name].sprite.position.z = -d.state.position.$matrix[0][1];
+        	spacecraft[d.name].status.material.color.setStyle(d.status.type);
+            spacecraft[d.name].object.position.x = d.state.position.$matrix[0][0];
+            spacecraft[d.name].object.position.y = d.state.position.$matrix[0][2];
+            spacecraft[d.name].object.position.z = -d.state.position.$matrix[0][1];
         });
     });
 }
