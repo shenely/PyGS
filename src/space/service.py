@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   12 February 2013
+Modified:   14 February 2013
 
 Purpose:    
 """
@@ -24,7 +24,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
-from core.routine import control,queue,socket,sequence,database
+from core.routine import control,queue,socket,order,database
 from clock.epoch import routine as epoch
 from .state import routine as state
 from .state.routine import transform,propagate
@@ -135,12 +135,12 @@ class SpaceSegment(object):
         transform_state = transform.keplerian2inertial(format_state)
         dequeue_state = queue.get(self.queue,transform_state)
         remove_state = queue.get(self.queue)
-        after_upper = sequence.after(self.physics,PUBLISH_MARGIN,None,dequeue_state)
-        after_lower = sequence.after(self.physics,REMOVE_MARGIN,after_upper,remove_state)
+        after_upper = order.after(self.physics,PUBLISH_MARGIN,None,dequeue_state)
+        after_lower = order.after(self.physics,REMOVE_MARGIN,after_upper,remove_state)
         inspect_state = queue.peek(self.queue,after_lower)
         enqueue_state = queue.put(self.queue,inspect_state)
         iterate_state = propagate.kepler(elements,STEP_SIZE,enqueue_state)
-        before_state = sequence.before(elements,ITERATE_MARGIN,inspect_state,iterate_state)
+        before_state = order.before(elements,ITERATE_MARGIN,inspect_state,iterate_state)
         
         self.tasks.append(before_state)
 
@@ -150,7 +150,7 @@ class SpaceSegment(object):
         accept_cmd = acknowledge.accept(format_ack)
         enqueue_cmd = queue.put(self.cmd_queue,accept_cmd)
         reject_cmd = acknowledge.reject(format_ack)
-        after_epoch = sequence.after(self.physics,COMMAND_MARGIN,enqueue_cmd,reject_cmd)
+        after_epoch = order.after(self.physics,COMMAND_MARGIN,enqueue_cmd,reject_cmd)
         parse_cmd = command.parse(after_epoch)
         subscribe_cmd = socket.subscribe(self.cmd_socket,parse_cmd)
         
@@ -163,8 +163,8 @@ class SpaceSegment(object):
         execute_cmd = command.execute(elements,format_result)
         dequeue_cmd = queue.get(self.cmd_queue,execute_cmd)
         remove_cmd = queue.get(self.cmd_queue)
-        after_state = sequence.after(elements,EXECUTE_MARGIN,None,dequeue_cmd)
-        before_state = sequence.before(elements,EXECUTE_MARGIN,remove_cmd,after_state)
+        after_state = order.after(elements,EXECUTE_MARGIN,None,dequeue_cmd)
+        before_state = order.before(elements,EXECUTE_MARGIN,remove_cmd,after_state)
         inspect_cmd = queue.peek(self.cmd_queue,before_state)
         
         self.tasks.append(inspect_cmd)

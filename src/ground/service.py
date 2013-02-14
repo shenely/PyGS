@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   11 February 2013
+Modified:   14 February 2013
 
 Purpose:    
 """
@@ -23,7 +23,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
-from core.routine import control,queue,socket,sequence
+from core.routine import control,queue,socket,order
 from clock.epoch import routine as epoch
 from .command import routine as command
 from .status import routine as status
@@ -111,8 +111,8 @@ class GroundSegment(object):
         format_cmd = command.format(COMMAND_ADDRESS.format(name=self.name),request_cmd)
         dequeue_cmd = queue.get(self.cmd_queue,format_cmd)
         remove_cmd = queue.get(self.cmd_queue)
-        after_system = sequence.after(self.physics,COMMAND_MARGIN,None,dequeue_cmd)
-        before_system = sequence.before(self.physics,DISCARD_MARGIN,remove_cmd,after_system)
+        after_system = order.after(self.physics,COMMAND_MARGIN,None,dequeue_cmd)
+        before_system = order.before(self.physics,DISCARD_MARGIN,remove_cmd,after_system)
         inspect_cmd = queue.peek(self.cmd_queue,before_system)
         
         self.tasks.append(inspect_cmd)
@@ -122,8 +122,8 @@ class GroundSegment(object):
         format_status = status.format(STATUS_ADDRESS.format(name=self.name),publish_status)
         dequeue_status = queue.get(self.status_queue,format_status)
         remove_status = queue.get(self.status_queue)
-        after_system = sequence.after(self.physics,STATUS_MARGIN,None,dequeue_status)
-        before_system = sequence.before(self.physics,DISCARD_MARGIN,remove_status,after_system)
+        after_system = order.after(self.physics,STATUS_MARGIN,None,dequeue_status)
+        before_system = order.before(self.physics,DISCARD_MARGIN,remove_status,after_system)
         inspect_status = queue.peek(self.status_queue,before_system)
         
         self.tasks.append(inspect_status)

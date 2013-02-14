@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   12 February 2013
 
 Provides routines for controlling the flow of data.
 
@@ -20,6 +20,7 @@ block -- Block message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-02-12                    1.1         Split and merge accept nulls
 
 """
 
@@ -52,7 +53,7 @@ __all__ = ["split",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 
@@ -81,7 +82,7 @@ def split(ipipe,opipes=None):
     #configuration validation
     assert isinstance(ipipe,types.GeneratorType) or ipipe is None
     assert isinstance(opipes,types.ListType)
-    assert filter(lambda opipe:isinstance(opipe,types.GeneratorType),opipes) or len(opipes) == 0
+    assert filter(lambda opipe:isinstance(opipe,types.GeneratorType) or opipe is None,opipes) or len(opipes) == 0
     
     message = None
     
@@ -130,7 +131,7 @@ def merge(ipipes,opipe=None):
     
     #configuration validation
     assert isinstance(ipipes,types.ListType)
-    assert filter(lambda ipipe:isinstance(ipipe,types.GeneratorType),ipipes) or len(ipipes) == 0
+    assert filter(lambda ipipe:isinstance(ipipe,types.GeneratorType) or ipipe is None,ipipes) or len(ipipes) == 0
     assert isinstance(opipe,types.GeneratorType) or opipe is None
     
     count = 0

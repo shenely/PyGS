@@ -1,0 +1,68 @@
+{
+  "asset": [
+    {
+      "_id": { "$oid", "guid" },
+      "type": "space",
+      "name": "Aqua",
+      "color": "#0ff"
+    },
+    {
+      "_id": { "$oid", "guid" },
+      "type": "ground",
+      "name": "Svalbard",
+      "color": "#f00"
+    }
+  ],
+
+  "ephemeris": [
+    {
+      "_id": { "$oid", "guid" },
+      "asset": { "$oid", "guid" },
+      "type": "inertial|geographic|chebyshev",
+      "epoch": {
+        "start": { "$date": 0 },
+        "end":  { "$date": 0 },
+       },
+      "states": [
+         { "$oid", "guid" },
+         { "$oid", "guid" }
+      ]
+    }
+  ],
+
+  "state": [
+    {
+      "_id": { "$oid", "guid" },
+      "asset": { "$oid", "guid" },
+      "type": "inertial",
+      "epoch": { "$date": 0 },
+      "position": { "$matrix": [ 0.0, 0.0, 0.0 ] },
+      "velocity": { "$matrix": [ 0.0, 0.0, 0.0 ] },
+      "units": {
+        "time": "s",
+        "space": "km"
+      }
+    },
+    {
+      "_id": { "$oid", "guid" },
+      "asset": { "$oid", "guid" },
+      "type": "geographic",
+      "epoch": { "$date": 0 },
+      "arc": 0.0,
+      "long": 0.0,
+      "lat": 0.0,
+      "units": {
+        "angle": "deg"
+      }
+    },
+    {
+      "_id": { "$oid", "guid" },
+      "type": "chebyshev",
+      "order": 0,
+      "coeff": { "$matrix": [ 0.0, 0.0, 0.0 ] },
+      "units": {
+        "space": "km"
+      }
+    }
+  ]
+}

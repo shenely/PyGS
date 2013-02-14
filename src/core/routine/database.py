@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   12 February 2013
 
 Provides routines for accessing a database.
 
@@ -19,6 +19,7 @@ find -- Find document
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-02-12                    1.1         Changed save to insert
 
 """
 
@@ -51,7 +52,7 @@ __all__ = ["save",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 
@@ -99,9 +100,9 @@ def save(collection,pipeline=None):
             #input validation
             assert isinstance(document,dict)
             
-            document.id = collection.save(document)
+            document.id = collection.insert(document)
             
-            logging.info("Database.Save:  Saved document with ID %s" % document.id)
+            logging.info("Database.Save:  Saved document(s)")
 
 @coroutine
 def find(collection,pipeline=None):
@@ -148,4 +149,4 @@ def find(collection,pipeline=None):
             
             documents = collection.find(query)
             
-            logging.info("Database.Find:  Found %d documents" % len(documents))
+            logging.info("Database.Find:  Found document(s)")

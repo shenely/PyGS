@@ -1,12 +1,12 @@
 #!/usr/bin/env python2.7
 
-"""Sequence routines
+"""Order routines
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   14 February 2013
 
-Provides routines for sequencing tasks.
+Provides routines for order tasks.
 
 Functions:
 before  -- Before reference
@@ -20,6 +20,7 @@ around  -- Around reference
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-02-14    shenely         1.1         Changed module name to order
 
 """
 
@@ -54,7 +55,7 @@ __all__ = ["before",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 
@@ -98,12 +99,12 @@ def before(reference,margin,istrue=None,isfalse=None):
     
     message,pipeline = None,None
     
-    logging.debug("Epoch.Before:  Starting")
+    logging.debug("Order.Before:  Starting")
     while True:
         try:
             message = yield message,pipeline
         except GeneratorExit:
-            logging.warn("Epoch.Before:  Stopping")
+            logging.warn("Order.Before:  Stopping")
             
             #close downstream routines (if they exists)
             pipeline.close() if pipeline is not None else None
@@ -117,7 +118,7 @@ def before(reference,margin,istrue=None,isfalse=None):
                        if (message.epoch < reference.epoch - margin) \
                        else isfalse
                     
-            logging.info("Epoch.Before:  %s", pipeline is istrue)
+            logging.info("Order.Before:  %s", pipeline is istrue)
     
 @coroutine
 def after(reference,margin,istrue=None,isfalse=None):
@@ -158,12 +159,12 @@ def after(reference,margin,istrue=None,isfalse=None):
     
     message,pipeline = None,None
     
-    logging.debug("Epoch.After:  Starting")
+    logging.debug("Order.After:  Starting")
     while True:
         try:
             message = yield message,pipeline
         except GeneratorExit:
-            logging.warn("Epoch.After:  Stopping")
+            logging.warn("Order.After:  Stopping")
             
             #close downstream routines (if they exists)
             pipeline.close() if pipeline is not None else None
@@ -177,7 +178,7 @@ def after(reference,margin,istrue=None,isfalse=None):
                        if (message.epoch > reference.epoch + margin) \
                        else isfalse
                     
-            logging.info("Epoch.After:  %s", pipeline is istrue)
+            logging.info("Order.After:  %s", pipeline is istrue)
 
 @coroutine
 def around(reference,margin,istrue=None,isfalse=None):
@@ -218,12 +219,12 @@ def around(reference,margin,istrue=None,isfalse=None):
     
     message,pipeline = None,None
     
-    logging.debug("Epoch.Around:  Starting")
+    logging.debug("Order.Around:  Starting")
     while True:
         try:
             message = yield message,pipeline
         except GeneratorExit:
-            logging.warn("Epoch.Around:  Stopping")
+            logging.warn("Order.Around:  Stopping")
             
             #close downstream routines (if they exists)
             pipeline.close() if pipeline is not None else None
@@ -238,4 +239,4 @@ def around(reference,margin,istrue=None,isfalse=None):
                           (message.epoch > reference.epoch - margin) \
                        else isfalse
                     
-            logging.info("Epoch.Around:  %s", pipeline is istrue)
+            logging.info("Order.Around:  %s", pipeline is istrue)

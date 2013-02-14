@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   12 February 2013
+Modified:   14 February 2013
 
 Purpose:    
 """
@@ -24,7 +24,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
-from core.routine import control,queue,socket,sequence
+from core.routine import control,queue,socket,order
 from clock.epoch import routine as epoch
 from space.state import routine as state
 from ground.status import routine as status
@@ -106,7 +106,7 @@ class UserSegment(object):
             self.task_update_epoch()
             self.task_generate_view()
         
-        self.task_update_state()
+        self.task_subscribe_state()
         self.task_subscribe_status()
         self.task_interpolate_state(spacecraft.state)
         self.task_update_status(spacecraft.status)
@@ -139,9 +139,9 @@ class UserSegment(object):
         
         cls.view_task = split_views
 
-    def task_update_state(self):
+    def task_subscribe_state(self):
         enqueue_state = queue.put(self.state_queue)
-        after_system = sequence.after(self.physics,ACCEPT_MARGIN,enqueue_state)
+        after_system = order.after(self.physics,ACCEPT_MARGIN,enqueue_state)
         parse_state = state.parse(after_system)
         subscribe_state = socket.subscribe(self.state_socket,parse_state)
         
@@ -150,7 +150,7 @@ class UserSegment(object):
 
     def task_subscribe_status(self):
         enqueue_status = queue.put(self.status_queue)
-        after_system = sequence.after(self.physics,ACCEPT_MARGIN,enqueue_status)
+        after_system = order.after(self.physics,ACCEPT_MARGIN,enqueue_status)
         parse_status = status.parse(after_system)
         subscribe_status = socket.subscribe(self.status_socket,parse_status)
         
@@ -163,8 +163,8 @@ class UserSegment(object):
         dequeue_state = queue.get(self.state_queue,interpolate_state)
         block_state = control.block(interpolate_state)
         remove_state = queue.get(self.state_queue,block_state)
-        after_upper = sequence.after(self.physics,INTERPOLATE_MARGIN,block_state,dequeue_state)
-        after_lower = sequence.after(self.physics,REMOVE_MARGIN,after_upper,remove_state)
+        after_upper = order.after(self.physics,INTERPOLATE_MARGIN,block_state,dequeue_state)
+        after_lower = order.after(self.physics,REMOVE_MARGIN,after_upper,remove_state)
         inspect_state = queue.peek(self.state_queue,after_lower)
         
         self.tasks.append(inspect_state)
@@ -173,8 +173,8 @@ class UserSegment(object):
         update_status = status.update(color)
         dequeue_status = queue.get(self.status_queue,update_status)
         remove_status = queue.get(self.status_queue)
-        after_upper = sequence.after(self.physics,STATUS_MARGIN,None,dequeue_status)
-        after_lower = sequence.after(self.physics,REMOVE_MARGIN,after_upper,remove_status)
+        after_upper = order.after(self.physics,STATUS_MARGIN,None,dequeue_status)
+        after_lower = order.after(self.physics,REMOVE_MARGIN,after_upper,remove_status)
         inspect_status = queue.peek(self.status_queue,after_lower)
         
         self.tasks.append(inspect_status)
