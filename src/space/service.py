@@ -24,6 +24,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
+from core.fluent import service
 from core.routine import control,queue,socket,order,database
 from clock.epoch import routine as epoch
 from .state import routine as state
@@ -31,7 +32,6 @@ from .state.routine import transform,propagate
 from ground.command import routine as command
 from .acknowledge import routine as acknowledge
 from .result import routine as result
-
 from clock.epoch import EpochState
 from .state import KeplerianState
 #
@@ -196,22 +196,22 @@ class SpaceSegment(object):
 def main():
     """Main Function"""
     
-    epoch = datetime(2010,1,1,tzinfo=utc)
-    aqua = KeplerianState(epoch,
+    clock = EpochState(datetime(2010,1,1,tzinfo=utc))
+    aqua = KeplerianState(clock.epoch,
                           7077.0,
                           0.0 * DEG_TO_RAD,
                           0.0012,
                           90.0 * DEG_TO_RAD,
                           98.2 * DEG_TO_RAD,
                           22.5 * DEG_TO_RAD)
-    aura = KeplerianState(epoch,
+    aura = KeplerianState(clock.epoch,
                           7077.0,
                           315.0 * DEG_TO_RAD,
                           0.0012,
                           90.0 * DEG_TO_RAD,
                           98.2 * DEG_TO_RAD,
                           22.5 * DEG_TO_RAD)
-    terra = KeplerianState(epoch,
+    terra = KeplerianState(clock.epoch,
                            7077.0,
                            45.0 * DEG_TO_RAD,
                            0.0012,
@@ -219,9 +219,97 @@ def main():
                            98.2 * DEG_TO_RAD,
                            157.5 * DEG_TO_RAD)
     
+#    scheduler = Scheduler()
+#    context = zmq.Context(1)
+#    
+#    #connection = MongoClient()
+#    #database = connection["Kepler"]
+#    
+#    epoch_socket = context.socket(zmq.SUB)
+#    epoch_socket.connect("tcp://localhost:5556")
+#    epoch_socket.setsockopt(zmq.SUBSCRIBE,EPOCH_ADDRESS)
+#    
+#    state_socket = context.socket(zmq.PUB)
+#    state_socket.connect("tcp://localhost:5555")
+#    acknowledge_socket = state_socket
+#
+#    command_socket = context.socket(zmq.SUB)
+#    command_socket.connect("tcp://localhost:5556")
+#    command_socket.setsockopt(zmq.SUBSCRIBE,COMMAND_ADDRESS.format(name="Aqua"))
+#
+#    state_queue = PriorityQueue()
+#    command_queue = PriorityQueue()
+    
+#    asset_socket = context.socket(zmq.SUB)
+#    asset_socket.connect("tcp://localhost:5556")
+#    asset_socket.setsockopt(zmq.SUBSCRIBE,ASSET_ADDRESS)
+#    
+#    ephem_socket = context.socket(zmq.SUB)
+#    ephem_socket.connect("tcp://localhost:5556")
+#    ephem_socket.setsockopt(zmq.SUBSCRIBE,EPHEMERIS_ADDRESS)
+    
     q = SpaceSegment("Aqua",aqua)
     r = SpaceSegment("Aura",aura)
     t = SpaceSegment("Terra",terra)
+    
+#    segment = service("Space segment").\
+#        task("Receive epoch").\
+#            source("Subscribe epoch",socket.subscribe,epoch_socket).\
+#            sequence("Parse epoch",epoch.parse).\
+#            sequence("Update epoch",epoch.update,clock).\
+#            split("Split assets",["Iterate state","Execute command"]).\
+#        task("Iterate state").\
+#            source("Receive epoch").\
+#            choice("Before state",order.before,aqua,ITERATE_MARGIN).\
+#                istrue().\
+#                    sequence("Inspect state",queue.peek,state_queue).\
+#                    choice("After lower",order.after,clock,REMOVE_MARGIN).\
+#                        istrue().\
+#                            choice("After upper",order.after,clock,PUBLISH_MARGIN).\
+#                                istrue().\
+#                                    sink("Drop task").\
+#                                isfalse().\
+#                                    sequence("Dequeue state",queue.get,state_queue).\
+#                                    sequence("Transform state",transform.keplerian2inertial).\
+#                                    sequence("Format state",state.format,STATE_ADDRESS.format(name="Aqua")).\
+#                                    sink("Publish state",socket.publish,state_socket).\
+#                        isfalse().\
+#                            sink("Remove state",queue.get,state_queue).\
+#                isfalse().\
+#                    sequence("Propagate state",propagate.kepler,aqua,STEP_SIZE).\
+#                    sequence("Enqueue state",queue.put,state_queue).\
+#                    sequence("Inspect state").\
+#        task("Receive command").\
+#            source("Subscribe command",socket.subscribe,command_socket).\
+#            sequence("Parse command",command.parse).\
+#            choice("After epoch",order.after,clock,COMMAND_MARGIN).\
+#                istrue().\
+#                    sequence("Enqueue command",queue.put,command_queue).\
+#                    sequence("Accept command",acknowledge.accept).\
+#                    sequence("Format acknowledge",acknowledge.format,ACKNOWLEDGE_ADDRESS.format(name="Aqua")).\
+#                    sink("Publish acknowledge",socket.publish,acknowledge_socket).\
+#                isfalse().\
+#                    sequence("Reject command",acknowledge.reject).\
+#                    sequence("Format acknowledge").\
+#        task("Execute command").\
+#            source("Receive epoch").\
+#            sequence("Inspect command",queue.peek,command_queue).\
+#            choice("Before state",order.before,aqua,EXECUTE_MARGIN).\
+#                istrue().\
+#                    sink("Remove command",queue.get,command_queue).\
+#                isfalse().\
+#                    choice("After state",order.after,aqua,EXECUTE_MARGIN).\
+#                        istrue().\
+#                            sink("Drop task").\
+#                        isfalse().\
+#                            sequence("Dequeue command",queue.get,command_queue).\
+#                            sequence("Execute command",command.execute,aqua).\
+#                            sequence("Format result",result.format,RESULT_ADDRESS.format(name="Aqua")).\
+#                            sink("Publish result",socket.publish,socket).\
+#        build()
+#            
+#    scheduler.handler(epoch_socket,segment.tasks["Receive epoch"])
+#    scheduler.handler(command_socket,segment.tasks["Receive command"])
     
     #scheduler.start()
     

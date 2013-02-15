@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 February 2013
+Modified:   14 February 2013
 
 Purpose:    
 """
@@ -22,7 +22,9 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
+from core.fluent import service
 from core.routine import socket
+from .epoch import EpochState
 from .epoch import routine as epoch
 from . import routine
 #
@@ -46,33 +48,26 @@ EPOCH_SCALE = 60
 #
 ####################
 
-
-class ClockSegment(object):
-    scheduler = Scheduler()
-    context = zmq.Context(1)
-    
-    def __init__(self,epoch):        
-        self.epoch = epoch
-        
-        self.socket = self.context.socket(zmq.PUB)
-        self.socket.connect("tcp://localhost:5555")
-        
-        self.task_update_epoch()
-
-    def task_update_epoch(self):
-        publish_epoch = socket.publish(self.socket)
-        format_epoch = epoch.format(EPOCH_ADDRESS,publish_epoch)
-        iterate_epoch = routine.continuous(self.epoch,EPOCH_SCALE,format_epoch)
-        
-        self.epoch_task = iterate_epoch
-        self.scheduler.periodic(self.epoch_task,200).start()
-
 def main():
     """Main Function"""
     
-    epoch = datetime(2010,1,1,tzinfo=utc)
+    scheduler = Scheduler()
+    context = zmq.Context(1)
+    
+    clock = EpochState(datetime(2010,1,1,tzinfo=utc))
         
-    c = ClockSegment(epoch)
+    epoch_socket = context.socket(zmq.PUB)
+    epoch_socket.connect("tcp://localhost:5555")
+        
+    segment = service("Clock segment").\
+        task("Send epoch").\
+            source("Iterate epoch",routine.continuous,clock.epoch,EPOCH_SCALE).\
+            sequence("Format epoch",epoch.format,EPOCH_ADDRESS).\
+            sink("Publish epoch",socket.publish,epoch_socket).\
+        build()
+    
+    scheduler.periodic(segment.tasks["Send epoch"],200).start()
+    
             
     #scheduler.start()
 

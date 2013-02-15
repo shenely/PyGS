@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   13 February 2013
+Modified:   14 February 2013
 
 Provides a fluent interfaces to routines.
 
@@ -17,6 +17,7 @@ Classes:
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-13    shenely         1.0         Initial revision
+2013-02-14                    1.1         Needs of clock segment met
 
 """
 
@@ -25,10 +26,12 @@ Date          Author          Version     Description
 # Import section #
 #
 #Built-in libraries
+import types
 
 #External libraries
 
 #Internal libraries
+from core.routine import control
 #
 ##################
 
@@ -36,7 +39,7 @@ Date          Author          Version     Description
 ##################
 # Export section #
 #
-__all__ = []
+__all__ = ["service"]
 #
 ##################
 
@@ -44,7 +47,7 @@ __all__ = []
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 
@@ -53,7 +56,7 @@ __version__ = "1.0"#current version [major.minor]
 
 IN ORDER TO configure a service to execute tasks
 AS A user
-I WANT TO a fluent interface
+I WANT TO build tasks with a fluent interface
 
 """
 
@@ -92,7 +95,7 @@ THEN the task name SHALL be unique to the service
 
 Scenario 3:  Source sequence creation
 
-WHEN the current context IS the current task task
+WHEN the current context IS the current task
     AND a source sequence IS added to the task
     AND a sequence name IS provided
     AND a routine IS provided
@@ -285,3 +288,451 @@ WHEN the current context is sealed
 THEN the current context SHALL be the parent of the current context
     AND the current context SHALL be sealed
 """
+
+class Service:
+    def __init__(self,name):
+        self.name = name
+        
+        self.tasks = {}
+        self.context = self
+    
+    def task(self,name):
+        task = Task(name,service=self)
+        
+        self.context = task
+        
+        return self
+    
+    def source(self,name,routine=None,*args,**kwargs):
+        if routine is not None:
+            Source(name,routine,self.context,*args,**kwargs)
+        else:
+            if self.context.name in self.tasks[name].dstream:
+                self.tasks[name].dstream[self.context.name].dstream[self.context.name] = self.context
+                self.context.ustream[name] = self.tasks[name].dstream[self.context.name]
+                
+                self.context = self.tasks[name].dstream[self.context.name]
+            elif name in self.context.task.pipes and\
+                 self.context.task.pipes[name].sealed:
+                self.context.dstream[name] = self.context.task.pipes[name]
+                self.context.task.pipes[name].ustream[name] = self.context
+                
+                self.context = self.context.task.pipes[name]
+                self.context.seal()
+        
+        return self
+    
+    def sequence(self,name,routine=None,*args,**kwargs):
+        if routine is not None:
+            Sequence(name,routine,self.context.task,*args,**kwargs)
+        else:
+            if name in self.context.task.pipes and\
+               self.context.task.pipes[name].sealed:
+                self.context.dstream[name] = self.context.task.pipes[name]
+                self.context.task.pipes[name].ustream[name] = self.context
+                
+                self.context = self.context.task.pipes[name]
+                self.context.seal() 
+        
+        return self
+    
+    def sink(self,name,routine=None,*args,**kwargs):
+        if name in self.context.task.pipes:
+            self.context.dstream[name] = self.context.task.pipes[name]
+            self.context.task.pipes[name].ustream[self.context.name] = self.context
+            
+            self.context = self.context.task.pipes[name]
+            self.context.seal()
+        else:
+            Sink(name,routine,self.context.task,*args,**kwargs)
+        
+        return self
+    
+    def choice(self,name,routine,*args,**kwargs):
+        Choice(name,routine,self.context.task,*args,**kwargs)
+        
+        return self
+    
+    def istrue(self):
+        IsTrue(self.context)
+        
+        return self
+    
+    def isfalse(self):
+        IsFalse(self.context)
+        
+        return self
+    
+    def split(self,name,dstream=None):
+        Split(name,dstream,self.context.task)
+        
+        return self
+
+    def build(self):
+        for name in self.tasks:
+            self.tasks[name] = self.tasks[name].build()
+        else:
+            return self
+    
+class Task:
+    def __init__(self,name,service):
+        self.name = name
+        
+        self.service = service
+        service.tasks[name] = self
+        
+        self.pipes = {}
+        
+        self.ustream = {}
+        self.dstream = {}
+
+    def build(self):
+        for name in self.pipes:
+            if isinstance(self.pipes[name],Source) and\
+               len(self.pipes[name].ustream) == 0 and\
+               self.pipes[name].sealed:
+                return self.pipes[name].build()
+        
+class Source:
+    def __init__(self,name,routine,task,*args,**kwargs):
+        self.name = name
+        self.routine = routine
+        self.args = args
+        self.kwargs = kwargs
+        
+        self.ustream = {}
+        self.dstream = {}
+        
+        self.service = task.service
+        self.service.context = self
+        
+        self.task = task
+        self.task.pipes[name] = self
+        
+        self.sealed = False
+        self.built = False
+    
+    def seal(self):
+        self.service.context = self
+        
+        for name in self.dstream:
+            if not self.dstream[name].sealed:
+                break
+        else:
+            self.sealed = True
+            
+            #self.service.context = self.task
+
+    def build(self):
+        if self.sealed:
+            if not self.built:
+                assert len(self.dstream) == 1
+                
+                for name in self.dstream:
+                    self.dstream[name] = self.dstream[name].build()
+                else:
+                    self.routine = self.routine(pipeline=self.dstream[name],
+                                                *self.args,**self.kwargs)
+                    
+                    self.built = True
+                    
+            return self.routine
+            
+
+class Sequence:
+    def __init__(self,name,routine,task,*args,**kwargs):
+        self.name = name
+        self.routine = routine
+        self.args = args
+        self.kwargs = kwargs
+        
+        self.ustream = {}
+        self.dstream = {}
+        
+        if isinstance(task.service.context.name,types.ListType):pass
+        else:
+            self.ustream[task.service.context.name] = task.service.context
+        
+        task.service.context.dstream[name] = self
+        
+        self.service = task.service
+        self.service.context = self
+        
+        self.task = task
+        self.task.pipes[name] = self
+        
+        self.sealed = False
+        self.built = False
+    
+    def seal(self):
+        self.service.context = self
+        
+        for name in self.dstream:
+            if not self.dstream[name].sealed:
+                break
+        else:
+            self.sealed = True
+        
+            for name in self.ustream:
+                self.ustream[name].seal()
+
+    def build(self):
+        if self.sealed:
+            if not self.built:
+                assert len(self.dstream) == 1
+                
+                for name in self.dstream:
+                    self.dstream[name] = self.dstream[name].build()
+                else:
+                    self.routine = self.routine(pipeline=self.dstream[name],
+                                                *self.args,**self.kwargs)
+                    
+                    self.built = True
+                    
+            return self.routine
+
+class Sink:
+    def __init__(self,name,routine,task,*args,**kwargs):
+        self.name = name
+        self.routine = routine
+        self.args = args
+        self.kwargs = kwargs
+        
+        self.ustream = {}
+        self.dstream = {}
+        
+        
+        if isinstance(task.service.context.name,types.ListType):pass
+        else:
+            self.ustream[task.service.context.name] = task.service.context
+        
+        task.service.context.dstream[name] = self
+        
+        self.service = task.service
+        self.service.context = self
+        
+        self.task = task
+        self.task.pipes[name] = self
+        
+        self.sealed = False
+        self.built = False
+        
+        self.seal()
+    
+    def seal(self):
+        self.sealed = True
+        
+        for name in self.ustream:
+            self.ustream[name].seal()
+
+    def build(self):
+        if self.sealed:
+            if not self.built:
+                assert len(self.dstream) == 0
+                
+                if self.routine is not None:
+                    self.routine = self.routine(*self.args,**self.kwargs)
+                    
+                self.built = True
+                    
+            return self.routine
+
+class Choice:
+    def __init__(self,name,routine,task,*args,**kwargs):
+        self.name = name
+        self.routine = routine
+        self.args = args
+        self.kwargs = kwargs
+        
+        self.ustream = {}
+        self.dstream = {}
+        
+        if isinstance(task.service.context.name,types.ListType):pass
+        else:
+            self.ustream[task.service.context.name] = task.service.context
+        
+        task.service.context.dstream[name] = self
+        
+        self.service = task.service
+        self.service.context = self
+        
+        self.task = task
+        self.task.pipes[name] = self
+        
+        self.sealed = False
+        self.built = False
+    
+    def seal(self):
+        self.service.context = self
+        
+        if "istrue" in self.dstream and\
+           "isfalse" in self.dstream and\
+           self.dstream["istrue"].sealed and\
+           self.dstream["isfalse"].sealed:
+            self.sealed = True
+            
+            for name in self.ustream:
+                self.ustream[name].seal()
+
+    def build(self):
+        if self.sealed:
+            if not self.built:
+                assert len(self.dstream) == 2
+                
+                if self.dstream["istrue"].sealed and\
+                   self.dstream["isfalse"].sealed:
+                    istrue = self.dstream["istrue"].build()
+                    isfalse = self.dstream["isfalse"].build()
+                    
+                    self.routine = self.routine(istrue=istrue,isfalse=isfalse,
+                                                *self.args,**self.kwargs)
+                    
+                self.built = True
+                    
+            return self.routine
+
+class IsTrue:
+    def __init__(self,choice):
+        self.choice = choice
+        choice.dstream["istrue"] = self
+        
+        self.name = choice.name
+        
+        self.dstream = {}
+        
+        self.service = choice.service
+        self.service.context = self
+        
+        self.task = choice.task
+        
+        self.sealed = False
+        self.built = False
+    
+    def seal(self):
+        self.service.context = self
+        
+        for name in self.dstream:
+            if not self.dstream[name].sealed:
+                break
+        else:
+            self.sealed = True
+            
+            self.choice.seal()
+
+    def build(self):
+        if self.sealed:
+            if not self.built:
+                assert len(self.dstream) == 1
+                
+                for name in self.dstream:
+                    self.dstream[name] = self.dstream[name].build()
+                else:
+                    self.routine = self.dstream[name]
+                    
+                    self.built = True
+                    
+            return self.routine
+        
+class IsFalse:
+    def __init__(self,choice):
+        self.choice = choice
+        choice.dstream["isfalse"] = self
+        
+        self.name = choice.name
+        
+        self.dstream = {}
+        
+        self.service = choice.service
+        self.service.context = self
+        
+        self.task = choice.task
+        
+        self.sealed = False
+        self.built = False
+    
+    def seal(self):
+        self.service.context = self
+        
+        for name in self.dstream:
+            if not self.dstream[name].sealed:
+                break
+        else:
+            self.sealed = True
+            
+            self.choice.seal()
+
+    def build(self):
+        if self.sealed:
+            if not self.built:
+                assert len(self.dstream) == 1
+                
+                for name in self.dstream:
+                    self.dstream[name] = self.dstream[name].build()
+                else:
+                    self.routine = self.dstream[name]
+                    
+                    self.built = True
+                    
+            return self.routine
+
+class Split:
+    def __init__(self,name,dstream=None,task=None):
+        self.name = name
+        self.routine = control.split
+        
+        self.ustream = {}
+        self.dstream = {}
+        
+        self.ustream[task.service.context.name] = task.service.context
+        task.service.context.dstream[name] = self
+        
+        if dstream is not None:
+            for name in dstream:
+                task.dstream[name] = self            
+        
+        self.task = task
+        self.task.pipes[name] = self
+        
+        self.service = task.service
+        self.service.context = self
+        
+        self.sealed = False
+        self.built = False
+        
+        self.seal()
+    
+    def seal(self):
+        self.sealed = True
+        
+        for name in self.ustream:
+            self.ustream[name].seal()
+
+    def build(self):
+        if self.sealed:
+            if not self.built:
+                assert len(self.dstream) > 0
+                
+                for name in self.dstream:
+                    self.dstream[name] = self.dstream[name].build()
+                else:
+                    self.routine = self.routine(ipipe=None,opipe=self.dstream.values())
+                    
+                self.built = True
+                    
+            return self.routine
+
+class Merge:pass
+
+def service(name):
+    return Service("name")
+
+def main():
+    test = service("test-service").\
+        task("test-task").\
+            source("test-source",None).\
+            sequence("test-sequence",None).\
+            sink("test-sink",None)
+    print test
+            
+if __name__ == '__main__':
+    main()
