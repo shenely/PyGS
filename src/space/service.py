@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   15 February 2013
+Modified:   16 February 2013
 
 Purpose:    
 """
@@ -31,7 +31,7 @@ from .state import routine as state
 from .state.routine import transform,propagate
 from ground.command import routine as command
 from .acknowledge import routine as acknowledge
-from .telemetry import routine as telemetry
+from .result import routine as result
 from model.asset import SpaceAsset
 from clock.epoch import EpochState
 from .state import KeplerianState
@@ -60,7 +60,7 @@ EPOCH_ADDRESS = "Kepler.Epoch"
 STATE_ADDRESS = "Kepler.{name!s}.State"
 COMMAND_ADDRESS = "Kepler.{name!s}.Command"
 ACKNOWLEDGE_ADDRESS = "Kepler.{name!s}.Acknowledge"
-TELEMETRY_ADDRESS = "Kepler.{name!s}.Telemetry"
+RESULT_ADDRESS = "Kepler.{name!s}.Result"
 ASSET_ADDRESS = "Kepler.Model.Asset"
 EPHEMERIS_ADDRESS = "Kepler.Model.Ephemeris"
 
@@ -100,7 +100,7 @@ def main():
     state_socket = context.socket(zmq.PUB)
     state_socket.connect("tcp://localhost:5555")
     acknowledge_socket = state_socket
-    telemetry_socket = state_socket
+    result_socket = state_socket
 
     command_socket = context.socket(zmq.SUB)
     command_socket.connect("tcp://localhost:5556")
@@ -109,59 +109,64 @@ def main():
     state_queue = PriorityQueue()
     command_queue = PriorityQueue()
     
-    segment = service("Space segment").\
-        task("Receive epoch").\
-            source("Subscribe epoch",socket.subscribe,epoch_socket).\
-            sequence("Parse epoch",epoch.parse).\
-            sequence("Update epoch",epoch.update,clock).\
-            split("Split assets").\
-            source("Split assets").\
-            choice("Before state",order.before,aqua.state,ITERATE_MARGIN).\
-                istrue().\
-                    sequence("Inspect state",queue.peek,state_queue).\
-                    choice("After lower",order.after,clock,REMOVE_MARGIN).\
-                        istrue().\
-                            choice("After upper",order.after,clock,PUBLISH_MARGIN).\
-                                istrue().\
-                                    sink("Drop task").\
-                                isfalse().\
-                                    sequence("Dequeue state",queue.get,state_queue).\
-                                    sequence("Transform state",transform.keplerian2inertial).\
-                                    sequence("Format state",state.format,STATE_ADDRESS.format(name=aqua.name)).\
-                                    sink("Publish state",socket.publish,state_socket).\
-                        isfalse().\
-                            sink("Remove state",queue.get,state_queue).\
-                isfalse().\
-                    sequence("Propagate state",propagate.kepler,aqua.state,STEP_SIZE).\
-                    sequence("Enqueue state",queue.put,state_queue).\
-                    sequence("Inspect state").\
-            source("Split assets").\
-            sequence("Inspect command",queue.peek,command_queue).\
-            choice("Before state #2",order.before,aqua.state,EXECUTE_MARGIN).\
-                istrue().\
-                    sink("Remove command",queue.get,command_queue).\
-                isfalse().\
-                    choice("After state",order.after,aqua.state,EXECUTE_MARGIN).\
-                        istrue().\
-                            sink("Drop task").\
-                        isfalse().\
-                            sequence("Dequeue command",queue.get,command_queue).\
-                            sequence("Execute command",command.execute,aqua.state).\
-                            sequence("Format telemetry",telemetry.format,TELEMETRY_ADDRESS.format(name=aqua.name)).\
-                            sink("Publish telemetry",socket.publish,telemetry_socket).\
-        task("Receive command").\
-            source("Subscribe command",socket.subscribe,command_socket).\
-            sequence("Parse command",command.parse).\
-            choice("After epoch",order.after,clock,COMMAND_MARGIN).\
-                istrue().\
-                    sequence("Enqueue command",queue.put,command_queue).\
-                    sequence("Accept command",acknowledge.accept).\
-                    sequence("Format acknowledge",acknowledge.format,ACKNOWLEDGE_ADDRESS.format(name=aqua.name)).\
-                    sink("Publish acknowledge",socket.publish,acknowledge_socket).\
-                isfalse().\
-                    sequence("Reject command",acknowledge.reject).\
-                    sequence("Format acknowledge").\
-        build()
+    segment = service("Space segment")
+
+    segment.task("Receive epoch").\
+        source("Subscribe epoch",socket.subscribe,epoch_socket).\
+        sequence("Parse epoch",epoch.parse).\
+        sequence("Update epoch",epoch.update,clock).\
+        split("Split assets")
+
+    segment.source("Split assets").\
+        choice("Before state",order.before,aqua.state,ITERATE_MARGIN).\
+            istrue().\
+                sequence("Inspect state",queue.peek,state_queue).\
+                choice("After lower",order.after,clock,REMOVE_MARGIN).\
+                    istrue().\
+                        choice("After upper",order.after,clock,PUBLISH_MARGIN).\
+                            istrue().\
+                                sink("Drop task").\
+                            isfalse().\
+                                sequence("Dequeue state",queue.get,state_queue).\
+                                sequence("Transform state",transform.keplerian2inertial).\
+                                sequence("Format state",state.format,STATE_ADDRESS.format(name=aqua.name)).\
+                                sink("Publish state",socket.publish,state_socket).\
+                    isfalse().\
+                        sink("Remove state",queue.get,state_queue).\
+            isfalse().\
+                sequence("Propagate state",propagate.kepler,aqua.state,STEP_SIZE).\
+                sequence("Enqueue state",queue.put,state_queue).\
+                sequence("Inspect state")
+    
+    segment.source("Split assets").\
+        sequence("Inspect command",queue.peek,command_queue).\
+        choice("Before state #2",order.before,aqua.state,EXECUTE_MARGIN).\
+            istrue().\
+                sink("Remove command",queue.get,command_queue).\
+            isfalse().\
+                choice("After state",order.after,aqua.state,EXECUTE_MARGIN).\
+                    istrue().\
+                        sink("Drop task").\
+                    isfalse().\
+                        sequence("Dequeue command",queue.get,command_queue).\
+                        sequence("Execute command",command.execute,aqua.state).\
+                        sequence("Format result",result.format,RESULT_ADDRESS.format(name=aqua.name)).\
+                        sink("Publish result",socket.publish,result_socket)
+    
+    segment.task("Receive command").\
+        source("Subscribe command",socket.subscribe,command_socket).\
+        sequence("Parse command",command.parse).\
+        choice("After epoch",order.after,clock,COMMAND_MARGIN).\
+            istrue().\
+                sequence("Enqueue command",queue.put,command_queue).\
+                sequence("Accept command",acknowledge.accept).\
+                sequence("Format acknowledge",acknowledge.format,ACKNOWLEDGE_ADDRESS.format(name=aqua.name)).\
+                sink("Publish acknowledge",socket.publish,acknowledge_socket).\
+            isfalse().\
+                sequence("Reject command",acknowledge.reject).\
+                sequence("Format acknowledge")
+    
+    segment.build()
             
     scheduler.handler(epoch_socket,segment.tasks["Receive epoch"])
     scheduler.handler(command_socket,segment.tasks["Receive command"])

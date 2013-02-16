@@ -21,7 +21,8 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-05    shenely         1.0         Promoted to version 1.0
 2013-02-06                    1.1         Using generic RequestMessage
-2013-02-15                    1.2         Using telemetry, not result
+2013-02-15                    1.2         Using result, not result
+2013-02-16                    1.3         Using result, not telemetry
 
 """
 
@@ -41,7 +42,7 @@ from core import coroutine,encoder,decoder
 from core.message import RequestMessage
 from clock.epoch import EpochState
 from . import BaseCommand
-from space.telemetry import BaseTelemetry
+from space.result import BaseResult
 #
 ##################
 
@@ -59,7 +60,7 @@ __all__ = ["execute",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 #
 ####################
 
@@ -82,7 +83,7 @@ def execute(system,pipeline=None):
     Scenario 1:  Upstream command received
     WHEN a command is received from upstream
     THEN the command SHALL be execute on the system state
-        AND the telemetry SHALL be sent downstream
+        AND the result SHALL be sent downstream
     
     """
     
@@ -90,12 +91,12 @@ def execute(system,pipeline=None):
     assert isinstance(system,EpochState)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
-    telemetry = None
+    result = None
         
     logging.debug("Command.Execute:  Starting")
     while True:
         try:
-            command = yield telemetry,pipeline
+            command = yield result,pipeline
         except GeneratorExit:
             logging.warn("Command.Execute:  Stopping")
             
@@ -107,10 +108,10 @@ def execute(system,pipeline=None):
             #input validation
             assert isinstance(command,BaseCommand)
             
-            telemetry = command.execute(system)
+            result = command.execute(system)
             
             #output validation
-            assert isinstance(telemetry,BaseTelemetry)
+            assert isinstance(result,BaseResult)
                             
             logging.info("Command.Execute:  Performed %s at %s" % (command.type,system.epoch))
 

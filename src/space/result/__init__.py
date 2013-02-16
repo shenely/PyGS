@@ -1,10 +1,10 @@
 #!/usr/bin/env python2.7
 
-"""Telemetry objects
+"""Result objects
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   15 February 2013
+Modified:   16 February 2013
 
 Purpose:    
 """
@@ -28,8 +28,8 @@ from clock.epoch import EpochState
 ##################
 # Export section #
 #
-__all__ = ["BaseTelemetry",
-           "ManeuverTelemetry"]
+__all__ = ["BaseResult",
+           "ManeuverResult"]
 #
 ##################
 
@@ -42,7 +42,7 @@ __version__ = "0.1"#current version [major.minor]
 ####################
 
 
-class BaseTelemetry(EpochState):
+class BaseResult(EpochState):
     def __init__(self,type,epoch,*args,**kwargs):
         EpochState.__init__(self,epoch,*args,**kwargs)
         
@@ -57,9 +57,9 @@ class BaseTelemetry(EpochState):
         
         return True
 
-class ManeuverTelemetry(BaseTelemetry):
+class ManeuverResult(BaseResult):
     def __init__(self,epoch,before,after,*args,**kwargs):
-        BaseTelemetry.__init__(self,"maneuver",epoch,*args,**kwargs)
+        BaseResult.__init__(self,"maneuver",epoch,*args,**kwargs)
         
         assert isinstance(before,EpochState)
         assert isinstance(after,EpochState)
@@ -69,7 +69,7 @@ class ManeuverTelemetry(BaseTelemetry):
     
     @staticmethod
     def check(kwargs):
-        assert BaseTelemetry.check(kwargs)
+        assert BaseResult.check(kwargs)
         assert hasattr(kwargs,"before")
         assert hasattr(kwargs,"after")
         

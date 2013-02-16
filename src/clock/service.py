@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   14 February 2013
+Modified:   16 February 2013
 
 Purpose:    
 """
@@ -59,12 +59,14 @@ def main():
     epoch_socket = context.socket(zmq.PUB)
     epoch_socket.connect("tcp://localhost:5555")
         
-    segment = service("Clock segment").\
-        task("Send epoch").\
-            source("Iterate epoch",routine.continuous,clock.epoch,EPOCH_SCALE).\
-            sequence("Format epoch",epoch.format,EPOCH_ADDRESS).\
-            sink("Publish epoch",socket.publish,epoch_socket).\
-        build()
+    segment = service("Clock segment")
+
+    segment.task("Send epoch").\
+        source("Iterate epoch",routine.continuous,clock.epoch,EPOCH_SCALE).\
+        sequence("Format epoch",epoch.format,EPOCH_ADDRESS).\
+        sink("Publish epoch",socket.publish,epoch_socket)
+    
+    segment.build()
     
     scheduler.periodic(segment.tasks["Send epoch"],200).start()
     
