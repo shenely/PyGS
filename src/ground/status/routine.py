@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   11 February 2013
+Modified:   15 February 2013
 
 Provides routines for broadcasting statuses.
 
@@ -19,6 +19,7 @@ parse   -- Parse status message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-11    shenely         1.0         Initial revision
+2013-02-15                    1.1         Using telemetry, not result
 
 """
 
@@ -38,7 +39,6 @@ from core import coroutine,encoder,decoder
 from core.message import RequestMessage
 from clock.epoch import EpochState
 from . import BaseStatus
-from space.result import BaseResult
 #
 ##################
 
@@ -55,7 +55,7 @@ __all__ = ["format",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 

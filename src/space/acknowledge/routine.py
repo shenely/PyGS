@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   15 February 2013
 
 Provides routines for acknowledging commands.
 
@@ -21,6 +21,7 @@ parse  -- Parse acknowledge message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-06    shenely         1.0         Promoted to version 1.0
+2013-02-15                    1.1         Bad format log messages
 
 """
 
@@ -181,12 +182,12 @@ def format(address,pipeline=None):
     
     message = None
         
-    logging.debug("Acknowledge.Parse:  Starting")
+    logging.debug("Acknowledge.Format:  Starting")
     while True:
         try:
             acknowledge = yield message,pipeline
         except GeneratorExit:
-            logging.warn("Acknowledge.Parse:  Stopping")
+            logging.warn("Acknowledge.Format:  Stopping")
             
             #close downstream routine (if it exists)
             pipeline.close() if pipeline is not None else None

@@ -1,16 +1,16 @@
 #!/usr/bin/env python2.7
 
-"""Result routines
+"""Telemetry routines
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   15 February 2013
 
-Provides routines for command results.
+Provides routines for asset telemetry.
 
 Functions:
-format -- Format result message
-parse  -- Parse result message
+format -- Format telemetry message
+parse  -- Parse telemetry message
 
 """
 
@@ -19,6 +19,7 @@ parse  -- Parse result message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-06    shenely         1.0         Promoted to version 1.0
+2013-02-15                    1.1         Using telemetry, not result
 
 """
 
@@ -36,7 +37,7 @@ import types
 #Internal libraries
 from core import coroutine,encoder,decoder
 from core.message import ResponseMessage
-from . import BaseResult
+from . import BaseTelemetry
 #
 ##################
 
@@ -53,28 +54,28 @@ __all__ = ["format",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 
 @coroutine
 def format(address,pipeline=None):
-    """Story:  Format result message
+    """Story:  Format telemetry message
     
     IN ORDER TO generating messages to results for a ground segment
     AS A space segment
-    I WANT TO encode a result in a defined string format
+    I WANT TO encode a telemetry in a defined string format
         
     """
     
-    """Specification:  Format result message
+    """Specification:  Format telemetry message
     
     GIVEN an address for the message envelope
         AND a downstream pipeline (default null)
         
     Scenario 1:  Upstream result received
-    WHEN a result is received from upstream
-    THEN the result SHALL be encoded as a message
+    WHEN a telemetry is received from upstream
+    THEN the telemetry SHALL be encoded as a message
         AND the message SHALL be sent downstream
     
     """
@@ -85,12 +86,12 @@ def format(address,pipeline=None):
     
     message = None
         
-    logging.debug("Result.Format:  Starting")
+    logging.debug("Telemetry.Format:  Starting")
     while True:
         try:
-            result = yield message,pipeline
+            telemetry = yield message,pipeline
         except GeneratorExit:
-            logging.warn("Result.Format:  Stopping")
+            logging.warn("Telemetry.Format:  Stopping")
             
             #close downstream routine (if it exists)
             pipeline.close() if pipeline is not None else None
@@ -98,45 +99,45 @@ def format(address,pipeline=None):
             return
         else:
             #input validation
-            assert isinstance(result,BaseResult)
+            assert isinstance(telemetry,BaseTelemetry)
             
-            notice = ResponseMessage(result)
+            notice = ResponseMessage(telemetry)
             message = address,encoder(notice)
                             
-            logging.info("Result.Format:  Formatted")
+            logging.info("Telemetry.Format:  Formatted")
 
 @coroutine
 def parse(pipeline=None):
-    """Story:  Parse result message
+    """Story:  Parse telemetry message
     
     IN ORDER TO process messages for results from a space segment
     AS A ground segment
-    I WANT TO decode the a formatted string as an result
+    I WANT TO decode the a formatted string as an telemetry
         
     """
     
-    """Specification:  Parse result message
+    """Specification:  Parse telemetry message
     
     GIVEN a downstream pipeline (default null)
         
     Scenario 1:  Upstream message received
     WHEN a message is received from upstream
-    THEN the message SHALL be decoded as an result
-        AND the result SHALL be sent downstream
+    THEN the message SHALL be decoded as an telemetry
+        AND the telemetry SHALL be sent downstream
     
     """
     
     #configuration validation
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
-    result = None
+    telemetry = None
         
-    logging.debug("Result.Parse:  Starting")
+    logging.debug("Telemetry.Parse:  Starting")
     while True:
         try:
-            address,message = yield result,pipeline
+            address,message = yield telemetry,pipeline
         except GeneratorExit:
-            logging.warn("Result.Parse:  Stopping")
+            logging.warn("Telemetry.Parse:  Stopping")
             
             #close downstream routine (if it exists)
             pipeline.close() if pipeline is not None else None
@@ -150,6 +151,6 @@ def parse(pipeline=None):
             
             #output validation
             assert notice.error == 0
-            result = BaseResult(**notice.result)
+            telemetry = BaseTelemetry(**notice.result)
                     
-            logging.info("Result.Parse:  Parsed")
+            logging.info("Telemetry.Parse:  Parsed")

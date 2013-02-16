@@ -4,13 +4,14 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   12 February 2013
+Modified:   15 February 2013
 
 Provides routines for controlling the flow of data.
 
 Functions:
 split -- Split pipeline
 merge -- Merge pipeline
+allow -- Allow message
 block -- Block message
 
 """
@@ -21,6 +22,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-05    shenely         1.0         Promoted to version 1.0
 2013-02-12                    1.1         Split and merge accept nulls
+2013-02-15                    1.2         Adding an allow routine
 
 """
 
@@ -45,6 +47,7 @@ from .. import coroutine
 #
 __all__ = ["split",
            "merge",
+           "allow",
            "block"]
 #
 ##################
@@ -53,7 +56,7 @@ __all__ = ["split",
 ####################
 # Constant section #
 #
-__version__ = "1.1"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 #
 ####################
 
@@ -163,6 +166,42 @@ def merge(ipipes,opipe=None):
             messages.append(message)
 
 @coroutine
+def allow(pipeline=None):
+    """Story:  Allow message
+    
+    IN ORDER TO couple an upstream source from a downstream sink
+    AS A generic segment
+    I WANT TO allow messages to flow downstream
+    
+    """
+    
+    """Specification:  Allow message
+    
+    GIVEN a downstream pipeline (default null)
+        
+    Scenario 1:  Upstream message received
+    WHEN a message is received from upstream
+    THEN the message SHALL be sent downstream
+    
+    """
+    
+    #configuration validation
+    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    
+    logging.debug("Control.Allow:  Starting")
+    while True:
+        try:
+            yield None,pipeline
+        except GeneratorExit:
+            logging.warn("Control.Allow:  Stopping")
+            
+            pipeline.close() if pipeline is not None else None
+            
+            return
+        else:
+            logging.info("Control.Allow:  Message blocked")
+
+@coroutine
 def block(pipeline=None):
     """Story:  Block message
     
@@ -183,7 +222,7 @@ def block(pipeline=None):
     """
     
     #configuration validation
-    assert isinstance(pipeline,types.GeneratorType)
+    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
     logging.debug("Control.Block:  Starting")
     while True:

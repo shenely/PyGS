@@ -204,8 +204,8 @@ def main():
                                 matrix([0.0,7.5,0.0]).T)
     
     q = UserSegment(aqua)
-    r = UserSegment(aura)
-    t = UserSegment(terra)
+    #r = UserSegment(aura)
+    #t = UserSegment(terra)
     
     #scheduler.start()
     

@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   03 February 2013
+Modified:   15 February 2013
 
 Purpose:    
 """
@@ -26,7 +26,7 @@ from scipy.optimize import newton
 from core import ObjectDict
 from clock.epoch import EpochState
 from space.state import KeplerianState
-from space.result import ManeuverResult
+from space.telemetry import ManeuverTelemetry
 #
 ##################
 
@@ -141,7 +141,7 @@ class ManeuverCommand(BaseCommand):
         
         perturb = KeplerianState(state.epoch,a,theta,e,omega,i,OMEGA)
         
-        result = ManeuverResult(self.epoch,copy.deepcopy(state),perturb,_id=self._id)
+        result = ManeuverTelemetry(self.epoch,copy.deepcopy(state),perturb,_id=self._id)
         
         state.update(perturb)
         

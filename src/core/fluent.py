@@ -18,6 +18,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-13    shenely         1.0         Initial revision
 2013-02-14                    1.1         Needs of clock segment met
+2013-02-15                    1.2         Attempting to fix split
 
 """
 
@@ -47,7 +48,7 @@ __all__ = ["service"]
 ####################
 # Constant section #
 #
-__version__ = "1.1"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 #
 ####################
 
@@ -306,19 +307,10 @@ class Service:
     def source(self,name,routine=None,*args,**kwargs):
         if routine is not None:
             Source(name,routine,self.context,*args,**kwargs)
-        else:
-            if self.context.name in self.tasks[name].dstream:
-                self.tasks[name].dstream[self.context.name].dstream[self.context.name] = self.context
-                self.context.ustream[name] = self.tasks[name].dstream[self.context.name]
-                
-                self.context = self.tasks[name].dstream[self.context.name]
-            elif name in self.context.task.pipes and\
+        else:            
+            if name in self.context.task.pipes and\
                  self.context.task.pipes[name].sealed:
-                self.context.dstream[name] = self.context.task.pipes[name]
-                self.context.task.pipes[name].ustream[name] = self.context
-                
                 self.context = self.context.task.pipes[name]
-                self.context.seal()
         
         return self
     
@@ -331,7 +323,6 @@ class Service:
                 self.context.dstream[name] = self.context.task.pipes[name]
                 self.context.task.pipes[name].ustream[name] = self.context
                 
-                self.context = self.context.task.pipes[name]
                 self.context.seal() 
         
         return self
@@ -341,7 +332,6 @@ class Service:
             self.context.dstream[name] = self.context.task.pipes[name]
             self.context.task.pipes[name].ustream[self.context.name] = self.context
             
-            self.context = self.context.task.pipes[name]
             self.context.seal()
         else:
             Sink(name,routine,self.context.task,*args,**kwargs)
@@ -364,7 +354,7 @@ class Service:
         return self
     
     def split(self,name,dstream=None):
-        Split(name,dstream,self.context.task)
+        Split(name,self.context.task)
         
         return self
 
@@ -382,9 +372,6 @@ class Task:
         service.tasks[name] = self
         
         self.pipes = {}
-        
-        self.ustream = {}
-        self.dstream = {}
 
     def build(self):
         for name in self.pipes:
@@ -449,10 +436,8 @@ class Sequence:
         self.ustream = {}
         self.dstream = {}
         
-        if isinstance(task.service.context.name,types.ListType):pass
-        else:
-            self.ustream[task.service.context.name] = task.service.context
         
+        self.ustream[task.service.context.name] = task.service.context
         task.service.context.dstream[name] = self
         
         self.service = task.service
@@ -502,10 +487,7 @@ class Sink:
         self.dstream = {}
         
         
-        if isinstance(task.service.context.name,types.ListType):pass
-        else:
-            self.ustream[task.service.context.name] = task.service.context
-        
+        self.ustream[task.service.context.name] = task.service.context
         task.service.context.dstream[name] = self
         
         self.service = task.service
@@ -547,10 +529,7 @@ class Choice:
         self.ustream = {}
         self.dstream = {}
         
-        if isinstance(task.service.context.name,types.ListType):pass
-        else:
-            self.ustream[task.service.context.name] = task.service.context
-        
+        self.ustream[task.service.context.name] = task.service.context
         task.service.context.dstream[name] = self
         
         self.service = task.service
@@ -676,7 +655,7 @@ class IsFalse:
             return self.routine
 
 class Split:
-    def __init__(self,name,dstream=None,task=None):
+    def __init__(self,name,task=None):
         self.name = name
         self.routine = control.split
         
@@ -684,28 +663,23 @@ class Split:
         self.dstream = {}
         
         self.ustream[task.service.context.name] = task.service.context
-        task.service.context.dstream[name] = self
-        
-        if dstream is not None:
-            for name in dstream:
-                task.dstream[name] = self            
+        task.service.context.dstream[name] = self          
         
         self.task = task
         self.task.pipes[name] = self
         
-        self.service = task.service
-        self.service.context = self
-        
-        self.sealed = False
+        self.sealed = True
         self.built = False
         
-        self.seal()
+        task.service.context.seal()
+        
+        self.service = task.service
+        self.service.context = self
     
     def seal(self):
         self.sealed = True
         
-        for name in self.ustream:
-            self.ustream[name].seal()
+        self.service.context = self
 
     def build(self):
         if self.sealed:
@@ -715,7 +689,7 @@ class Split:
                 for name in self.dstream:
                     self.dstream[name] = self.dstream[name].build()
                 else:
-                    self.routine = self.routine(ipipe=None,opipe=self.dstream.values())
+                    self.routine = self.routine(ipipe=None,opipes=self.dstream.values())
                     
                 self.built = True
                     

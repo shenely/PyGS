@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   15 February 2013
 
 Provides routines for command execution.
 
@@ -20,7 +20,8 @@ parse   -- Parse command message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-05    shenely         1.0         Promoted to version 1.0
-2013-02-06    shenely         1.1         Using generic RequestMessage
+2013-02-06                    1.1         Using generic RequestMessage
+2013-02-15                    1.2         Using telemetry, not result
 
 """
 
@@ -40,7 +41,7 @@ from core import coroutine,encoder,decoder
 from core.message import RequestMessage
 from clock.epoch import EpochState
 from . import BaseCommand
-from space.result import BaseResult
+from space.telemetry import BaseTelemetry
 #
 ##################
 
@@ -58,7 +59,7 @@ __all__ = ["execute",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 #
 ####################
 
@@ -81,7 +82,7 @@ def execute(system,pipeline=None):
     Scenario 1:  Upstream command received
     WHEN a command is received from upstream
     THEN the command SHALL be execute on the system state
-        AND the result SHALL be sent downstream
+        AND the telemetry SHALL be sent downstream
     
     """
     
@@ -89,12 +90,12 @@ def execute(system,pipeline=None):
     assert isinstance(system,EpochState)
     assert isinstance(pipeline,types.GeneratorType) or pipeline is None
     
-    result = None
+    telemetry = None
         
     logging.debug("Command.Execute:  Starting")
     while True:
         try:
-            command = yield result,pipeline
+            command = yield telemetry,pipeline
         except GeneratorExit:
             logging.warn("Command.Execute:  Stopping")
             
@@ -106,10 +107,10 @@ def execute(system,pipeline=None):
             #input validation
             assert isinstance(command,BaseCommand)
             
-            result = command.execute(system)
+            telemetry = command.execute(system)
             
             #output validation
-            assert isinstance(result,BaseResult)
+            assert isinstance(telemetry,BaseTelemetry)
                             
             logging.info("Command.Execute:  Performed %s at %s" % (command.type,system.epoch))
 

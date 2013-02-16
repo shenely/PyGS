@@ -62,12 +62,12 @@ class InertialState(EpochState):
         assert isinstance(position,matrix)
         assert position.dtype.type is float64
         assert position.shape == (3,1)
-        assert norm(position) > EARTH_RADIUS
+        #assert norm(position) > EARTH_RADIUS
         
         assert isinstance(velocity,matrix)
         assert velocity.dtype.type is float64
         assert velocity.shape == (3,1)
-        assert velocity.T * velocity * norm(position) < 2 * EARTH_GRAVITATION
+        #assert velocity.T * velocity * norm(position) < 2 * EARTH_GRAVITATION
         
         self.position = position
         self.velocity = velocity

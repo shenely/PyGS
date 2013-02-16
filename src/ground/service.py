@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   14 February 2013
+Modified:   15 February 2013
 
 Purpose:    
 """
@@ -22,13 +22,15 @@ import zmq
 from bson.tz_util import utc
 
 #Internal libraries
+from core.fluent import service
 from core.service.scheduler import Scheduler
 from core.routine import control,queue,socket,order
 from clock.epoch import routine as epoch
 from .command import routine as command
 from .status import routine as status
-#from space.acknowledge import routine as acknowledge
-#from space.result import routine as result
+from space.acknowledge import routine as acknowledge
+from space.telemetry import routine as telemetry
+from model.asset import SpaceAsset
 from clock.epoch import EpochState
 from .command import ManeuverCommand
 from .status import BaseStatus
@@ -51,7 +53,7 @@ __version__ = "0.1"#current version [major.minor]
 EPOCH_ADDRESS = "Kepler.Epoch"
 COMMAND_ADDRESS = "Kepler.{name!s}.Command"
 ACKNOWLEDGE_ADDRESS = "Kepler.{name!s}.Acknowledge"
-RESULT_ADDRESS = "Kepler.{name!s}.Result"
+TELEMETRY_ADDRESS = "Kepler.{name!s}.Telemetry"
 STATUS_ADDRESS = "Kepler.{name!s}.Status"
 
 DISCARD_MARGIN = timedelta(seconds=0)
@@ -60,8 +62,15 @@ COMMAND_MARGIN = timedelta(seconds=420)
 #
 ####################
 
-
-class GroundSegment(object):
+                
+def main():
+    """Main Function"""
+    
+    clock = EpochState(datetime(2010,1,1,0,12,30,tzinfo=utc))
+    aqua = SpaceAsset("Aqua","#007777")
+    aqua.command = ManeuverCommand(clock.epoch,-1.0,0.0,1.0)
+    aqua.status = BaseStatus("green",clock.epoch)
+    
     scheduler = Scheduler()
     context = zmq.Context(1)
     
@@ -69,94 +78,67 @@ class GroundSegment(object):
     epoch_socket.connect("tcp://localhost:5556")
     epoch_socket.setsockopt(zmq.SUBSCRIBE,EPOCH_ADDRESS)
     
-    physics = EpochState(datetime.utcnow())
-    tasks = []
+    command_socket = context.socket(zmq.PUB)
+    command_socket.connect("tcp://localhost:5555")
+    status_socket = command_socket
     
-    def __init__(self,name):
-        if not hasattr(self,"epoch_task"):
-            self.task_update_epoch()
-        
-        self.name = name
-        
-        self.socket = self.context.socket(zmq.PUB)
-        self.socket.connect("tcp://localhost:5555")
+    acknowledge_socket = context.socket(zmq.SUB)
+    acknowledge_socket.connect("tcp://localhost:5556")
+    acknowledge_socket.setsockopt(zmq.SUBSCRIBE,ACKNOWLEDGE_ADDRESS.format(name=aqua.name))
     
-        self.ack_socket = self.context.socket(zmq.SUB)
-        self.ack_socket.connect("tcp://localhost:5556")
-        self.ack_socket.setsockopt(zmq.SUBSCRIBE,ACKNOWLEDGE_ADDRESS.format(name=self.name))
-    
-        self.result_socket = self.context.socket(zmq.SUB)
-        self.result_socket.connect("tcp://localhost:5556")
-        self.result_socket.setsockopt(zmq.SUBSCRIBE,RESULT_ADDRESS.format(name=self.name))
+    telemetry_socket = context.socket(zmq.SUB)
+    telemetry_socket.connect("tcp://localhost:5556")
+    telemetry_socket.setsockopt(zmq.SUBSCRIBE,TELEMETRY_ADDRESS.format(name=aqua.name))
 
-        self.cmd_queue = PriorityQueue()
-        self.status_queue = PriorityQueue()
-        
-        self.task_request_command()
-        self.task_publish_status()
-        #self.task_schedule_event()
-
-    @classmethod
-    def task_update_epoch(cls):
-        split_tasks = control.split(None,cls.tasks)
-        update_epoch = epoch.update(cls.physics,split_tasks)
-        parse_epoch = epoch.parse(update_epoch)
-        subscribe_epoch = socket.subscribe(cls.epoch_socket,parse_epoch)
-        
-        cls.epoch_task = subscribe_epoch
-        cls.scheduler.handler(cls.epoch_socket,cls.epoch_task)
-
-    def task_request_command(self):
-        request_cmd = socket.publish(self.socket)
-        format_cmd = command.format(COMMAND_ADDRESS.format(name=self.name),request_cmd)
-        dequeue_cmd = queue.get(self.cmd_queue,format_cmd)
-        remove_cmd = queue.get(self.cmd_queue)
-        after_system = order.after(self.physics,COMMAND_MARGIN,None,dequeue_cmd)
-        before_system = order.before(self.physics,DISCARD_MARGIN,remove_cmd,after_system)
-        inspect_cmd = queue.peek(self.cmd_queue,before_system)
-        
-        self.tasks.append(inspect_cmd)
-
-    def task_publish_status(self):
-        publish_status = socket.publish(self.socket)
-        format_status = status.format(STATUS_ADDRESS.format(name=self.name),publish_status)
-        dequeue_status = queue.get(self.status_queue,format_status)
-        remove_status = queue.get(self.status_queue)
-        after_system = order.after(self.physics,STATUS_MARGIN,None,dequeue_status)
-        before_system = order.before(self.physics,DISCARD_MARGIN,remove_status,after_system)
-        inspect_status = queue.peek(self.status_queue,before_system)
-        
-        self.tasks.append(inspect_status)
-
-    def task_schedule_event(self):
-        #parse_ack = acknowledge.parse()
-        subscribe_ack = socket.subscribe(self.ack_socket)#,parse_ack)
-        
-        self.ack_task = subscribe_ack
-        self.scheduler.handler(self.ack_socket,self.ack_task)
-        
-        #parse_result = result.parse()
-        subscribe_result = socket.subscribe(self.result_socket)#,parse_result)
-        
-        self.result_task = subscribe_result
-        self.scheduler.handler(self.result_socket,self.result_task)
-                
-def main():
-    """Main Function"""
+    command_queue = PriorityQueue()
+    status_queue = PriorityQueue()
     
-    epoch = datetime(2010,1,1,0,12,30,tzinfo=utc)
+    command_queue.put((0,aqua.command))
+    status_queue.put((0,aqua.status))
     
-    aqua = GroundSegment("Aqua")
-    aura = GroundSegment("Aura")
-    terra = GroundSegment("Terra")
-    
-    aqua.cmd_queue.put((0,ManeuverCommand(epoch,0.0,0.0,1.0)))
-    aura.cmd_queue.put((0,ManeuverCommand(epoch,0.0,0.1,0.0)))
-    terra.cmd_queue.put((0,ManeuverCommand(epoch,0.1,0.0,0.0)))
-    
-    aqua.status_queue.put((0,BaseStatus("green",epoch)))
-    aura.status_queue.put((0,BaseStatus("yellow",epoch)))
-    terra.status_queue.put((0,BaseStatus("red",epoch)))
+    segment = service("Ground segment").\
+        task("Receive epoch").\
+            source("Subscribe epoch",socket.subscribe,epoch_socket).\
+            sequence("Parse epoch",epoch.parse).\
+            sequence("Update epoch",epoch.update,clock).\
+            split("Split assets").\
+            source("Split assets").\
+            sequence("Inspect command",queue.peek,command_queue).\
+            choice("Before epoch",order.before,clock,DISCARD_MARGIN).\
+                istrue().\
+                    sink("Remove command",queue.get,command_queue).\
+                isfalse().\
+                    choice("After epoch",order.after,clock,COMMAND_MARGIN).\
+                        istrue().\
+                            sink("Drop task").\
+                        isfalse().\
+                            sequence("Dequeue command",queue.get,command_queue).\
+                            sequence("Format command",command.format,COMMAND_ADDRESS.format(name=aqua.name)).\
+                            sink("Request command",socket.publish,command_socket).\
+            source("Split assets").\
+            sequence("Inspect status",queue.peek,status_queue).\
+            choice("Before epoch #2",order.before,clock,DISCARD_MARGIN).\
+                istrue().\
+                    sink("Remove status",queue.get,status_queue).\
+                isfalse().\
+                    choice("After epoch #2",order.after,clock,STATUS_MARGIN).\
+                        istrue().\
+                            sink("Drop task").\
+                        isfalse().\
+                            sequence("Dequeue status",queue.get,status_queue).\
+                            sequence("Format status",status.format,STATUS_ADDRESS.format(name=aqua.name)).\
+                            sink("Publish status",socket.publish,status_socket).\
+        task("Receive acknowledge").\
+            source("Response acknowledge",socket.subscribe,acknowledge_socket).\
+            sink("Block acknowledge",control.block).\
+        task("Receive telemetry").\
+            source("Response telemetry",socket.subscribe,telemetry_socket).\
+            sink("Block telemetry",control.block).\
+        build()
+            
+    scheduler.handler(epoch_socket,segment.tasks["Receive epoch"])
+    scheduler.handler(acknowledge_socket,segment.tasks["Receive acknowledge"])
+    scheduler.handler(telemetry_socket,segment.tasks["Receive telemetry"])
     
     #scheduler.start()
     
