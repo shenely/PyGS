@@ -101,23 +101,30 @@ service("User segment")
         .source("Subscribe epoch",socket.subscribe,epoch_socket)
         .sequence("Parse epoch",epoch.parse)
         .sequence("Update epoch",epoch.update,clock)
-        .split(["Interpolate state","Update status"])
-    .task("Send view")
-        .source("Interpolate state")
+        .split("Split tasks")
+        
+        .source("Split tasks")
         .split("Split geographic")
+        
         .source("Split geographic")
+        .sink("Merge inertial")
+        
         .merge("Merge inertial")
         .sequence("Inertial notice",notice.inertial,NOTICE_ADDRESS.format("Inertial")
         .sink("Publish notice",socket.publish,socket)
+        
         .source("Split geographic")
         .sequence("Geographic transform",transform.inertial2geographic)
         .split("Split horizontal")
+        
         .source("Split horizontal")
         .sequence("Geographic notice",notice.geographic,NOTICE_ADDRESS.format("Geographic")
-        .merge("Merge geographic")
         .sink("Publish notice")
+        
         .source("Split horizontal")
         .sequence("Horizontal transform",transform.geographic2horizontal,ground.state)
+        .sink("Merge horizontal")
+        
         .merge("Merge horizontal")
         .sequence("Horizontal notice,,notice.horizontal,NOTICE_ADDRESS.format("Horizontal"))
         .sink("Publish notice")

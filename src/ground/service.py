@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 February 2013
+Modified:   17 February 2013
 
 Purpose:    
 """
@@ -22,7 +22,7 @@ import zmq
 from bson.tz_util import utc
 
 #Internal libraries
-from core.fluent import service
+from core.fluent import application
 from core.service.scheduler import Scheduler
 from core.routine import control,queue,socket,order
 from clock.epoch import routine as epoch
@@ -96,9 +96,9 @@ def main():
     command_queue.put((0,aqua.command))
     status_queue.put((0,aqua.status))
     
-    segment = service("Ground segment")
+    segment = application("Ground segment")
 
-    segment.task("Receive epoch").\
+    segment.workflow("Receive epoch").\
         source("Subscribe epoch",socket.subscribe,epoch_socket).\
         sequence("Parse epoch",epoch.parse).\
         sequence("Update epoch",epoch.update,clock).\
@@ -132,19 +132,20 @@ def main():
                         sequence("Format status",status.format,STATUS_ADDRESS.format(name=aqua.name)).\
                         sink("Publish status",socket.publish,status_socket)
 
-    segment.task("Receive acknowledge").\
+    segment.workflow("Receive acknowledge").\
             source("Response acknowledge",socket.subscribe,acknowledge_socket).\
             sink("Drop task")
 
-    segment.task("Receive result").\
+    segment.workflow("Receive result").\
             source("Response result",socket.subscribe,result_socket).\
             sink("Drop task")
 
+    segment.clean()
     segment.build()
             
-    scheduler.handler(epoch_socket,segment.tasks["Receive epoch"])
-    scheduler.handler(acknowledge_socket,segment.tasks["Receive acknowledge"])
-    scheduler.handler(result_socket,segment.tasks["Receive result"])
+    scheduler.handler(epoch_socket,segment["Receive epoch"])
+    scheduler.handler(acknowledge_socket,segment["Receive acknowledge"])
+    scheduler.handler(result_socket,segment["Receive result"])
     
     #scheduler.start()
     

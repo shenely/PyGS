@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 February 2013
+Modified:   17 February 2013
 
 Purpose:    
 """
@@ -24,7 +24,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.service.scheduler import Scheduler
-from core.fluent import service
+from core.fluent import application
 from core.routine import queue,socket,order,database
 from clock.epoch import routine as epoch
 from .state import routine as state
@@ -109,9 +109,9 @@ def main():
     state_queue = PriorityQueue()
     command_queue = PriorityQueue()
     
-    segment = service("Space segment")
+    segment = application("Space segment")
 
-    segment.task("Receive epoch").\
+    segment.workflow("Receive epoch").\
         source("Subscribe epoch",socket.subscribe,epoch_socket).\
         sequence("Parse epoch",epoch.parse).\
         sequence("Update epoch",epoch.update,clock).\
@@ -153,7 +153,7 @@ def main():
                         sequence("Format result",result.format,RESULT_ADDRESS.format(name=aqua.name)).\
                         sink("Publish result",socket.publish,result_socket)
     
-    segment.task("Receive command").\
+    segment.workflow("Receive command").\
         source("Subscribe command",socket.subscribe,command_socket).\
         sequence("Parse command",command.parse).\
         choice("After epoch",order.after,clock,COMMAND_MARGIN).\
@@ -166,10 +166,11 @@ def main():
                 sequence("Reject command",acknowledge.reject).\
                 sequence("Format acknowledge")
     
+    segment.clean()
     segment.build()
             
-    scheduler.handler(epoch_socket,segment.tasks["Receive epoch"])
-    scheduler.handler(command_socket,segment.tasks["Receive command"])
+    scheduler.handler(epoch_socket,segment["Receive epoch"])
+    scheduler.handler(command_socket,segment["Receive command"])
     
     #scheduler.start()
     
