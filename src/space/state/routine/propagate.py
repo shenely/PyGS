@@ -5,7 +5,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   10 February 2013
+Modified:   18 February 2013
 
 Provides routines for state propagation.
 
@@ -20,6 +20,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-06    shenely         1.0         Promoted to version 1.0
 2013-02-10                    1.1         Ephemeris propagation started
+2013-02-18                    1.2         Completed task (awhile ago)
 
 """
 
@@ -97,9 +98,7 @@ def kepler(state,step=CLOCK_STEP,pipeline=None):
         AND the state SHALL be sent downstream
     
     """
-    
-    #TODO:  consider moving this under the state routines
-    
+        
     #configuration validation
     assert isinstance(state,KeplerianState)
     assert isinstance(step,timedelta)

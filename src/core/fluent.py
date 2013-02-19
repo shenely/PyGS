@@ -34,6 +34,7 @@ import types
 #External libraries
 
 #Internal libraries
+from core import ObjectDict
 from core.routine import control
 #
 ##################
@@ -53,79 +54,6 @@ __all__ = ["application"]
 __version__ = "1.3"#current version [major.minor]
 #
 ####################
-
-
-"""Story:  Fluent interface
-
-IN ORDER TO configure a service to execute tasks
-AS A user
-I WANT TO build tasks with a fluent interface
-
-"""
-
-"""Specification:  Fluent interface
-
-GIVEN a context
-
-WHEN the context IS a task
-    AND a source pipeline IS created
-THEN the context SHALL be the source
-
-WHEN the context IS a pipeline
-    AND a sequence pipeline IS created
-THEN the sequence SHALL be a downstream pipeline of the context
-    AND the context SHALL be an upstream pipeline of the sequence
-    AND the context SHALL be the sequence
-
-WHEN the context IS a pipeline
-    AND a sink pipeline IS created
-THEN the sink SHALL be a downstream pipeline of the context
-    AND the context SHALL be an upstream pipeline of the sink
-    AND the context SHALL be the sink
-    AND the context SHALL be sealed
-
-WHEN the context IS a pipeline
-    AND a choice pipeline IS created
-THEN the choice SHALL be a downstream pipeline of the context
-    AND the context SHALL be an upstream pipeline of the choice
-    AND the context SHALL be the choice
-
-WHEN the context IS a choice pipeline
-    AND a true pipeline IS created
-THEN the true SHALL be the true pipeline of the context
-    AND the context SHALL be the choice pipeline of the true
-    AND the content SHALL be the true
-
-WHEN the context IS a choice pipeline
-    AND a false pipeline IS created
-THEN the true SHALL be the false pipeline of the context
-    AND the context SHALL be the choice pipeline of the false
-    AND the context SHALL be the false
-
-WHEN the context IS a pipeline
-    AND a split pipeline IS created
-THEN the split SHALL be a downstream pipeline of the context
-    AND the context SHALL be an upstream pipeline of the split
-    AND the context SHALL be sealed
-
-WHEN the context IS a task
-    AND a merge pipeline IS created
-THEN the merge SHALL be a downstream pipeline of the context
-    AND the context SHALL be an upstream pipeline of the merge
-    
-WHEN the context IS a pipeline
-    AND the context IS sealed
-THEN the context SHALL be the upstream pipeline
-    AND the context of the context SHALL be sealed
-    
-WHEN the context IS a source pipeline
-    AND the context IS sealed
-THEN the context SHALL be the context's task
-    
-WHEN the context IS a merge pipeline
-    AND the context IS sealed
-THEN the context SHALL be the context's task
-"""
 
 
 class Application(object):
@@ -149,6 +77,13 @@ class Application(object):
             self.routine[name] = self.workflows[name].build()
         else:
             return self
+        
+    def assets(self,*args,**kwargs):
+        if len(args) == 0:
+            return Assets(public=kwargs["public"],private=kwargs["private"])
+        else:
+            for name in self.workflows:
+                self.workflows[wname].assets(*args)
     
     def workflow(self,name):
         self.context = Workflow(self,name)
@@ -229,6 +164,14 @@ class Workflow(object):
             if isinstance(self.pipelines[name],Source) and\
                len(self.pipelines[name].upstream) == 0:
                 return self.pipelines[name].build()
+        
+    def assets(self,*args):
+        if len(args) == 0:
+            return Assets(public=kwargs["public"],private=kwargs["private"])
+        else:
+            for name in self.pipelines:
+                if isinstance(self.pipelines[name],Assets):
+                    self.pipelines[name].clean(full=False)
 
 class Pipeline(object):
     def __new__(cls,context,name=None,routine=None,*args,**kwargs):
@@ -249,6 +192,8 @@ class Pipeline(object):
             
             obj.upstream = {}
             obj.downstream = {}
+            
+            obj.pipeline = None
             
             obj.sealed = False
             obj.built = False
@@ -281,11 +226,15 @@ class Pipeline(object):
             else:
                 self.workflow.application.context = self.workflow
     
-    def clean(self):
+    def clean(self,full):
         self.built = False
         
         for name in self.downstream:
-            self.downstream[name].clean()
+            self.downstream[name].clean(full)
+        else:
+            self.pipeline.close() if self.pipeline is not None else None
+            
+            self.pipeline = None
     
     def build(self):
         if self.built:pass
@@ -298,8 +247,17 @@ class Pipeline(object):
             else:
                 self.pipeline = self.routine(pipeline=pipeline,*self.args,**self.kwargs)\
                                 if self.routine is not None else None
+            
+                for name in self.upstream:
+                    if isinstance(self.upstream[name],Split):
+                        self.upstream[name].tick(self.pipeline)
+                for name in self.downstream:
+                    if isinstance(self.downstream[name],Merge):
+                        self.downstream[name].tick(self.pipeline)
         
         return self.pipeline
+
+class Assets(Pipeline):pass
 
 class Source(Pipeline):        
     def seal(self):
@@ -339,13 +297,17 @@ class Choice(Pipeline):
                     
                     break
     
-    def clean(self):
+    def clean(self,full):
         self.built = False
         
         if self.true is not None:
-            self.true.clean()
+            self.true.clean(full)
         if self.false is not None:
-            self.false.clean()
+            self.false.clean(full)
+
+        self.pipeline.close() if self.pipeline is not None else None
+            
+        self.pipeline = None
     
     def build(self):
         if self.built:pass
@@ -427,7 +389,14 @@ class Split(Sink):
     def __new__(cls,context,name):
         obj = Sink.__new__(cls,context,name,control.split)
         
+        obj.opipes = []
+        
         return obj
+    
+    def clean(self,full=True):
+        Sink.clean(self,full)
+        
+        self.opipes = []
     
     def build(self):
         if self.built:pass
@@ -435,13 +404,15 @@ class Split(Sink):
             self.built = True
             
             ipipe = None
-            opipes = []
             for name in self.downstream:
-                opipes.append(self.downstream[name].build())
+                self.opipes.append(self.downstream[name].build())
             else:
-                self.pipeline = self.routine(ipipe=ipipe,opipes=opipes)
+                self.pipeline = self.routine(ipipe=ipipe,opipes=self.opipes)
         
         return self.pipeline
+    
+    def tick(self,pipeline):
+        self.opipes.append(pipeline)
 
 class Merge(Source):
     def __new__(cls,context,name):
@@ -475,21 +446,31 @@ class Merge(Source):
         obj.sealed = False
         obj.built = False
         
+        obj.ipipes = []
+        obj.pipeline = None
+        
         return obj
     
-    def build(self):
+    def clean(self,full=True):
+        if full:
+            Source.clean(self,full)        
+        
+            self.ipipes = []
+    
+    def build(self):       
         if self.built:pass
         else:
             self.built = True
             
-            opipe = None
-            ipipes = [None] * len(self.upstream)
             for name in self.downstream:
                 opipe = self.downstream[name].build()
             else:
-                self.pipeline = self.routine(ipipes=ipipes,opipe=opipe)
+                self.pipeline = self.routine(ipipes=self.ipipes,opipe=opipe)
         
         return self.pipeline
+    
+    def tick(self,pipeline):
+        self.ipipes.append(pipeline)
 
 def application(name):
     return Application(name)
