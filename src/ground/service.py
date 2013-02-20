@@ -104,7 +104,7 @@ def main():
         sequence("Update epoch",epoch.update,clock).\
         split("Split assets")
 
-    segment.source("Split assets").\
+    segment.assets().source("Split assets").\
             sequence("Inspect command",queue.peek,command_queue).\
             choice("Before epoch",order.before,clock,DISCARD_MARGIN).\
                 istrue().\
@@ -118,7 +118,7 @@ def main():
                             sequence("Format command",command.format,COMMAND_ADDRESS.format(name=aqua.name)).\
                             sink("Request command",socket.publish,command_socket)
 
-    segment.source("Split assets").\
+    segment.assets().source("Split assets").\
         sequence("Inspect status",queue.peek,status_queue).\
         choice("Before epoch #2",order.before,clock,DISCARD_MARGIN).\
             istrue().\
@@ -132,11 +132,11 @@ def main():
                         sequence("Format status",status.format,STATUS_ADDRESS.format(name=aqua.name)).\
                         sink("Publish status",socket.publish,status_socket)
 
-    segment.workflow("Receive acknowledge").\
+    segment.workflow("Receive acknowledge").assets().\
             source("Response acknowledge",socket.subscribe,acknowledge_socket).\
             sink("Drop task")
 
-    segment.workflow("Receive result").\
+    segment.workflow("Receive result").assets().\
             source("Response result",socket.subscribe,result_socket).\
             sink("Drop task")
 

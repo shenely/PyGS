@@ -56,6 +56,26 @@ __version__ = "1.3"#current version [major.minor]
 ####################
 
 
+class AssetObject(object):
+    list = []
+    
+    def __init__(self,public,private):
+        object.__init__(self)
+        
+        self.public = public
+        self.private = private
+        
+    def __getattr__(self,name):
+        def getter(obj):
+            if name in self.public:
+                return getattr(obj.asset,name)
+            elif name in self.private:
+                return getattr(obj,name)
+            else:
+                raise AttributeError
+        
+        return getter
+
 class Application(object):
     def __init__(self,name):
         self.name = name
@@ -63,6 +83,8 @@ class Application(object):
         self.workflows = {}
         
         self.context = self
+        
+        self.asset = None
     
     def __getitem__(self,name):
         return self.routine[name]
@@ -79,11 +101,22 @@ class Application(object):
             return self
         
     def assets(self,*args,**kwargs):
-        if len(args) == 0:
-            return Assets(public=kwargs["public"],private=kwargs["private"])
+        if len(args) > 0:
+            for asset in args:
+                for name in self.workflows:
+                    if "Assets" in self.workflows[name].pipelines:
+                        self.asset = asset
+                        
+                        self.workflows[name].pipelines["Assets"].clean()
+                        self.workflows[name].pipelines["Assets"].build()
+                        
+                        break
+        elif "public" in kwargs and "private" in kwargs:
+            return AssetObject(**kwargs)
         else:
-            for name in self.workflows:
-                self.workflows[wname].assets(*args)
+            self.context = Assets(self.context)
+        
+        return self
     
     def workflow(self,name):
         self.context = Workflow(self,name)
@@ -145,6 +178,7 @@ class Workflow(object):
         self.name = name
         
         self.pipelines = {}
+        self.assets = {}
         
         if isinstance(context,Application):
             self.application = context
@@ -153,25 +187,17 @@ class Workflow(object):
             self.application = context.application
             context.application.workflows[name] = self
     
-    def clean(self):
+    def clean(self,split=True,merge=True):
         for name in self.pipelines:
             if isinstance(self.pipelines[name],Source) and\
                len(self.pipelines[name].upstream) == 0:
-                return self.pipelines[name].clean()
+                return self.pipelines[name].clean(split,merge)
     
     def build(self):
         for name in self.pipelines:
             if isinstance(self.pipelines[name],Source) and\
                len(self.pipelines[name].upstream) == 0:
                 return self.pipelines[name].build()
-        
-    def assets(self,*args):
-        if len(args) == 0:
-            return Assets(public=kwargs["public"],private=kwargs["private"])
-        else:
-            for name in self.pipelines:
-                if isinstance(self.pipelines[name],Assets):
-                    self.pipelines[name].clean(full=False)
 
 class Pipeline(object):
     def __new__(cls,context,name=None,routine=None,*args,**kwargs):
@@ -226,11 +252,11 @@ class Pipeline(object):
             else:
                 self.workflow.application.context = self.workflow
     
-    def clean(self,full):
+    def clean(self,split=True,merge=True):
         self.built = False
         
         for name in self.downstream:
-            self.downstream[name].clean(full)
+            self.downstream[name].clean(True,merge)
         else:
             self.pipeline.close() if self.pipeline is not None else None
             
@@ -238,14 +264,32 @@ class Pipeline(object):
     
     def build(self):
         if self.built:pass
-        else:
-            self.built = True
-            
+        else:            
             pipeline = None
             for name in self.downstream:
                 pipeline = self.downstream[name].build()
             else:
-                self.pipeline = self.routine(pipeline=pipeline,*self.args,**self.kwargs)\
+                args = []
+                for arg in self.args:
+                    if isinstance(arg,types.FunctionType):
+                        if self.workflow.application.asset is not None:
+                            args.append(arg(self.workflow.application.asset))
+                        else:
+                            return self.pipeline
+                    else:
+                        args.append(arg)
+            
+                kwargs = {}
+                for name in self.kwargs:
+                    if isinstance(kwargs[name],types.FunctionType):
+                        if self.workflow.service.asset is not None:
+                            kwargs[name] = self.kwargs[name](self.asset)
+                        else:
+                            return self.pipeline
+                    else:
+                        kwargs[name] = self.kwargs[name]
+                            
+                self.pipeline = self.routine(pipeline=pipeline,*args,**kwargs)\
                                 if self.routine is not None else None
             
                 for name in self.upstream:
@@ -254,10 +298,10 @@ class Pipeline(object):
                 for name in self.downstream:
                     if isinstance(self.downstream[name],Merge):
                         self.downstream[name].tick(self.pipeline)
+            
+                self.built = True
         
         return self.pipeline
-
-class Assets(Pipeline):pass
 
 class Source(Pipeline):        
     def seal(self):
@@ -297,13 +341,13 @@ class Choice(Pipeline):
                     
                     break
     
-    def clean(self,full):
+    def clean(self,split=True,merge=True):
         self.built = False
         
         if self.true is not None:
-            self.true.clean(full)
+            self.true.clean(True,merge)
         if self.false is not None:
-            self.false.clean(full)
+            self.false.clean(True,merge)
 
         self.pipeline.close() if self.pipeline is not None else None
             
@@ -311,13 +355,13 @@ class Choice(Pipeline):
     
     def build(self):
         if self.built:pass
-        else:
-            self.built = True
-            
+        else:            
             istrue = self.true.build()
             isfalse = self.false.build()
             
             self.pipeline = self.routine(istrue=istrue,isfalse=isfalse,*self.args,**self.kwargs)
+            
+            self.built = True
             
         return self.pipeline
 
@@ -345,11 +389,11 @@ class IsTrue(Pipeline):
     def build(self):
         if self.built:pass
         else:
-            self.built = True
-            
             pipeline = None
             for name in self.downstream:
                 self.pipeline = self.downstream[name].build()
+            else:
+                self.built = True
         
         return self.pipeline
 
@@ -377,11 +421,11 @@ class IsFalse(Pipeline):
     def build(self):
         if self.built:pass
         else:
-            self.built = True
-            
             pipeline = None
             for name in self.downstream:
                 self.pipeline = self.downstream[name].build()
+            else:
+                self.built = True
         
         return self.pipeline
 
@@ -393,21 +437,28 @@ class Split(Sink):
         
         return obj
     
-    def clean(self,full=True):
-        Sink.clean(self,full)
-        
-        self.opipes = []
+    def clean(self,split=True,merge=True):
+        if split:
+            Sink.clean(self,True,merge)
+            
+            self.opipes = []
+        else:
+            for name in self.downstream:
+                self.downstream[name].clean(True,merge)
+            else:
+                self.built = False
     
     def build(self):
         if self.built:pass
         else:
-            self.built = True
-            
             ipipe = None
             for name in self.downstream:
-                self.opipes.append(self.downstream[name].build())
+                opipe = self.downstream[name].build()
             else:
-                self.pipeline = self.routine(ipipe=ipipe,opipes=self.opipes)
+                self.pipeline = self.routine(ipipe=ipipe,opipes=self.opipes) \
+                                if self.pipeline is not None else self.pipeline
+            
+                self.built = True
         
         return self.pipeline
     
@@ -451,26 +502,64 @@ class Merge(Source):
         
         return obj
     
-    def clean(self,full=True):
-        if full:
-            Source.clean(self,full)        
+    def clean(self,split=True,merge=True):
+        if merge:
+            Source.clean(self,True,merge)        
         
             self.ipipes = []
     
     def build(self):       
         if self.built:pass
         else:
-            self.built = True
-            
             for name in self.downstream:
                 opipe = self.downstream[name].build()
             else:
                 self.pipeline = self.routine(ipipes=self.ipipes,opipe=opipe)
         
+                self.built = True
+        
         return self.pipeline
     
     def tick(self,pipeline):
         self.ipipes.append(pipeline)
+
+class Assets(Split):
+    def __new__(cls,context):
+        obj = Split.__new__(cls,context,"Assets")
+        
+        obj.sealed = False
+        
+        return obj
+        
+    def seal(self):
+        self.workflow.application.context = self
+        
+        for name in self.downstream:
+            if not self.downstream[name].sealed:
+                break
+            else:
+                del self.downstream[name].upstream[self.name]
+        else:
+            self.workflow.application.context = self.workflow
+    
+    def clean(self,split=True,merge=True):
+        for name in self.downstream:
+            if self.name in self.downstream[name].upstream:
+                del self.downstream[name].upstream[self.name]
+            
+            self.downstream[name].clean(False,False)
+        else:
+            self.built = False
+    
+    def build(self):
+        if self.built:pass
+        else:
+            for name in self.downstream:
+                self.downstream[name].build()
+            else:
+                self.built = True
+    
+    def tick(self,pipeline):pass
 
 def application(name):
     return Application(name)

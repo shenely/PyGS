@@ -121,7 +121,7 @@ def main():
             isfalse().\
                 sink("Remove status",queue.get,status_queue)
     
-    segment.source("Split assets").\
+    segment.assets().source("Split assets").\
         sequence("Inspect state",queue.peek,state_queue).\
         choice("After lower #2",order.after,clock,REMOVE_MARGIN).\
             istrue().\
@@ -140,14 +140,14 @@ def main():
             isfalse().\
                 sink("Remove state",queue.get,state_queue)
         
-    segment.source("Split geographic").\
+    segment.assets().source("Split geographic").\
         sink("Merge inertial")
         
     segment.merge("Merge inertial").\
         sequence("Inertial notice",notice.inertial,[aqua],NOTICE_ADDRESS.format("Inertial")).\
         sink("Publish notice",socket.publish,view_socket)
         
-    segment.source("Split geographic").\
+    segment.assets().source("Split geographic").\
         sequence("Geographic transform",transform.inertial2geographic).\
         sink("Merge geographic")
         
@@ -155,7 +155,7 @@ def main():
         sequence("Geographic notice",notice.geographic,[aqua],NOTICE_ADDRESS.format("Geographic")).\
         sink("Publish notice")
 
-    segment.workflow("Receive status").\
+    segment.workflow("Receive status").assets().\
         source("Subscribe status",socket.subscribe,status_socket).\
         sequence("Parse status",status.parse).\
         choice("After clock",order.after,clock,ACCEPT_MARGIN).\
@@ -164,7 +164,7 @@ def main():
             isfalse().\
                 sink("Drop task")
 
-    segment.workflow("Receive state").\
+    segment.workflow("Receive state").assets().\
         source("Subscribe state",socket.subscribe,state_socket).\
         sequence("Parse state",state.parse).\
         choice("After clock",order.after,clock,ACCEPT_MARGIN).\
