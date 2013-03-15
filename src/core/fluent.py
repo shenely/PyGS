@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   17 February 2013
+Modified:   15 March 2013
 
 Provides a fluent interfaces to routines.
 
@@ -20,6 +20,7 @@ Date          Author          Version     Description
 2013-02-14                    1.1         Needs of clock segment met
 2013-02-15                    1.2         Attempting to fix split
 2013-02-18                    1.3         Incorporating some lessons
+2013-03-15                    1.4         This is now truth
 
 """
 
@@ -211,6 +212,8 @@ class Workflow(object):
         
         self.pipelines = {}
         
+        self.workflow = None
+        
         if isinstance(context,Application):
             self.application = context
             context.workflows[name] = self
@@ -222,13 +225,25 @@ class Workflow(object):
         for name in self.pipelines:
             if isinstance(self.pipelines[name],Source) and\
                len(self.pipelines[name].upstream) == 0:
-                return self.pipelines[name].clean()
+                self.pipelines[name].clean()
     
     def build(self):
         for name in self.pipelines:
             if isinstance(self.pipelines[name],Source) and\
                len(self.pipelines[name].upstream) == 0:
-                return self.pipelines[name].build()
+                self.workflow = self.pipelines[name].build()
+                
+                break
+        
+        self.tick()
+        
+        return self.workflow
+    
+    def tick(self):
+        for name in self.pipelines:
+            if isinstance(self.pipelines[name],(Split,Merge)):
+                self.pipelines[name].tick()
+        
 
 class Pipeline(object):
     def __new__(cls,context,name=None,routine=None,*args,**kwargs):
@@ -249,6 +264,8 @@ class Pipeline(object):
             
             obj.upstream = {}
             obj.downstream = {}
+            
+            obj.pipeline = None
             
             obj.sealed = False
             obj.built = False
@@ -283,6 +300,9 @@ class Pipeline(object):
     
     def clean(self):
         self.built = False
+        
+        self.pipeline.close() if self.pipeline is not None else None
+        self.pipeline = None
         
         for name in self.downstream:
             self.downstream[name].clean()
@@ -427,6 +447,8 @@ class Split(Sink):
     def __new__(cls,context,name):
         obj = Sink.__new__(cls,context,name,control.split)
         
+        obj.opipes = []
+        
         return obj
     
     def build(self):
@@ -435,13 +457,17 @@ class Split(Sink):
             self.built = True
             
             ipipe = None
-            opipes = []
             for name in self.downstream:
-                opipes.append(self.downstream[name].build())
+                self.downstream[name].build()
             else:
-                self.pipeline = self.routine(ipipe=ipipe,opipes=opipes)
+                self.pipeline = self.routine(ipipe=ipipe,opipes=self.opipes)
         
         return self.pipeline
+    
+    def tick(self):
+        for name in self.downstream:
+            if self.downstream[name].built:
+                self.opipes.append(self.downstream[name].pipeline)
 
 class Merge(Source):
     def __new__(cls,context,name):
@@ -455,6 +481,10 @@ class Merge(Source):
         
         obj.upstream = {}
         obj.downstream = {}
+            
+        obj.pipeline = None
+        
+        obj.ipipes = []
         
         if isinstance(context,Pipeline):
             context.downstream[name] = obj
@@ -483,13 +513,17 @@ class Merge(Source):
             self.built = True
             
             opipe = None
-            ipipes = [None] * len(self.upstream)
             for name in self.downstream:
                 opipe = self.downstream[name].build()
             else:
-                self.pipeline = self.routine(ipipes=ipipes,opipe=opipe)
+                self.pipeline = self.routine(ipipes=self.ipipes,opipe=opipe)
         
         return self.pipeline
+    
+    def tick(self):
+        for name in self.upstream:
+            if self.upstream[name].built:
+                self.ipipes.append(self.upstream[name].pipeline)
 
 def application(name):
     return Application(name)
