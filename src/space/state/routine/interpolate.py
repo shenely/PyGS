@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 
 """Interpolation routines
 
@@ -17,7 +18,8 @@ hermite -- Cubic Hermite spline
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-02-06    shenely         1.0         Promoted to version 1.0
-2013-02-10                                Using InertialState now
+2013-02-10                    1.1         Using InertialState now
+2013-03-20                    1.2         Using Unicode in comments
 
 """
 
@@ -91,11 +93,11 @@ def hermite(system,prev=None,next=None,istrue=None,isfalse=None):
                 p1=position[1]
                 m0=velocity[0]*(x1-x0)
                 m1=velocity[1]*(x1-x0)
-        AND the basis functions SHALL be evaluated at for the domain:
-                h[0,0]=2t\u00b3-3t\u00b2+1
-                h[0,1]=-2t\u00b3+3t\u00b2
-                h[1,0]=t\u00b3-2t\u00b2+t
-                h[1,1]=t\u00b3-t\u00b2
+        AND the basis functions SHALL be evaluated for the domain:
+                h[0,0]=2t³-3t²+1
+                h[0,1]=-2t³+3t²
+                h[1,0]=t³-2t²+t
+                h[1,1]=t³-t²
         AND the scaled position and velocity SHALL be calculated with
             the basis functions:
                 p(t)=h[0,0]*p0+h[1,0]*m0+h[0,1]*p1+h[1,1]*m1
