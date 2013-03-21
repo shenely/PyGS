@@ -117,7 +117,7 @@ class InertialState(EpochState):
     
     @property
     def V(self):
-        """Inertial U (read-only)"""
+        """Inertial Velocity (read-only)"""
         return norm(self.velocity)
     
     @property

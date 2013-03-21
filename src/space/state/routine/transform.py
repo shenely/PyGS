@@ -353,8 +353,8 @@ def inertial2geographic(pipeline=None):
             
             t = state.epoch
             arc = acosd(EARTH_RADIUS / state.R)
-            long = (RAD_TO_DEG * state.alpha +\
-                    360 * (t - J2000).total_seconds() / JULIAN_DAY) % 360
+            long = (RAD_TO_DEG * state.alpha) % 360# +\
+                    #360 * (t - J2000).total_seconds() / JULIAN_DAY) % 360
             lat = RAD_TO_DEG * state.delta
 
             state = GeographicState(t,arc,long,lat)

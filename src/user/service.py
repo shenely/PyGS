@@ -67,6 +67,118 @@ EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 #
 ####################
 
+
+class UserSegment(object):
+    scheduler = Scheduler()
+    context = zmq.Context(1)
+    
+    epoch_socket = context.socket(zmq.SUB)
+    epoch_socket.connect("tcp://localhost:5556")
+    epoch_socket.setsockopt(zmq.SUBSCRIBE,EPOCH_ADDRESS)
+    
+    view_socket = context.socket(zmq.PUB)
+    view_socket.connect("tcp://localhost:5555")
+    
+    physics = EpochState(datetime.utcnow())
+    tasks = []
+    spacecraft = []
+    
+    def __init__(self,spacecraft):        
+        self.spacecraft.append(spacecraft)
+                
+        self.state_socket = self.context.socket(zmq.SUB)
+        self.state_socket.connect("tcp://localhost:5556")
+        self.state_socket.setsockopt(zmq.SUBSCRIBE,STATE_ADDRESS.format(name=spacecraft.name))
+
+        self.state_queue = PriorityQueue()
+                
+        self.status_socket = self.context.socket(zmq.SUB)
+        self.status_socket.connect("tcp://localhost:5556")
+        self.status_socket.setsockopt(zmq.SUBSCRIBE,STATUS_ADDRESS.format(name=spacecraft.name))
+
+        self.status_queue = PriorityQueue()
+        
+        self.socket = self.context.socket(zmq.PUB)
+        self.socket.connect("tcp://localhost:5555")
+
+        self.queue = PriorityQueue()
+        
+        if not hasattr(self,"epoch_task"):
+            self.task_update_epoch()
+            self.task_generate_view()
+        
+        self.task_subscribe_state()
+        self.task_subscribe_status()
+        self.task_interpolate_state(spacecraft.state)
+        self.task_update_status(spacecraft.status)
+
+    @classmethod
+    def task_update_epoch(cls):
+        split_tasks = control.split(None,cls.tasks)
+        update_epoch = epoch.update(cls.physics,split_tasks)
+        parse_epoch = epoch.parse(update_epoch)
+        subscribe_epoch = socket.subscribe(cls.epoch_socket,parse_epoch)
+        
+        cls.epoch_task = subscribe_epoch
+        cls.scheduler.handler(cls.epoch_socket,cls.epoch_task)
+    
+    @classmethod
+    def task_generate_view(cls):
+        point = GeographicState(datetime(2010,1,1),0.0,0.0,0.0)
+        
+        publish_view = socket.publish(cls.view_socket)
+        view_local = notice.horizontal(cls.spacecraft,NOTICE_ADDRESS.format("Horizontal"),publish_view)
+        merge_tasks_local = control.merge(cls.tasks,view_local)
+        horizontal_transform = transform.geographic2horizontal(point,merge_tasks_local)
+        view_global2d = notice.geographic(cls.spacecraft,NOTICE_ADDRESS.format("Geographic"),publish_view)
+        merge_tasks_global2d = control.merge(cls.tasks,view_global2d)
+        split_views_2d = control.split(None,[merge_tasks_global2d,horizontal_transform])
+        geographic_transform = transform.inertial2geographic(split_views_2d)
+        view_global3d = notice.inertial(cls.spacecraft,NOTICE_ADDRESS.format("Inertial"),publish_view)
+        merge_tasks3d = control.merge(cls.tasks,view_global3d)
+        split_views = control.split(None,[merge_tasks3d,geographic_transform])
+        
+        cls.view_task = split_views
+
+    def task_subscribe_state(self):
+        enqueue_state = queue.put(self.state_queue)
+        after_system = order.after(self.physics,ACCEPT_MARGIN,enqueue_state)
+        parse_state = state.parse(after_system)
+        subscribe_state = socket.subscribe(self.state_socket,parse_state)
+        
+        self.state_task = subscribe_state
+        self.scheduler.handler(self.state_socket,self.state_task)
+
+    def task_subscribe_status(self):
+        enqueue_status = queue.put(self.status_queue)
+        after_system = order.after(self.physics,ACCEPT_MARGIN,enqueue_status)
+        parse_status = status.parse(after_system)
+        subscribe_status = socket.subscribe(self.status_socket,parse_status)
+        
+        self.status_task = subscribe_status
+        self.scheduler.handler(self.status_socket,self.status_task)
+    
+    def task_interpolate_state(self,coords):
+        update_state = state.update(coords,self.view_task)
+        interpolate_state = interpolate.hermite(self.physics,istrue=update_state)
+        dequeue_state = queue.get(self.state_queue,interpolate_state)
+        block_state = control.block(interpolate_state)
+        remove_state = queue.get(self.state_queue,block_state)
+        after_upper = order.after(self.physics,INTERPOLATE_MARGIN,block_state,dequeue_state)
+        after_lower = order.after(self.physics,REMOVE_MARGIN,after_upper,remove_state)
+        inspect_state = queue.peek(self.state_queue,after_lower)
+        
+        self.tasks.append(inspect_state)
+    
+    def task_update_status(self,color):
+        update_status = status.update(color)
+        dequeue_status = queue.get(self.status_queue,update_status)
+        remove_status = queue.get(self.status_queue)
+        after_upper = order.after(self.physics,STATUS_MARGIN,None,dequeue_status)
+        after_lower = order.after(self.physics,REMOVE_MARGIN,after_upper,remove_status)
+        inspect_status = queue.peek(self.status_queue,after_lower)
+        
+        self.tasks.append(inspect_status)
         
 def main():
     """Main Function"""
@@ -121,7 +233,7 @@ def main():
             isfalse().\
                 sink("Remove status",queue.get,status_queue)
     
-    segment.assets().source("Split assets").\
+    segment.source("Split assets").\
         sequence("Inspect state",queue.peek,state_queue).\
         choice("After lower #2",order.after,clock,REMOVE_MARGIN).\
             istrue().\
@@ -140,14 +252,14 @@ def main():
             isfalse().\
                 sink("Remove state",queue.get,state_queue)
         
-    segment.assets().source("Split geographic").\
+    segment.source("Split geographic").\
         sink("Merge inertial")
         
     segment.merge("Merge inertial").\
         sequence("Inertial notice",notice.inertial,[aqua],NOTICE_ADDRESS.format("Inertial")).\
         sink("Publish notice",socket.publish,view_socket)
         
-    segment.assets().source("Split geographic").\
+    segment.source("Split geographic").\
         sequence("Geographic transform",transform.inertial2geographic).\
         sink("Merge geographic")
         
@@ -155,7 +267,7 @@ def main():
         sequence("Geographic notice",notice.geographic,[aqua],NOTICE_ADDRESS.format("Geographic")).\
         sink("Publish notice")
 
-    segment.workflow("Receive status").assets().\
+    segment.workflow("Receive status").\
         source("Subscribe status",socket.subscribe,status_socket).\
         sequence("Parse status",status.parse).\
         choice("After clock",order.after,clock,ACCEPT_MARGIN).\
@@ -164,7 +276,7 @@ def main():
             isfalse().\
                 sink("Drop task")
 
-    segment.workflow("Receive state").assets().\
+    segment.workflow("Receive state").\
         source("Subscribe state",socket.subscribe,state_socket).\
         sequence("Parse state",state.parse).\
         choice("After clock",order.after,clock,ACCEPT_MARGIN).\

@@ -23,7 +23,6 @@ import zmq
 from bson.tz_util import utc
 
 #Internal libraries
-from core import ObjectDict
 from core.service.scheduler import Scheduler
 from core.fluent import application
 from core.routine import queue,socket,order,database
@@ -82,9 +81,7 @@ def main():
     """Main Function"""
     
     clock = EpochState(datetime(2010,1,1,tzinfo=utc))
-    
-    asset1 = ObjectDict()
-    asset1.asset = aqua = SpaceAsset("Aqua","#007777")
+    aqua = SpaceAsset("Aqua","#007777")
     aqua.state = KeplerianState(clock.epoch,
                                 7077.0,
                                 0.0 * DEG_TO_RAD,
@@ -109,12 +106,10 @@ def main():
     command_socket.connect("tcp://localhost:5556")
     command_socket.setsockopt(zmq.SUBSCRIBE,COMMAND_ADDRESS.format(name=aqua.name))
 
-    asset1.state_queue = state_queue = PriorityQueue()
+    state_queue = PriorityQueue()
     command_queue = PriorityQueue()
     
     segment = application("Space segment")
-    assets = segment.assets(public=["status","state"],
-                            private=["state_queue"])
 
     segment.workflow("Receive epoch").\
         source("Subscribe epoch",socket.subscribe,epoch_socket).\
@@ -122,10 +117,10 @@ def main():
         sequence("Update epoch",epoch.update,clock).\
         split("Split assets")
 
-    segment.assets().source("Split assets").\
+    segment.source("Split assets").\
         choice("Before state",order.before,aqua.state,ITERATE_MARGIN).\
             istrue().\
-                sequence("Inspect state",queue.peek,assets.state_queue).\
+                sequence("Inspect state",queue.peek,state_queue).\
                 choice("After lower",order.after,clock,REMOVE_MARGIN).\
                     istrue().\
                         choice("After upper",order.after,clock,PUBLISH_MARGIN).\
@@ -173,11 +168,9 @@ def main():
     
     segment.clean()
     segment.build()
-    
-    segment.assets(asset1)
             
     scheduler.handler(epoch_socket,segment["Receive epoch"])
-    #scheduler.handler(command_socket,segment["Receive command"])
+    scheduler.handler(command_socket,segment["Receive command"])
     
     #scheduler.start()
     
