@@ -4,14 +4,13 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   02 May 2013
 
 Provides routines for prioritizing messages queues.
 
-Functions:
-put  -- Put to queue
-get  -- Get from queue
-peek -- Peek at queue
+Classes:
+GetQueue  -- Get from queue
+PutQueue  -- Put to queue
 
 """
 
@@ -19,7 +18,7 @@ peek -- Peek at queue
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-05-02    shenely         1.0         Initial revision
 
 """
 
@@ -37,8 +36,8 @@ import types
 from bson.tz_util import utc
 
 #Internal libraries
-from .. import coroutine
-from clock.epoch import EpochState
+from . import EventRoutine,ActionRoutine
+from epoch import EpochState
 #
 ##################
 
@@ -46,9 +45,8 @@ from clock.epoch import EpochState
 ##################
 # Export section #
 #
-__all__ = ["put",
-           "get",
-           "peek"]
+__all__ = ["GetQueue",
+           "PutQueue"]
 #
 ##################
 
@@ -63,8 +61,55 @@ J2000 = datetime(2000,1,1,12,tzinfo=utc)#Julian epoch (2000-01-01T12:00:00Z)
 ####################
 
 
-@coroutine
-def put(queue,pipeline=None,full=None):
+class GetQueue(EventRoutine):
+    """Story:  Get from Queue
+    
+    IN ORDER TO process important messages first
+    AS A generic segment
+    I WANT TO retrieve the highest priority message from a queue
+    
+    """
+    
+    """Specification:  Get from queue
+    
+    GIVEN a priority queue
+        AND a downstream pipeline (default null)
+        AND a alternate (if empty) pipeline (default null)
+        
+    Scenario 1:  Message requested
+    WHEN a message is requested from upstream
+    THEN highest priority message SHALL be removed from the queue
+        AND the message SHALL be sent downstream
+        
+    Scenario 2:  Queue is empty
+    WHEN a message is requested from upstream
+        AND the queue is empty
+    THEN a blank message SHALL be sent downstream (alternate route)
+    
+    """
+    
+    def __init__(self,queue):
+        assert isinstance(queue,Queue)
+        
+        EventRoutine.__init__(self)
+        
+        self.queue = queue
+    
+    def occur(self,message):
+        if not self.queue.empty(): 
+            priority,message = self.queue.get()
+            
+            assert isinstance(priority,(types.IntType,types.FloatType))
+                    
+            logging.info("{0}:  Got with priority {1}".\
+                         format(self.name,priority))
+            
+            return message
+        else:
+            logging.warn("{0}:  Queue is empty".\
+                         format(self.name))
+
+class PutQueue(ActionRoutine):
     """Story:  Put to queue
     
     IN ORDER TO process important messages first
@@ -93,164 +138,27 @@ def put(queue,pipeline=None,full=None):
     
     """
     
-    #configuration validation
-    assert isinstance(queue,Queue)
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    name = "Queue.Put"
     
-    flag = True
-    message = None
-    
-    logging.debug("Queue.Put:  Starting")
-    while True:
-        try:
-            message = yield message,pipeline if flag else full
-        except GeneratorExit:
-            logging.warn("Queue.Put:  Stopping")
-            
-            #close downstream routines (if they exists)
-            pipeline.close() if pipeline is not None else None
-            full.close() if full is not None else None
-            
-            return
-        else:
-            #input validation
-            assert isinstance(message,EpochState)
-            
-            priority = (message.epoch - J2000).total_seconds()        
-            
-            if not queue.full():
-                queue.put((priority,message))
-                        
-                logging.info("Queue.Put:  Put message with priority %s" % priority)
-                
-                flag = True
-            else:
-                flag = False
-                        
-                logging.warn("Queue.Put:  Queue is full")
-
-@coroutine
-def get(queue,pipeline=None,empty=None):
-    """Story:  Get from Queue
-    
-    IN ORDER TO process important messages first
-    AS A generic segment
-    I WANT TO retrieve the highest priority message from a queue
-    
-    """
-    
-    """Specification:  Get from queue
-    
-    GIVEN a priority queue
-        AND a downstream pipeline (default null)
-        AND a alternate (if empty) pipeline (default null)
+    def __init__(self,queue):
+        assert isinstance(queue,Queue)
         
-    Scenario 1:  Message requested
-    WHEN a message is requested from upstream
-    THEN highest priority message SHALL be removed from the queue
-        AND the message SHALL be sent downstream
+        ActionRoutine.__init__(self)
         
-    Scenario 2:  Queue is empty
-    WHEN a message is requested from upstream
-        AND the queue is empty
-    THEN a blank message SHALL be sent downstream (alternate route)
+        self.queue = queue
     
-    """
-    
-    #configuration validation
-    assert isinstance(queue,Queue)
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
-    
-    flag = True
-    message = None
-    
-    logging.debug("Queue.Get:  Starting")
-    while True:
-        try:
-            yield message,pipeline if flag else empty
-        except GeneratorExit:
-            logging.warn("Queue.Get:  Stopping")
-            
-            #close downstream routines (if they exists)
-            pipeline.close() if pipeline is not None else None
-            empty.close() if empty is not None else None
-            
-            return
-        else:
-            if not queue.empty(): 
-                priority,message = queue.get()
-                
-                #output validation
-                assert isinstance(priority,(types.IntType,types.FloatType))
-                        
-                logging.info("Queue.Get:  Got message with priority %s" % priority)
-                
-                flag = True
-            else:
-                flag = False
-                message = None
-                        
-                logging.warn("Queue.Get:  Queue is empty")
-
-@coroutine
-def peek(queue,pipeline=None,empty=None):
-    """Story:  Peek at queue
-    
-    IN ORDER TO validate messages before processing
-    AS A generic segment
-    I WANT TO know which message is currently the highest priority
-    
-    """
-    
-    """Specification:  Peek at queue
-    
-    GIVEN a priority queue
-        AND a downstream pipeline (default null)
-        AND a alternate (if empty) pipeline (default null)
+    def execute(self,message):
+        assert isinstance(message,EpochState)#TODO:  Create EpochState (also, rename)
         
-    Scenario 1:  Message requested
-    WHEN a message is requested from upstream
-    THEN highest priority message SHALL be copied from the queue
-        AND the message SHALL be sent downstream
+        priority = (message.epoch - J2000).total_seconds()        
         
-    Scenario 2:  Queue is empty
-    WHEN a message is requested from upstream
-        AND the queue is empty
-    THEN a blank message SHALL be sent downstream (alternate route)
-    
-    """
-    
-    #configuration validation
-    assert isinstance(queue,Queue)
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
-    
-    flag = True
-    message = None
-    
-    logging.debug("Queue.Peek:  Starting")
-    while True:
-        try:
-            message = yield message,pipeline if flag else empty
-        except GeneratorExit:
-            logging.warn("Queue.Peek:  Stopping")
-            
-            #close downstream routines (if they exists)
-            pipeline.close() if pipeline is not None else None
-            empty.close() if empty is not None else None
-            
-            return
-        else:
-            if not queue.empty():           
-                priority,message = queue.queue[0]
-                
-                #output validation
-                assert isinstance(priority,(types.IntType,types.FloatType))
+        if not self.queue.full():
+            self.queue.put((priority,message))
                     
-                logging.info("Queue.Peek:  Peeked at message with priority %s" % priority)
-                
-                flag = True
-            else:
-                flag = False
-                message = None
-                        
-                logging.warn("Queue.Peek:  Queue is empty")
+            logging.info("{0}:  Put with priority {1}".\
+                         format(self.name,priority))
+            
+            return message
+        else:                    
+            logging.warn("{0}:  Queue is full".\
+                         format(self.name))

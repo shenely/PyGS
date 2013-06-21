@@ -4,20 +4,20 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   06 February 2013
+Modified:   02 May 2013
 
 Provides routines for driving the simulation clock.
 
-Functions:
-continuous -- Continuous clock routine
-discrete   -- Discrete clock routine
+Classes:
+ContinuousClock -- Continuous clock routine
+DiscreteClock   -- Discrete clock routine
 """
 
 """Change log:
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-06    shenely         1.0         Promoted to version 1.0
+2013-05-02    shenely         1.0         Initial revision
 
 """
 
@@ -34,7 +34,8 @@ import types
 from bson.tz_util import utc
 
 #Internal libraries
-from core import coroutine
+from core.routine import SourceRoutine
+from epoch import EpochState
 #
 ##################
 
@@ -42,8 +43,8 @@ from core import coroutine
 ##################
 # Export section #
 #
-__all__ = ["continuous",
-           "discrete"]
+__all__ = ["ContinuousClock",
+           "DiscreteClock"]
 #
 ##################
 
@@ -61,8 +62,7 @@ CLOCK_STEP = timedelta(seconds=60)#Clock step (default to 60 seconds)
 ####################
 
 
-@coroutine
-def continuous(epoch=J2000,scale=CLOCK_SCALE,pipeline=None):
+class ContinuousClock(SourceRoutine):
     """Story:  Continuous clock
     
     IN ORDER TO manage the simulation time
@@ -93,40 +93,34 @@ def continuous(epoch=J2000,scale=CLOCK_SCALE,pipeline=None):
     
     """
     
-    #configuration validation
-    assert isinstance(epoch,datetime)
-    assert isinstance(scale,(types.IntType,types.FloatType))
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    name = "Clock.Continuous"
     
-    now = datetime.utcnow()
+    def __init__(self,epoch=J2000,scale=CLOCK_SCALE):
+        assert isinstance(epoch,datetime)
+        assert isinstance(scale,(types.IntType,types.FloatType))
         
-    logging.debug("Clock.Continuous:  Starting at %s" % epoch)
-    while True:
-        try:
-            message = yield epoch,pipeline
-        except GeneratorExit:
-            logging.warn("Clock.Continuous:  Stopping at %s" % epoch)
+        SourceRoutine.__init__(self)
+        
+        self.epoch = epoch
+        self.scale = scale
+        
+        self.now = datetime.utcnow()
+    
+    def receive(self):
+        logging.info("{0}:  Ticking from {1}".\
+                     format(self.name,self.epoch))
+        
+        self.past = self.now
+        self.now = datetime.utcnow()
             
-            #close downstream routine (if it exists)
-            pipeline.close() if pipeline is not None else None
-            
-            return
-        else:
-            if message is not None:
-                #input validation
-                assert isinstance(message,(types.IntType,types.FloatType))
-                
-                scale = message
-                
-            past = now
-            now = datetime.utcnow()
-            
-            epoch += scale * (now - past)#increase simulation time
-            
-            logging.info("Clock.Continuous:  Updated epoch to %s" % epoch)
+        self.epoch += self.scale * (self.now - self.past)#increase simulation time
+        
+        logging.info("{0}:  Ticked to {1}".\
+                     format(self.name,self.epoch))
+        
+        return EpochState(self.epoch)
 
-@coroutine
-def discrete(epoch=J2000,step=CLOCK_STEP,pipeline=None):
+class DiscreteClock(SourceRoutine):
     """Story:  Discrete clock
     
     IN ORDER TO manage the simulation time
@@ -154,29 +148,22 @@ def discrete(epoch=J2000,step=CLOCK_STEP,pipeline=None):
     
     """
     
-    #configuration validation
-    assert isinstance(epoch,datetime)
-    assert isinstance(step,timedelta)
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    def __init__(self,epoch=J2000,step=CLOCK_STEP):
+        assert isinstance(epoch,datetime)
+        assert isinstance(step,timedelta)
         
-    logging.debug("Clock.Discrete:  Starting at %s" % epoch)
-    while True:
-        try:
-            message = yield epoch,pipeline
-        except GeneratorExit:
-            logging.warn("Clock.Discrete:  Stopping at %s" % epoch)
-            
-            #close downstream routine (if it exists)
-            pipeline.close() if pipeline is not None else None
-            
-            return
-        else:
-            if message is not None:
-                #input validation
-                assert isinstance(message,timedelta)
-                
-                step = message
-                
-            epoch += step#increase simulation time
-            
-            logging.info("Clock.Discrete:  Updated epoch to %s" % epoch)
+        SourceRoutine.__init__(self)
+        
+        self.epoch = epoch
+        self.step = step
+        
+    def receive(self):
+        logging.info("{0}:  Ticking from {1}".\
+                     format(self.name,self.epoch))
+        
+        self.epoch += self.step#increase simulation time
+        
+        logging.info("{0}:  Ticked to {1}".\
+                     format(self.name,self.epoch))
+        
+        return EpochState(self.epoch)

@@ -4,15 +4,15 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   15 February 2013
+Modified:   02 May 2013
 
 Provides routines for controlling the flow of data.
 
-Functions:
-split -- Split pipeline
-merge -- Merge pipeline
-allow -- Allow message
-block -- Block message
+Classes:
+SplitControl -- Split pipeline
+MergeControl -- Merge pipeline
+AllowControl -- Allow message
+BlockControl -- Block message
 
 """
 
@@ -20,12 +20,9 @@ block -- Block message
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-05    shenely         1.0         Promoted to version 1.0
-2013-02-12                    1.1         Split and merge accept nulls
-2013-02-15                    1.2         Adding an allow routine
+2013-05-02    shenely         1.0         Initial revision
 
 """
-
 
 ##################
 # Import section #
@@ -37,7 +34,7 @@ import types
 #External libraries
 
 #Internal libraries
-from .. import coroutine
+from . import BaseRoutine,SourceRoutine,TargetRoutine,ConditionRoutine
 #
 ##################
 
@@ -45,10 +42,10 @@ from .. import coroutine
 ##################
 # Export section #
 #
-__all__ = ["split",
-           "merge",
-           "allow",
-           "block"]
+__all__ = ["SplitControl",
+           "MergeControl",
+           "AllowControl",
+           "BlockControl"]
 #
 ##################
 
@@ -56,13 +53,12 @@ __all__ = ["split",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.0"#current version [major.minor]
 #
 ####################
 
 
-@coroutine
-def split(ipipe,opipes=None):
+class SplitControl(SourceRoutine,TargetRoutine):
     """Story:  Split pipeline
     
     IN ORDER TO distribute messages to multiple downstream sinks
@@ -82,29 +78,33 @@ def split(ipipe,opipes=None):
     
     """
     
-    #configuration validation
-    assert isinstance(ipipe,types.GeneratorType) or ipipe is None
-    assert isinstance(opipes,types.ListType)
-    assert filter(lambda opipe:isinstance(opipe,types.GeneratorType) or opipe is None,opipes) or len(opipes) == 0
+    name = "Control.Split"
     
-    message = None
-    
-    logging.debug("Control.Split:  Starting")
-    while True:
-        try:
-            message = yield message,opipes
-        except GeneratorExit:
-            logging.warn("Control.Split:  Stopping")
-            
-            #close downstream routines
-            [pipeline.close() for pipeline in opipes] if opipes is not None else None
-            
-            return
+    def process(self,message,ipipe):        
+        for opipe in self.target:
+            self.scheduler.push(message,opipe)
         else:
-            logging.info("Control.Split:  %d-way split" % len(opipes))
+            logging.info("{0}:  %d-way split".\
+                         format(self.name,len(self.target)))
+        
+            message = None
+            opipe = None
+        
+        return message,opipe
+    
+    def set_target(self,target):
+        assert isinstance(target,BaseRoutine)
+        
+        if len(self.target) is None:
+            logging.info("{0}:  Single target defined".\
+                         format(self.name))
+        else:
+            logging.info("{0}:  Multiple targets defined".\
+                          format(self.name))
+        
+        self.target.append(target)
 
-@coroutine
-def merge(ipipes,opipe=None):
+class MergeControl(SourceRoutine,TargetRoutine):
     """Story:  Split pipeline
     
     IN ORDER TO aggregate messages from multiple upstream sources
@@ -132,41 +132,50 @@ def merge(ipipes,opipe=None):
     
     """
     
-    #configuration validation
-    assert isinstance(ipipes,types.ListType)
-    assert filter(lambda ipipe:isinstance(ipipe,types.GeneratorType) or ipipe is None,ipipes) or len(ipipes) == 0
-    assert isinstance(opipe,types.GeneratorType) or opipe is None
+    name = "Control.Merge"
     
-    count = 0
-    messages = []
+    def __init__(self):
+        self.source = list()
+        self.target = list()
     
-    logging.debug("Control.Merge:  Starting")
-    while True:
-        try:
-            if count < len(ipipes)-1:
-                message = yield None,None
-                count += 1
-            else:
-                message = yield messages,opipe
-                messages = []            
-                count = 0
-            
-                logging.info("Control.Merge:  %d-way merge" % len(ipipes))
-        except GeneratorExit:
-            ipipes.pop()
-            
-            if len(ipipes) == 0:
-                logging.warn("Control.Merge:  Stopping")
-            
-                #close downstream routine
-                opipe.close() if opipe is not None else None
-                
-                return
-        else:
-            messages.append(message)
+    def process(self,message,ipipe):
+        if ipipe in self.source:
+            if ipipe in self.message:
+                logging.warn("{0}:  Duplicate source".\
+                             format(self.name))
 
-@coroutine
-def allow(pipeline=None):
+            self.message[ipipe] = message
+        else:
+            logging.error("{0}:  Undefined source".\
+                          format(self.name))
+            
+        if len(self.message) == len(self.source):
+            logging.info("{0}:  %d-way merge".\
+                         format(self.name,len(self.source)))
+            
+            message = self.message.values()
+            opipe = self.target
+            
+            self.message.clear()
+        else:
+            message = None
+            opipe = None
+        
+        return message,opipe
+    
+    def set_source(self,source):
+        assert isinstance(source,BaseRoutine)
+        
+        if len(self.source) == 0:
+            logging.info("{0}:  Single source defined".\
+                         format(self.name))
+        else:
+            logging.info("{0}:  Multiple sources defined".\
+                         format(self.name))
+        
+        self.source.append(source)
+
+class AllowControl(ConditionRoutine):
     """Story:  Allow message
     
     IN ORDER TO couple an upstream source from a downstream sink
@@ -185,24 +194,15 @@ def allow(pipeline=None):
     
     """
     
-    #configuration validation
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    name = "Control.Allow"
     
-    logging.debug("Control.Allow:  Starting")
-    while True:
-        try:
-            yield None,pipeline
-        except GeneratorExit:
-            logging.warn("Control.Allow:  Stopping")
-            
-            pipeline.close() if pipeline is not None else None
-            
-            return
-        else:
-            logging.info("Control.Allow:  Message blocked")
+    def satisfy(self,message):
+        logging.info("{0}:  Message allowed".\
+                     format(self.name))
+        
+        return True
 
-@coroutine
-def block(pipeline=None):
+class BlockControl(ConditionRoutine):
     """Story:  Block message
     
     IN ORDER TO decouple an upstream source from a downstream sink
@@ -221,18 +221,10 @@ def block(pipeline=None):
     
     """
     
-    #configuration validation
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    name = "Control.Block"
     
-    logging.debug("Control.Block:  Starting")
-    while True:
-        try:
-            yield None,pipeline
-        except GeneratorExit:
-            logging.warn("Control.Block:  Stopping")
-            
-            pipeline.close() if pipeline is not None else None
-            
-            return
-        else:
-            logging.info("Control.Block:  Message blocked")
+    def satisfy(self,message):
+        logging.info("{0}:  Message blocked".\
+                     format(self.name))
+        
+        return False

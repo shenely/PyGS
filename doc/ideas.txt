@@ -1,0 +1,92 @@
+core
+    routine
+        BaseRoutine
+        SourceRoutine(BaseRoutine)
+        EventRoutine(BaseRoutine)
+        CondtionRoutine(BaseRoutine)
+        ActionRoutine(BaseRoutine)
+        TargetRoutine(BaseRoutine)
+        control
+            ControlSplit(SourceRoutine,TargetRoutine)
+            ControlMerge(SourceRoutine,TargetRoutine)
+            ControlAllow(ConditionRoutine)
+            ControlBlock(ConditionRoutine)
+        database
+            DatabaseFind(EventRoutine)
+            DatabaseSave(ActionRoutine)
+        file
+            FileRead(EventRoutine)
+            FileWrite(ActionRoutine)
+        queue
+            QueueGet(EventRoutine)
+            QueuePut(ActionRoutine)
+        socket
+            SocketSubscribe(SourceRoutine)
+            SocketPublish(TargetRoutine)
+epoch
+    routine
+        BeforeEpoch(ConditionRoutine)
+        AfterEpoch(ConditionRoutine)
+        ParseEpoch(EventRoutine)
+        FormatEpoch(ActionRoutine)
+        UpdateEpoch(ActionRoutine)
+state
+    routine
+        ParseState(EventRoutine)
+        FormatState(ActionEpoch)
+        UpdateState(ActionEpoch)
+        interpolate
+            InterpolateAction(ActionRoutine)
+            HermiteInterpolate(InterpolateAction)
+        orbit
+            OrbitCondition(ConditionRoutine)
+            OrbitPerigee(OrbitCondition)
+            OrbitApogee(OrbitCondition)
+            OrbitAscendingNode(OrbitCondition)
+            OrbitDescendingNode(OrbitCondition)
+            OrbitNorthernPole(OrbitCondition)
+            OrbitSouthernPole(OrbitCondition)
+        propagate
+            PropagateAction(ActionRoutine)
+            KeplerPropagate(PropagateAction)
+        transform
+            TransformAction(ActionRoutine)
+            IdentityTransform(TransformAction)
+            InertialToKeperlianTransform(TransformAction)
+            KeperlianToInertialTransform(TransformAction)
+            InertialToGeographicTransform(TransformAction)
+            GeographicToHorizontalTransform(TransformAction)
+clock
+    routine
+        ContinuousClock(SourceRoutine)
+        DiscreteClock(SourceRoutine)
+    service
+        From ContinuousClock
+        Then FormatEpoch
+        To SocketPublish
+space
+    routine
+    service
+        From SocketSubscribe
+        When ParseEpoch
+        Then UpdateEpoch
+        To SplitRoutine
+        
+        From SplitRoutine
+        When BeforeEpoch
+        Then KeplerPropagate
+         And KeperlianToInertialTransform
+        To QueuePut
+        
+        From SplitRoutine
+        When QueueGet
+        Given BeforeEpoch
+          And AfterEpoch
+        Then FormatState
+        To SocketPublish
+        
+        From SplitRoutine
+        When QueueGet
+        Given BeforeEpoch
+          And not AfterEpoch
+        To QueuePut

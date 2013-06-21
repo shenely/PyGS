@@ -4,13 +4,13 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   05 February 2013
+Modified:   14 May 2013
 
 Provides routines for socket communication.
 
-Functions:
-publish   -- Publish to socket
-subscribe -- Subscribe from socket
+Classes:
+SubscribeSocket -- Subscribe from socket
+PublishSocket   -- Publish to socket
 
 """
 
@@ -18,7 +18,7 @@ subscribe -- Subscribe from socket
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-02-05    shenely         1.0         Promoted to version 1.0
+2013-05-14    shenely         1.0         Initial revision
 
 """
 
@@ -34,7 +34,7 @@ import types
 import zmq
 
 #Internal libraries
-from .. import coroutine
+from . import SourceRoutine,TargetRoutine
 #
 ##################
 
@@ -42,8 +42,8 @@ from .. import coroutine
 ##################
 # Export section #
 #
-__all__ = ["publish",
-           "subscribe"]
+__all__ = ["SubscribeSocket",
+           "PublishSocket"]
 #
 ##################
 
@@ -56,8 +56,52 @@ __version__ = "1.0"#current version [major.minor]
 ####################
 
 
-@coroutine
-def publish(socket,pipeline=None):
+class SubscribeSocket(SourceRoutine):
+    """Story:  Subscribe from socket
+    
+    IN ORDER TO be synchronized with multiple segments
+    AS A generic segment
+    I WANT TO receive a message simultaneously with multiple segments
+    
+    """
+    
+    """Specification:  Subscribe from socket
+    
+    GIVEN a subscribe socket
+        AND a downstream pipeline (default null)
+        
+    Scenario 1:  Socket message received
+    WHEN a message is received from the socket
+        AND the message defines an envelope
+        AND the message defines the content
+    THEN the message SHALL be sent downstream
+    
+    """
+    
+    name = "Socket.Subscribe"
+    
+    def __init__(self,socket):
+        assert isinstance(socket,zmq.Socket)
+        assert socket.socket_type is zmq.SUB
+        
+        SourceRoutine.__init__(self)
+        
+        self.socket = socket
+    
+    def receive(self):
+        message = self.socket.recv_multipart()
+        
+        assert isinstance(message,types.ListType)
+        assert len(message) == 2
+        assert isinstance(message[0],types.StringTypes)
+        assert isinstance(message[1],types.StringTypes)
+                
+        logging.info("{0}:  From address {1}".\
+                     format(self.name,message[0]))
+        
+        return message
+
+class PublishSocket(TargetRoutine):
     """Story:  Publish to socket
     
     IN ORDER TO synchronize multiple segments 
@@ -80,140 +124,23 @@ def publish(socket,pipeline=None):
     
     """
     
-    #configuration validation
-    assert isinstance(socket,zmq.Socket)
-    assert socket.socket_type is zmq.PUB
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+    name = "Socket.Publish"
     
-    message = None
-    
-    logging.debug("Socket.Publish:  Starting")
-    while True:
-        try:
-            message = yield message,pipeline
-        except GeneratorExit:
-            logging.warn("Socket.Publish:  Stopping")
-            
-            #close downstream routines (if they exists)
-            pipeline.close() if pipeline is not None else None
-            
-            return
-        else:          
-            #input validation
-            assert isinstance(message,types.TupleType)
-            assert len(message) == 2
-            assert isinstance(message[0],types.StringTypes)
-            assert isinstance(message[1],types.StringTypes)
-            
-            socket.send_multipart(message)
-                    
-            logging.info("Socket.Publish:  To address %s" % message[0])
-
-@coroutine
-def subscribe(socket,pipeline=None):
-    """Story:  Subscribe from socket
-    
-    IN ORDER TO be synchronized with multiple segments
-    AS A generic segment
-    I WANT TO receive a message simultaneously with multiple segments
-    
-    """
-    
-    """Specification:  Subscribe from socket
-    
-    GIVEN a subscribe socket
-        AND a downstream pipeline (default null)
+    def __init__(self,socket):
+        assert isinstance(socket,zmq.Socket)
+        assert socket.socket_type is zmq.PUB
         
-    Scenario 1:  Socket message received
-    WHEN a message is received from the socket
-        AND the message defines an envelope
-        AND the message defines the content
-    THEN the message SHALL be sent downstream
-    
-    """
-    
-    #configuration validation
-    assert isinstance(socket,zmq.Socket)
-    assert socket.socket_type is zmq.SUB
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
-    
-    message = None
-    
-    logging.debug("Socket.Subscribe:  Starting")
-    while True:
-        try:
-            message = yield message,pipeline
-        except GeneratorExit:
-            logging.warn("Socket.Subscribe:  Stopping")
-            
-            #close downstream routines (if they exists)
-            pipeline.close() if pipeline is not None else None
-            
-            return
-        else:
-            message = socket.recv_multipart()
-            
-            #output validation
-            assert isinstance(message,types.ListType)
-            assert len(message) == 2
-            assert isinstance(message[0],types.StringTypes)
-            assert isinstance(message[1],types.StringTypes)
-                    
-            logging.info("Socket.Subscribe:  From address %s" % message[0])
-
-@coroutine
-def request(socket,pipeline=None):
-    """Story:  Request from socket
-    
-    IN ORDER TO synchronize with another segment
-    AS A generic segment
-    I WANT TO receive a message to another segment
-    
-    """
-    
-    """Specification:  Request from socket
-    
-    GIVEN a request socket
-        AND a downstream pipeline (default null)
+        TargetRoutine.__init__(self)
         
-    Scenario 1:  Socket message received
-    WHEN a message is received from the socket
-        AND the message defines an envelope
-        AND the message defines the content
-    THEN the message SHALL be sent downstream
-    
-    """
-    
-    #configuration validation
-    assert isinstance(socket,zmq.Socket)
-    assert socket.socket_type is zmq.REQ
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
-
-@coroutine
-def respond(socket,pipeline=None):
-    """Story:  Respond to socket
-    
-    IN ORDER TO synchronize with another segment
-    AS A generic segment
-    I WANT TO send a message to another segment
-    
-    """
-    
-    """Specification:  Respond to socket
-    
-    GIVEN a response socket
-        AND a downstream pipeline (default null)
+        self.socket = socket
+           
+    def send(self,message):
+        assert isinstance(message,types.TupleType)
+        assert len(message) == 2
+        assert isinstance(message[0],types.StringTypes)
+        assert isinstance(message[1],types.StringTypes)
         
-    Scenario 1:  Upstream message received
-    WHEN a message is received from upstream
-        AND the message defines an envelope
-        AND the message defines the content
-    THEN the message SHALL be sent to the socket
-        AND the message SHALL be sent downstream
-    
-    """
-    
-    #configuration validation
-    assert isinstance(socket,zmq.Socket)
-    assert socket.socket_type is zmq.REP
-    assert isinstance(pipeline,types.GeneratorType) or pipeline is None
+        self.socket.send_multipart(message)
+                
+        logging.info("{0}:  To address {1}".\
+                     format(self.name,message[0]))

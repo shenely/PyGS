@@ -1,18 +1,52 @@
-from datetime import datetime
+#!/usr/bin/env python2.7
+
+"""Core objects
+
+Author(s):  Sean Henely
+Language:   Python 2.x
+Modified:   20 June 2013
+
+Purpose:    
+"""
+
+
+##################
+# Import section #
+#
+#Built-in libraries
 import functools
 import types
 import json
 
+#External libraries
 from numpy import matrix
 from bson import json_util
 from bson.objectid import ObjectId
 
+#Internal libraries
+#
+##################
+
+
+##################
+# Export section #
+#
 __all__= ["coroutine",
           "ObjectDict",
+          "BaseObject",
           "encoder",
           "decoder"]
+#
+##################
 
-EPOCH_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+####################
+# Constant section #
+#
+__version__ = "1.0"#current version [major.minor]
+#
+####################
+
 
 def coroutine(func):
     def wrapper(*args,**kw):
@@ -46,19 +80,6 @@ class BaseObject(ObjectDict):
         
         self._id = _id
         if object is not None:self.object = object
-    
-    @staticmethod
-    def check(kwargs):
-        assert isinstance(kwargs,ObjectDict)
-        assert hasattr(kwargs,"_id")
-        
-        return True
-    
-    @classmethod
-    def build(cls,kwargs):
-        assert cls.check(kwargs)
-        
-        return cls(**kwargs)
         
 def object_hook(dct):
     dct = json_util.object_hook(dct)
