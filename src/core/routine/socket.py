@@ -33,9 +33,11 @@ import types
 
 #External libraries
 import zmq
+from zmq.eventloop import ioloop
 
 #Internal libraries
 from . import SourceRoutine,TargetRoutine
+from ..service import schedule
 #
 ##################
 
@@ -80,6 +82,8 @@ class SubscribeSocket(SourceRoutine):
     """
     
     name = "Socket.Subscribe"
+    type = schedule.HANDLER
+    event = ioloop.POLLIN
     
     def __init__(self,socket):
         assert isinstance(socket,zmq.Socket)
@@ -87,10 +91,10 @@ class SubscribeSocket(SourceRoutine):
         
         SourceRoutine.__init__(self)
         
-        self.socket = socket
+        self.handle = socket
     
     def _receive(self):
-        message = self.socket.recv_multipart()
+        message = self.handle.recv_multipart()
         
         assert isinstance(message,types.ListType)
         assert len(message) == 2
@@ -126,6 +130,8 @@ class PublishSocket(TargetRoutine):
     """
     
     name = "Socket.Publish"
+    type = schedule.HANDLER
+    event = ioloop.POLLIN
     
     def __init__(self,socket):
         assert isinstance(socket,zmq.Socket)
@@ -133,7 +139,7 @@ class PublishSocket(TargetRoutine):
         
         TargetRoutine.__init__(self)
         
-        self.socket = socket
+        self.handle = socket
            
     def _send(self,message):
         assert isinstance(message,types.TupleType)
@@ -141,7 +147,7 @@ class PublishSocket(TargetRoutine):
         assert isinstance(message[0],types.StringTypes)
         assert isinstance(message[1],types.StringTypes)
         
-        self.socket.send_multipart(message)
+        self.handle.send_multipart(message)
                 
         logging.info("{0}:  To address {1}".\
                      format(self.name,message[0]))

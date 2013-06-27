@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   26 June 2013
+Modified:   27 June 2013
 
 Provides routines for driving the simulation clock.
 
@@ -19,6 +19,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-02    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
+2013-06-27    shenely         1.2         Properties for scheduler
 
 """
 
@@ -36,6 +37,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.routine import SourceRoutine
+from core.service import schedule
 from epoch import EpochState
 #
 ##################
@@ -53,12 +55,14 @@ __all__ = ["ContinuousClock",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 
 J2000 = datetime(2000,1,1,12,tzinfo=utc)#Julian epoch (2000-01-01T12:00:00Z)
 
 CLOCK_SCALE = 1.0#Clock rate scale (default 1:1, i.e. real-time)
 CLOCK_STEP = timedelta(seconds=60)#Clock step (default to 60 seconds)
+
+TIMEOUT = 200#time between running
 #
 ####################
 
@@ -95,6 +99,8 @@ class ContinuousClock(SourceRoutine):
     """
     
     name = "Clock.Continuous"
+    type = schedule.PERIODIC
+    timeout = TIMEOUT
     
     def __init__(self,epoch=J2000,scale=CLOCK_SCALE):
         assert isinstance(epoch,datetime)
@@ -148,6 +154,10 @@ class DiscreteClock(SourceRoutine):
         AND the simulation time SHALL be requested
     
     """
+    
+    name = "Clock.Discrete"
+    type = schedule.PERIODIC
+    timeout = TIMEOUT
     
     def __init__(self,epoch=J2000,step=CLOCK_STEP):
         assert isinstance(epoch,datetime)

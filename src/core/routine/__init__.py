@@ -68,6 +68,7 @@ class BaseRoutine(object):
 
 class SourceRoutine(BaseRoutine):
     name = "Core.Source"
+    type = None
     
     def _process(self,message,ipipe):
         logging.info("{0}:  Receiving".\
@@ -132,7 +133,7 @@ class ConditionRoutine(BaseRoutine):
             logging.info("{0}:  {1} target defined".\
                          format(self.name,self.mode))
         else:
-            logging.error("{0}:  Target redefined".\
+            logging.error("{0}:  {1} target redefined".\
                           format(self.name,self.mode))
         
         self.target[self.mode] = target

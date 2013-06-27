@@ -1,10 +1,12 @@
+from .service import schedule
 from .behavior import *
 from .scenario import *
 from .clause import *
 
 class Application(object):
-    def __init__(self,name):
+    def __init__(self,name,scheduler):
         self.name = name
+        self.scheduler = scheduler
         
     def Behavior(self,name):
         assert isinstance(name,basestring)
@@ -24,6 +26,13 @@ class Application(object):
         assert isinstance(self.context,Scenario)
         
         self.context = FromClause(name,routine)
+
+        if routine.type is schedule.PERIODIC:
+            self.scheduler.periodic(routine,routine.timeout).start()
+        elif routine.type is schedule.DELAYED:
+            self.scheduler.delayed(routine,routine.timeout).start()
+        elif routine.type is schedule.HANDLER:
+            self.scheduler.delayed(routine,routine.handle,routine.event)
         
         return self
     
