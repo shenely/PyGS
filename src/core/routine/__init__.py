@@ -14,10 +14,10 @@ class BaseRoutine(object):
         self.source = list()
         self.target = None
         
-        self.routine = self.routine()
+        self.routine = self._routine()
     
     @coroutine
-    def routine(self): 
+    def _routine(self): 
         message,opipe = None,None
                
         logging.debug("{0}:  Starting".\
@@ -34,12 +34,12 @@ class BaseRoutine(object):
                 logging.info("{0}:  Processing".\
                              format(self.name))
                 
-                message,opipe = self.process(message,ipipe)
+                message,opipe = self._process(message,ipipe)
         
                 logging.info("{0}:  Processed".\
                              format(self.name))
     
-    def process(self,message,ipipe):
+    def _process(self,message,ipipe):
         raise NotImplemented
     
     def set_source(self,source):
@@ -69,11 +69,11 @@ class BaseRoutine(object):
 class SourceRoutine(BaseRoutine):
     name = "Core.Source"
     
-    def process(self,message,ipipe):
+    def _process(self,message,ipipe):
         logging.info("{0}:  Receiving".\
                      format(self.name))
         
-        message = self.receive()
+        message = self._receive()
         opipe = self.target
         
         logging.info("{0}:  Received".\
@@ -81,17 +81,17 @@ class SourceRoutine(BaseRoutine):
         
         return message,opipe
     
-    def receive(self):
+    def _receive(self):
         raise NotImplemented
 
 class TargetRoutine(BaseRoutine):
     name = "Core.Target"
     
-    def process(self,message,ipipe):
+    def _process(self,message,ipipe):
         logging.info("{0}:  Sending".\
                      format(self.name))
         
-        self.send(message)
+        self._send(message)
         opipe = self.target
         
         logging.info("{0}:  Sent".\
@@ -99,17 +99,17 @@ class TargetRoutine(BaseRoutine):
         
         return message,opipe
     
-    def send(self,message):
+    def _send(self,message):
         raise NotImplemented
 
 class ConditionRoutine(BaseRoutine):
     name = "Core.Condition"
     
-    def process(self,message,ipipe):
+    def _process(self,message,ipipe):
         logging.info("{0}:  Satisfying".\
                      format(self.name))
             
-        if self.satisfy(message):
+        if self._satisfy(message):
             logging.info("{0}:  Satisfied".\
                          format(self.name))
             
@@ -122,7 +122,7 @@ class ConditionRoutine(BaseRoutine):
             
         return message,opipe
     
-    def satisfy(self,message):
+    def _satisfy(self,message):
         raise NotImplemented
     
     def set_target(self,target):
@@ -140,11 +140,11 @@ class ConditionRoutine(BaseRoutine):
 class EventRoutine(BaseRoutine):
     name = "Core.Event"
     
-    def process(self,message,ipipe):
+    def _process(self,message,ipipe):
         logging.info("{0}:  Occurring".\
                      format(self.name))
         
-        message = self.occur(message)
+        message = self._occur(message)
         
         if message is not None:
             logging.info("{0}:  Occurred".\
@@ -159,17 +159,17 @@ class EventRoutine(BaseRoutine):
             
         return message,opipe
     
-    def occur(self,message):
+    def _occur(self,message):
         raise NotImplemented
 
 class ActionRoutine(BaseRoutine):
     name = "Core.Action"
     
-    def process(self,message,ipipe):
+    def _process(self,message,ipipe):
         logging.info("{0}:  Executing".\
                      format(self.name))
         
-        message = self.execute(message)
+        message = self._execute(message)
         opipe = self.target
         
         logging.info("{0}:  Executed".\
@@ -177,5 +177,5 @@ class ActionRoutine(BaseRoutine):
             
         return message,opipe
     
-    def execute(self,message):
+    def _execute(self,message):
         raise NotImplemented

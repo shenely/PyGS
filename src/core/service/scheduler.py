@@ -51,18 +51,20 @@ class Scheduler(object):
             
         return ioloop.PeriodicCallback(callback,timeout)
 
-    def handler(self,socket,routine):
+    def aperiodic(self,routine,timeout):
+        def callback():
+            self.schedule(None,routine)
+            
+        return ioloop.DelayedCallback(callback,timeout)
+
+    def handler(self,routine,handle,event=ioloop.POLLIN):
         def callback(socket,events):
             self.schedule(*routine.next())
             
-        self.loop.add_handler(socket,callback,ioloop.POLLIN)
+        self.loop.add_handler(handle,callback,event)
     
     def schedule(self,message,pipeline):
-        if isinstance(pipeline,(types.ListType,types.TupleType)) is True:
-            for i in range(len(pipeline)):
-                if pipeline[i] is not None:
-                    self.queue.put((message,pipeline[i]))
-        elif pipeline is not None:
+        if pipeline is not None:
             self.queue.put((message,pipeline))
         
     def run(self):

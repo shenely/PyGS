@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 May 2013
+Modified:   26 June 2013
 
 Provides routines for controlling the flow of data.
 
@@ -21,6 +21,7 @@ BlockControl -- Block message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-02    shenely         1.0         Initial revision
+2013-06-26    shenely         1.1         Modifying routine structure
 
 """
 
@@ -80,7 +81,7 @@ class SplitControl(SourceRoutine,TargetRoutine):
     
     name = "Control.Split"
     
-    def process(self,message,ipipe):        
+    def _process(self,message,ipipe):        
         for opipe in self.target:
             self.scheduler.push(message,opipe)
         else:
@@ -138,7 +139,7 @@ class MergeControl(SourceRoutine,TargetRoutine):
         self.source = list()
         self.target = list()
     
-    def process(self,message,ipipe):
+    def _process(self,message,ipipe):
         if ipipe in self.source:
             if ipipe in self.message:
                 logging.warn("{0}:  Duplicate source".\
@@ -196,7 +197,7 @@ class AllowControl(ConditionRoutine):
     
     name = "Control.Allow"
     
-    def satisfy(self,message):
+    def _satisfy(self,message):
         logging.info("{0}:  Message allowed".\
                      format(self.name))
         
@@ -223,7 +224,7 @@ class BlockControl(ConditionRoutine):
     
     name = "Control.Block"
     
-    def satisfy(self,message):
+    def _satisfy(self,message):
         logging.info("{0}:  Message blocked".\
                      format(self.name))
         

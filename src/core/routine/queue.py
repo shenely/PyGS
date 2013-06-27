@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 May 2013
+Modified:   26 June 2013
 
 Provides routines for prioritizing messages queues.
 
@@ -19,6 +19,7 @@ PutQueue  -- Put to queue
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-02    shenely         1.0         Initial revision
+2013-06-26    shenely         1.1         Modifying routine structure
 
 """
 
@@ -95,7 +96,7 @@ class GetQueue(EventRoutine):
         
         self.queue = queue
     
-    def occur(self,message):
+    def _occur(self,message):
         if not self.queue.empty(): 
             priority,message = self.queue.get()
             
@@ -147,7 +148,7 @@ class PutQueue(ActionRoutine):
         
         self.queue = queue
     
-    def execute(self,message):
+    def _execute(self,message):
         assert isinstance(message,EpochState)#TODO:  Create EpochState (also, rename)
         
         priority = (message.epoch - J2000).total_seconds()        

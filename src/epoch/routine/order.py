@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   14 May 2013
+Modified:   26 June 2013
 
 Provides routines for order tasks.
 
@@ -19,6 +19,7 @@ AfterEpoch  -- After reference
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-14    shenely         1.0         Initial revision
+2013-06-26    shenely         1.1         Modifying routine structure
 
 """
 
@@ -96,7 +97,7 @@ class BeforeEpoch(ConditionRoutine):
         self.reference = reference
         self.margin = margin
     
-    def satisfy(self,message):
+    def _satisfy(self,message):
         return message.epoch < (self.reference.epoch - self.margin)
 
 class AfterEpoch(ConditionRoutine):
@@ -138,5 +139,5 @@ class AfterEpoch(ConditionRoutine):
         self.reference = reference
         self.margin = margin
     
-    def satisfy(self,message):
+    def _satisfy(self,message):
         return message.epoch > (self.reference.epoch + self.margin)

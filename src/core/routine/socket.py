@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   14 May 2013
+Modified:   26 June 2013
 
 Provides routines for socket communication.
 
@@ -19,6 +19,7 @@ PublishSocket   -- Publish to socket
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-14    shenely         1.0         Initial revision
+2013-06-26    shenely         1.1         Modifying routine structure
 
 """
 
@@ -88,7 +89,7 @@ class SubscribeSocket(SourceRoutine):
         
         self.socket = socket
     
-    def receive(self):
+    def _receive(self):
         message = self.socket.recv_multipart()
         
         assert isinstance(message,types.ListType)
@@ -134,7 +135,7 @@ class PublishSocket(TargetRoutine):
         
         self.socket = socket
            
-    def send(self,message):
+    def _send(self,message):
         assert isinstance(message,types.TupleType)
         assert len(message) == 2
         assert isinstance(message[0],types.StringTypes)

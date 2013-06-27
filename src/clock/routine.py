@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   02 May 2013
+Modified:   26 June 2013
 
 Provides routines for driving the simulation clock.
 
@@ -18,6 +18,7 @@ DiscreteClock   -- Discrete clock routine
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-02    shenely         1.0         Initial revision
+2013-06-26    shenely         1.1         Modifying routine structure
 
 """
 
@@ -106,7 +107,7 @@ class ContinuousClock(SourceRoutine):
         
         self.now = datetime.utcnow()
     
-    def receive(self):
+    def _receive(self):
         logging.info("{0}:  Ticking from {1}".\
                      format(self.name,self.epoch))
         
@@ -157,7 +158,7 @@ class DiscreteClock(SourceRoutine):
         self.epoch = epoch
         self.step = step
         
-    def receive(self):
+    def _receive(self):
         logging.info("{0}:  Ticking from {1}".\
                      format(self.name,self.epoch))
         

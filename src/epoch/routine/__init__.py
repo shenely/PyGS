@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   20 June 2013
+Modified:   26 June 2013
 
 Provides routines for order tasks.
 
@@ -19,6 +19,7 @@ AfterEpoch   -- After reference
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-14    shenely         1.0         Initial revision
+2013-06-26    shenely         1.1         Modifying routine structure
 
 """
 
@@ -80,7 +81,7 @@ class ParseEpoch(EventRoutine):
     
     name = "Epoch.Parse"
     
-    def occur(self,message):
+    def _occur(self,message):
         logging.info("{0}:  Parsing from {1}".\
                      format(self.name,message))
         
@@ -121,7 +122,7 @@ class FormatEpoch(ActionRoutine):
         
         self.address = address
     
-    def execute(self,epoch):
+    def _execute(self,epoch):
         
         logging.info("{0}:  Formatting from {1}".\
                      format(self.name,epoch.epoch))
