@@ -22,7 +22,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from core.agenda import Scheduler
-from core.application import Application
+from core.engine import *
 from core.routine import socket
 from epoch import routine as epoch
 from . import routine

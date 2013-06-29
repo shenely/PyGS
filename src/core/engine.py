@@ -1,7 +1,7 @@
 from .agenda import *
-from .behavior import *
-from .scenario import *
-from .clause import *
+from .routine import *
+
+__all__ = ["Application"]
 
 class Application(object):
     def __init__(self,name,scheduler):
@@ -93,3 +93,52 @@ class Application(object):
         self.context.routine.mode = mode
         
         return self
+
+class Behavior:
+    def __init__(self,name):
+        self.name = name
+
+class Scenario:
+    def __init__(self,name):
+        self.name = name
+
+class BaseClause(object):
+    def __init__(self,name,routine,context):
+        assert isinstance(name,basestring)
+        
+        self.name = name
+        self.routine = routine
+        
+        if isinstance(context,BaseClause):
+            self.routine.set_source(context.routine)
+            context.routine.set_target(self.routine)
+
+class FromClause(BaseClause):
+    def __init__(self,name,routine,context=None):
+        assert isinstance(routine,SourceRoutine)
+        
+        BaseClause.__init__(self,name,routine,context)
+        
+class ToClause(BaseClause):
+    def __init__(self,name,routine,context=None):
+        assert isinstance(routine,TargetRoutine)
+        
+        BaseClause.__init__(self,name,routine,context)
+
+class GivenClause(BaseClause):
+    def __init__(self,name,routine,context=None):
+        assert isinstance(routine,ConditionRoutine)
+        
+        BaseClause.__init__(self,name,routine,context)
+        
+class WhenClause(BaseClause):
+    def __init__(self,name,routine,context=None):
+        assert isinstance(routine,EventRoutine)
+        
+        BaseClause.__init__(self,name,routine,context)
+        
+class ThenClause(BaseClause):
+    def __init__(self,name,routine,context=None):
+        assert isinstance(routine,ActionRoutine)
+        
+        BaseClause.__init__(self,name,routine,context)
