@@ -60,13 +60,12 @@ STEP_SIZE = timedelta(seconds=60)
 def main():
     """Main Function"""
     
-    scheduler = Scheduler()
+    processor = Processor()
     context = zmq.Context(1)
     
     clock_epoch = EpochState(datetime(2010,1,1,tzinfo=utc))
         
     epoch_socket = context.socket(zmq.SUB)
-    epoch_socket.setsockopt(zmq.SUBSCRIBE,EPOCH_ADDRESS)
     epoch_socket.connect("tcp://localhost:5556")
         
     state_socket = context.socket(zmq.PUB)
@@ -86,9 +85,9 @@ def main():
 #
 #    scheduler.periodic(segment["Send epoch"],200).start()
 
-    input = socket.SubscribeSocket(epoch_socket)
+    input = socket.SubscribeSocket(epoch_socket,EPOCH_ADDRESS)
     parser = epoch.ParseEpoch()
-    split = control.SplitControl(scheduler)
+    split = control.SplitControl(processor)
     #iterate_after = order.AfterEpoch(None,ITERATE_MARGIN)
     publish_after = order.AfterEpoch(clock_epoch,PUBLISH_MARGIN)
     remove_after = order.AfterEpoch(clock_epoch,REMOVE_MARGIN)
@@ -97,10 +96,10 @@ def main():
     #iterator = propagate.KeplerPropagate()
     put_state = queue.PutQueue(state_queue)
     get_state = queue.GetQueue(state_queue)
-    #formatter = state.FormatState(STATE_ADDRESS)
-    output = socket.PublishSocket(state_socket)
+    #formatter = state.FormatState()
+    output = socket.PublishSocket(state_socket,STATE_ADDRESS)
 
-    segment = Application("Space segment",scheduler)
+    segment = Application("Space segment",processor)
     
     segment.Behavior("Propagate state")
     
@@ -137,7 +136,5 @@ def main():
         When("Get state",get_state).\
         Given("After lower",remove_after).Is(False).\
         Then("Put state",put_state)
-    
-    scheduler.start()
                 
 if __name__ == '__main__':main()

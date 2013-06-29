@@ -22,7 +22,8 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-02    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
-2013-06-29    shenely         1.2         Refactored for agenda
+2013-06-29    shenely                     Refactored for agenda
+2013-06-29    shenely                     Refactored for agenda
 
 """
 
@@ -56,7 +57,7 @@ __all__ = ["SplitControl",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 
@@ -83,13 +84,13 @@ class SplitControl(SourceRoutine,TargetRoutine):
     
     name = "Control.Split"
     
-    def __init__(self,scheduler):
-        assert isinstance(scheduler,Scheduler)
+    def __init__(self,processor):
+        assert isinstance(processor,Processor)
         
         TargetRoutine.__init__(self)
         self.target = list()
         
-        self.scheduler = scheduler
+        self.scheduler = processor
     
     def _process(self,message,ipipe):        
         for opipe in self.target:

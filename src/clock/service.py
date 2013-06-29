@@ -51,7 +51,7 @@ EPOCH_SCALE = 60
 def main():
     """Main Function"""
     
-    scheduler = Scheduler()
+    processor = Processor()
     context = zmq.Context(1)
     
     clock_epoch = datetime(2010,1,1,tzinfo=utc)
@@ -72,10 +72,10 @@ def main():
 #    scheduler.periodic(segment["Send epoch"],200).start()
 
     input = routine.ContinuousClock(clock_epoch,EPOCH_SCALE)
-    formatter = epoch.FormatEpoch(EPOCH_ADDRESS)
-    output = socket.PublishSocket(epoch_socket)
+    formatter = epoch.FormatEpoch()
+    output = socket.PublishSocket(epoch_socket,EPOCH_ADDRESS)
 
-    segment = Application("Clock segment",scheduler).\
+    segment = Application("Clock segment",processor).\
         Behavior("Main clock").\
             Scenario("Send epoch").\
                 From("Clock source",input).\

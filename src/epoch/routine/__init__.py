@@ -20,7 +20,8 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-14    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
-2013-06-29    shenely         1.2         Accounted for address
+2013-06-29    shenely                     Accounted for address
+2013-06-29    shenely         1.2         Addresses handled by sockets
 
 """
 
@@ -82,9 +83,7 @@ class ParseEpoch(EventRoutine):
     
     name = "Epoch.Parse"
     
-    def _occur(self,message):
-        address,message = message
-        
+    def _occur(self,message):        
         logging.info("{0}:  Parsing from {1}".\
                      format(self.name,message))
         
@@ -118,13 +117,6 @@ class FormatEpoch(ActionRoutine):
     
     name = "Epoch.Format"
     
-    def __init__(self,address):
-        assert isinstance(address,basestring)
-        
-        ActionRoutine.__init__(self)
-        
-        self.address = address
-    
     def _execute(self,epoch):
         
         logging.info("{0}:  Formatting from {1}".\
@@ -135,4 +127,4 @@ class FormatEpoch(ActionRoutine):
         logging.info("{0}:  Formatted to {1}".\
                      format(self.name,message))
                      
-        return self.address,message
+        return message

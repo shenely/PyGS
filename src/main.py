@@ -10,12 +10,12 @@ def main():
     
     broker.main()
     
-    scheduler = agenda.Scheduler()
+    processor = agenda.Processor()
         
     clock.main()
     space.main()
     
-    scheduler.start()
+    processor.start()
     
 if __name__ == '__main__':
     main()

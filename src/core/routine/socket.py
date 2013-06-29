@@ -20,7 +20,8 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-14    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
-2013-06-29    shenely         1.2         Refactored agenda
+2013-06-29    shenely                     Refactored agenda
+2013-06-29    shenely         1.2         Address handled internally
 
 """
 
@@ -86,24 +87,24 @@ class SubscribeSocket(SourceRoutine):
     type = HANDLER
     event = ioloop.POLLIN
     
-    def __init__(self,socket):
+    def __init__(self,socket,address):
         assert isinstance(socket,zmq.Socket)
         assert socket.socket_type is zmq.SUB
+        
+        socket.setsockopt(zmq.SUBSCRIBE,address)
         
         SourceRoutine.__init__(self)
         
         self.handle = socket
     
     def _receive(self):
-        message = self.handle.recv_multipart()
+        address,message = self.handle.recv_multipart()
         
-        assert isinstance(message,types.ListType)
-        assert len(message) == 2
-        assert isinstance(message[0],types.StringTypes)
-        assert isinstance(message[1],types.StringTypes)
+        assert isinstance(address,types.StringTypes)
+        assert isinstance(message,types.StringTypes)
                 
         logging.info("{0}:  From address {1}".\
-                     format(self.name,message[0]))
+                     format(self.name,address))
         
         return message
 
@@ -134,21 +135,19 @@ class PublishSocket(TargetRoutine):
     type = HANDLER
     event = ioloop.POLLIN
     
-    def __init__(self,socket):
+    def __init__(self,socket,address):
         assert isinstance(socket,zmq.Socket)
         assert socket.socket_type is zmq.PUB
         
         TargetRoutine.__init__(self)
         
         self.handle = socket
+        self.address = address
            
     def _send(self,message):
-        assert isinstance(message,types.TupleType)
-        assert len(message) == 2
-        assert isinstance(message[0],types.StringTypes)
-        assert isinstance(message[1],types.StringTypes)
+        assert isinstance(message,types.StringTypes)
         
-        self.handle.send_multipart(message)
+        self.handle.send_multipart((self.address,message))
                 
         logging.info("{0}:  To address {1}".\
                      format(self.name,message[0]))

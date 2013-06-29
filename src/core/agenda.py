@@ -18,6 +18,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-06-27    shenely         1.0         Initial revision
 2013-06-29    shenely         1.1         Refactored to agenda
+2013-06-29    shenely         1.2         Generalized to processor
 
 """
 
@@ -41,7 +42,7 @@ from zmq.eventloop import ioloop
 ##################
 # Export section #
 #
-__all__ = ["Scheduler",
+__all__ = ["Processor",
            "PERIODIC",
            "DELAYED",
            "HANDLER"]
@@ -52,7 +53,7 @@ __all__ = ["Scheduler",
 ####################
 # Constant section #
 #
-__version__ = "1.1"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 
 TIMEOUT = timedelta(0,0,0,100)#time between running
 
@@ -63,34 +64,49 @@ HANDLER  = 2#Triggered scenario
 ####################
 
 
-class Scheduler(object):    
+class Processor(object):
+    self = None
+    
     queue = Queue()
-    loop = ioloop.IOLoop.instance()   
-
-    def __init__(self):
-                
-        self.running = False
+    
+    started = False
+    running = False
+    
+    main = None
+    loop = ioloop.IOLoop.instance()
+    
+    def __new__(cls):
+        if cls.self is None:
+            cls.self = object.__new__(cls)
+            
+        return cls.self
                 
     def start(self):
-        if not self.running:
-            self.running = True
-            
-            self.main = self.loop.add_timeout(TIMEOUT,self.run)
+        if not self.started:
+            self.started = True
             
             self.loop.start()
         
     def stop(self):
-        if self.running:
-            self.running = False
-            
-            self.loop.remove_timeout(self.main)
+        if self.started:
+            self.started = False
             
             self.loop.stop()
+            
+    def pause(self):
+        if self.started and self.running:
+            self.running = False
+            
+            self.main = self.loop.remove_timeout(self.main) if self.main is not None else None
+                        
+    def resume(self):
+        if self.started and not self.running:
+            self.running = True
+            
+            self.main = self.loop.add_timeout(TIMEOUT,self.run)
 
     def agenda(self):
         self.stop()
-
-        tasks = []
 
         for i in range(self.queue.qsize()):
             message,pipeline = self.queue.get()
@@ -124,17 +140,22 @@ class Scheduler(object):
     def schedule(self,message,fpipe,tpipe):
         if tpipe is not None:
             self.queue.put((message,fpipe,tpipe))
+            
+        if self.started:self.resume()
+    
+    def dispatch(self):
+        message,fpipe,tpipe = self.queue.get()
+        
+        fpipe = tpipe
+        message,tpipe = tpipe.routine.send((message,fpipe))
+        
+        return message,fpipe,tpipe
         
     def run(self):
         if self.running:
             while not self.queue.empty():
-                message,fpipe,tpipe = self.queue.get()
-                
-                fpipe = tpipe
-                message,tpipe = tpipe.routine.send((message,fpipe))
-                                                   
-                self.schedule(message,fpipe,tpipe)
+                self.schedule(*self.dispatch())
             else:
-                self.loop.add_timeout(TIMEOUT,self.run)
+                self.pause()
         else:
-            self.start()
+            self.resume()
