@@ -23,7 +23,6 @@ Date          Author          Version     Description
 2013-05-02    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
 2013-06-29    shenely                     Refactored for agenda
-2013-06-29    shenely                     Refactored for agenda
 
 """
 

@@ -89,6 +89,8 @@ class BeforeEpoch(ConditionRoutine):
     
     """
     
+    name = "Epoch.Before"
+    
     def __init__(self,reference,margin):
         assert isinstance(reference,EpochState)#TODO:  Define EpochState (also, rename)
         assert isinstance(margin,timedelta)
@@ -138,6 +140,8 @@ class AfterEpoch(ConditionRoutine):
     THEN the message SHALL be sent to the true upstream
     
     """
+    
+    name = "Epoch.After"
     
     def __init__(self,reference,margin):
         assert isinstance(reference,EpochState)

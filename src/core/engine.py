@@ -44,7 +44,8 @@ class Application(object):
         return self
     
     def Given(self,name,routine):
-        assert isinstance(self.context,(FromClause,
+        assert isinstance(self.context,(Scenario,
+                                        FromClause,
                                         WhenClause))
         
         self.context = GivenClause(name,routine,self.context)

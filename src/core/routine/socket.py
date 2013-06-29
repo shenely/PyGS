@@ -150,4 +150,4 @@ class PublishSocket(TargetRoutine):
         self.handle.send_multipart((self.address,message))
                 
         logging.info("{0}:  To address {1}".\
-                     format(self.name,message[0]))
+                     format(self.name,self.address))

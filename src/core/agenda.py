@@ -141,7 +141,7 @@ class Processor(object):
         if tpipe is not None:
             self.queue.put((message,fpipe,tpipe))
             
-        if self.started:self.resume()
+        if self.started and not self.running:self.resume()
     
     def dispatch(self):
         message,fpipe,tpipe = self.queue.get()

@@ -111,18 +111,20 @@ class ConditionRoutine(BaseRoutine):
         BaseRoutine.__init__(self)
         
         self.target = dict()
+        self.target[False] = None
+        self.target[True] = None
     
     def _process(self,message,ipipe):
         logging.info("{0}:  Satisfying".\
                      format(self.name))
             
         if self._satisfy(message):
-            logging.debug("{0}:  Satisfied".\
+            logging.info("{0}:  Satisfied".\
                          format(self.name))
             
             opipe = self.target[True]
         else:
-            logging.debug("{0}:  Not satisfied".\
+            logging.warning("{0}:  Not satisfied".\
                          format(self.name))
             
             opipe = self.target[False]

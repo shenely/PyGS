@@ -28,6 +28,7 @@ from core.routine import socket,control,queue,method
 from epoch import routine as epoch
 from epoch.routine import order
 from epoch import EpochState
+from state.routine import propagate
 #from . import routine
 #
 ##################
@@ -64,6 +65,7 @@ def main():
     context = zmq.Context(1)
     
     clock_epoch = EpochState(datetime(2010,1,1,tzinfo=utc))
+    state_epoch = EpochState(datetime(2010,1,1,tzinfo=utc))
         
     epoch_socket = context.socket(zmq.SUB)
     epoch_socket.connect("tcp://localhost:5556")
@@ -88,15 +90,15 @@ def main():
     input = socket.SubscribeSocket(epoch_socket,EPOCH_ADDRESS)
     parser = epoch.ParseEpoch()
     split = control.SplitControl(processor)
-    #iterate_after = order.AfterEpoch(None,ITERATE_MARGIN)
+    iterate_before = order.BeforeEpoch(state_epoch,ITERATE_MARGIN)
     publish_after = order.AfterEpoch(clock_epoch,PUBLISH_MARGIN)
     remove_after = order.AfterEpoch(clock_epoch,REMOVE_MARGIN)
     update_publish = method.ExecuteMethod(publish_after.set_reference)
     update_remove = method.ExecuteMethod(remove_after.set_reference)
-    #iterator = propagate.KeplerPropagate()
+    iterator = propagate.KeplerPropagate(state_epoch)
     put_state = queue.PutQueue(state_queue)
     get_state = queue.GetQueue(state_queue)
-    #formatter = state.FormatState()
+    formatter = epoch.FormatEpoch()
     output = socket.PublishSocket(state_socket,STATE_ADDRESS)
 
     segment = Application("Space segment",processor)
@@ -110,30 +112,25 @@ def main():
         And("Update remove",update_remove).\
         To("Split epoch",split)
     
-#    segment.Scenario("Propagate state").\
-#        From("Split epoch",split).\
-#        Given("After state",iterate_after).Is(True).\
-#        Then("Keplar propagator",iterator).\
-#        And("Put state",put_state)
-#    
-#    segment.Scenario("Publish state").\
-#        From("Split epoch",split).\
-#        When("Get state",get_state).\
-#        Given("After lower",remove_after).Is(True).\
-#        And("After upper",publish_after).Is(False).\
-#        Then("Format state",formatter).\
-#        To("Publish target",output)
+    segment.Scenario("Propagate state").\
+        From("Split epoch",split).\
+        Given("After state",iterate_before).Is(False).\
+        Then("Keplar propagator",iterator).\
+        And("Put state",put_state)
     
-    segment.Scenario("Requeue state").\
+    segment.Scenario("Publish state").\
         From("Split epoch",split).\
         When("Get state",get_state).\
         Given("After lower",remove_after).Is(True).\
-        And("After upper",publish_after).Is(True).\
+        And("After upper",publish_after).Is(False).\
+        Then("Format state",formatter).\
+        To("Publish target",output)
+    
+    segment.Scenario("Requeue state").\
+        Given("After upper",publish_after).Is(True).\
         Then("Put state",put_state)
     
     segment.Scenario("Remove state").\
-        From("Split epoch",split).\
-        When("Get state",get_state).\
         Given("After lower",remove_after).Is(False).\
         Then("Put state",put_state)
                 
