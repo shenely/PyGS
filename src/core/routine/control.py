@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   26 June 2013
+Modified:   29 June 2013
 
 Provides routines for controlling the flow of data.
 
@@ -22,6 +22,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-02    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
+2013-06-29    shenely         1.2         Refactored for agenda
 
 """
 
@@ -35,7 +36,8 @@ import types
 #External libraries
 
 #Internal libraries
-from . import BaseRoutine,SourceRoutine,TargetRoutine,ConditionRoutine
+from . import *
+from ..agenda import *
 #
 ##################
 
@@ -81,11 +83,19 @@ class SplitControl(SourceRoutine,TargetRoutine):
     
     name = "Control.Split"
     
+    def __init__(self,scheduler):
+        assert isinstance(scheduler,Scheduler)
+        
+        TargetRoutine.__init__(self)
+        self.target = list()
+        
+        self.scheduler = scheduler
+    
     def _process(self,message,ipipe):        
         for opipe in self.target:
-            self.scheduler.push(message,opipe)
+            self.scheduler.schedule(message,ipipe,opipe)
         else:
-            logging.info("{0}:  %d-way split".\
+            logging.info("{0}:  {1:d}-way split".\
                          format(self.name,len(self.target)))
         
             message = None
@@ -136,8 +146,8 @@ class MergeControl(SourceRoutine,TargetRoutine):
     name = "Control.Merge"
     
     def __init__(self):
-        self.source = list()
-        self.target = list()
+        SourceRoutine.__init__(self)
+        self.message = dict()
     
     def _process(self,message,ipipe):
         if ipipe in self.source:

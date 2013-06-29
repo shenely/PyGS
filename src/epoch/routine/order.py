@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   26 June 2013
+Modified:   29 June 2013
 
 Provides routines for order tasks.
 
@@ -20,6 +20,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-14    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
+2013-06-29    shenely         1.2         Adding methods
 
 """
 
@@ -53,7 +54,7 @@ __all__ = ["BeforeEpoch",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 #
 ####################
 
@@ -99,6 +100,14 @@ class BeforeEpoch(ConditionRoutine):
     
     def _satisfy(self,message):
         return message.epoch < (self.reference.epoch - self.margin)
+    
+    def set_reference(self,reference):
+        assert isinstance(reference,EpochState)
+        
+        self.reference = reference
+        
+        return reference
+        
 
 class AfterEpoch(ConditionRoutine):
     """Story:  After reference
@@ -141,3 +150,10 @@ class AfterEpoch(ConditionRoutine):
     
     def _satisfy(self,message):
         return message.epoch > (self.reference.epoch + self.margin)
+    
+    def set_reference(self,reference):
+        assert isinstance(reference,EpochState)
+        
+        self.reference = reference
+        
+        return reference

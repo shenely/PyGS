@@ -1,7 +1,8 @@
 import logging
 from .. import coroutine
 
-__all__ = ["SourceRoutine",
+__all__ = ["BaseRoutine",
+           "SourceRoutine",
            "TargetRoutine",
            "ConditionRoutine",
            "EventRoutine",
@@ -31,12 +32,12 @@ class BaseRoutine(object):
                 
                 return
             else:
-                logging.info("{0}:  Processing".\
+                logging.debug("{0}:  Processing".\
                              format(self.name))
                 
                 message,opipe = self._process(message,ipipe)
         
-                logging.info("{0}:  Processed".\
+                logging.debug("{0}:  Processed".\
                              format(self.name))
     
     def _process(self,message,ipipe):
@@ -71,13 +72,13 @@ class SourceRoutine(BaseRoutine):
     type = None
     
     def _process(self,message,ipipe):
-        logging.info("{0}:  Receiving".\
+        logging.debug("{0}:  Receiving".\
                      format(self.name))
         
         message = self._receive()
         opipe = self.target
         
-        logging.info("{0}:  Received".\
+        logging.debug("{0}:  Received".\
                      format(self.name))
         
         return message,opipe
@@ -89,13 +90,13 @@ class TargetRoutine(BaseRoutine):
     name = "Core.Target"
     
     def _process(self,message,ipipe):
-        logging.info("{0}:  Sending".\
+        logging.debug("{0}:  Sending".\
                      format(self.name))
         
         self._send(message)
         opipe = self.target
         
-        logging.info("{0}:  Sent".\
+        logging.debug("{0}:  Sent".\
                      format(self.name))
         
         return message,opipe
@@ -106,17 +107,22 @@ class TargetRoutine(BaseRoutine):
 class ConditionRoutine(BaseRoutine):
     name = "Core.Condition"
     
+    def __init__(self):
+        BaseRoutine.__init__(self)
+        
+        self.target = dict()
+    
     def _process(self,message,ipipe):
         logging.info("{0}:  Satisfying".\
                      format(self.name))
             
         if self._satisfy(message):
-            logging.info("{0}:  Satisfied".\
+            logging.debug("{0}:  Satisfied".\
                          format(self.name))
             
             opipe = self.target[True]
         else:
-            logging.info("{0}:  Not satisfied".\
+            logging.debug("{0}:  Not satisfied".\
                          format(self.name))
             
             opipe = self.target[False]
@@ -142,13 +148,13 @@ class EventRoutine(BaseRoutine):
     name = "Core.Event"
     
     def _process(self,message,ipipe):
-        logging.info("{0}:  Occurring".\
+        logging.debug("{0}:  Occurring".\
                      format(self.name))
         
         message = self._occur(message)
         
         if message is not None:
-            logging.info("{0}:  Occurred".\
+            logging.debug("{0}:  Occurred".\
                          format(self.name))
             
             opipe = self.target
@@ -167,13 +173,13 @@ class ActionRoutine(BaseRoutine):
     name = "Core.Action"
     
     def _process(self,message,ipipe):
-        logging.info("{0}:  Executing".\
+        logging.debug("{0}:  Executing".\
                      format(self.name))
         
         message = self._execute(message)
         opipe = self.target
         
-        logging.info("{0}:  Executed".\
+        logging.debug("{0}:  Executed".\
                      format(self.name))
             
         return message,opipe

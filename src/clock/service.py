@@ -21,7 +21,7 @@ import zmq
 from bson.tz_util import utc
 
 #Internal libraries
-from core.agenda import Scheduler
+from core.agenda import *
 from core.engine import *
 from core.routine import socket
 from epoch import routine as epoch
@@ -76,12 +76,10 @@ def main():
     output = socket.PublishSocket(epoch_socket)
 
     segment = Application("Clock segment",scheduler).\
-        Behavior("Send epoch").\
-            Scenario("Main clock").\
+        Behavior("Main clock").\
+            Scenario("Send epoch").\
                 From("Clock source",input).\
                 Then("Format epoch",formatter).\
                 To("Publish target",output)
-    
-    scheduler.start()
                 
 if __name__ == '__main__':main()

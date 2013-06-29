@@ -32,7 +32,7 @@ class Application(object):
         elif routine.type is DELAYED:
             self.scheduler.delayed(routine,routine.timeout).start()
         elif routine.type is HANDLER:
-            self.scheduler.delayed(routine,routine.handle,routine.event)
+            self.scheduler.handler(routine,routine.handle,routine.event)
         
         return self
     

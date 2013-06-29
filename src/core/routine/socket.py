@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   26 June 2013
+Modified:   29 June 2013
 
 Provides routines for socket communication.
 
@@ -20,6 +20,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-14    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
+2013-06-29    shenely         1.2         Refactored agenda
 
 """
 
@@ -37,7 +38,7 @@ from zmq.eventloop import ioloop
 
 #Internal libraries
 from . import SourceRoutine,TargetRoutine
-from ..service import schedule
+from ..agenda import *
 #
 ##################
 
@@ -54,7 +55,7 @@ __all__ = ["SubscribeSocket",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 #
 ####################
 
@@ -82,7 +83,7 @@ class SubscribeSocket(SourceRoutine):
     """
     
     name = "Socket.Subscribe"
-    type = schedule.HANDLER
+    type = HANDLER
     event = ioloop.POLLIN
     
     def __init__(self,socket):
@@ -130,7 +131,7 @@ class PublishSocket(TargetRoutine):
     """
     
     name = "Socket.Publish"
-    type = schedule.HANDLER
+    type = HANDLER
     event = ioloop.POLLIN
     
     def __init__(self,socket):

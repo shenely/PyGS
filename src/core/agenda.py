@@ -114,9 +114,10 @@ class Scheduler(object):
             
         return ioloop.DelayedCallback(callback,timeout,self.loop)
 
-    def handler(self,pipeline,handle,event=ioloop.POLLIN):
+    def handler(self,fpipe,handle,event=ioloop.POLLIN):
         def callback(socket,events):
-            self.schedule(*pipeline.routine.send((None,None)))
+            message,tpipe = fpipe.routine.send((None,None))
+            self.schedule(message,fpipe,tpipe)
             
         self.loop.add_handler(handle,callback,event)
     

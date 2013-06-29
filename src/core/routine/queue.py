@@ -89,6 +89,8 @@ class GetQueue(EventRoutine):
     
     """
     
+    name = "Queue.Get"
+    
     def __init__(self,queue):
         assert isinstance(queue,Queue)
         

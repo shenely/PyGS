@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   26 June 2013
+Modified:   29 June 2013
 
 Provides routines for order tasks.
 
@@ -20,6 +20,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-14    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
+2013-06-29    shenely         1.2         Accounted for address
 
 """
 
@@ -54,7 +55,7 @@ __all__ = ["ParseEpoch",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 #
 ####################
 
@@ -82,6 +83,8 @@ class ParseEpoch(EventRoutine):
     name = "Epoch.Parse"
     
     def _occur(self,message):
+        address,message = message
+        
         logging.info("{0}:  Parsing from {1}".\
                      format(self.name,message))
         
