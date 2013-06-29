@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   20 June 2013
+Modified:   29 June 2013
 
 Purpose:    
 """
@@ -72,14 +72,12 @@ class ObjectDict(dict):
         del self[name]
 
 class BaseObject(ObjectDict):
-    def __init__(self,_id=ObjectId(),object=None):
+    def __init__(self,_id=None):
         ObjectDict.__init__(self)
         
-        assert isinstance(_id,ObjectId)
-        assert isinstance(object,ObjectId) or object is None
+        assert isinstance(_id,ObjectId) or _id is None
         
-        self._id = _id
-        if object is not None:self.object = object
+        self._id = _id if _id is not None else ObjectId()
         
 def object_hook(dct):
     dct = json_util.object_hook(dct)

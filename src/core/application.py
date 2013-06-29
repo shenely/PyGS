@@ -1,4 +1,4 @@
-from .service import schedule
+from .agenda import *
 from .behavior import *
 from .scenario import *
 from .clause import *
@@ -27,11 +27,11 @@ class Application(object):
         
         self.context = FromClause(name,routine)
 
-        if routine.type is schedule.PERIODIC:
+        if routine.type is PERIODIC:
             self.scheduler.periodic(routine,routine.timeout).start()
-        elif routine.type is schedule.DELAYED:
+        elif routine.type is DELAYED:
             self.scheduler.delayed(routine,routine.timeout).start()
-        elif routine.type is schedule.HANDLER:
+        elif routine.type is HANDLER:
             self.scheduler.delayed(routine,routine.handle,routine.event)
         
         return self

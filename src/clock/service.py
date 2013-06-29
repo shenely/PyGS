@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   20 May 2013
+Modified:   29 June 2013
 
 Purpose:    
 """
@@ -21,7 +21,7 @@ import zmq
 from bson.tz_util import utc
 
 #Internal libraries
-from core.service.schedule import Scheduler
+from core.agenda import Scheduler
 from core.application import Application
 from core.routine import socket
 from epoch import routine as epoch

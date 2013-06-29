@@ -1,12 +1,12 @@
 #!/usr/bin/env python2.7
 
-"""Scheduler service
+"""Agenda service
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   27 June 2013
+Modified:   29 June 2013
 
-Provides a scheduling service.
+Provides a agenda service.
 
 Classes:
 Scheduler -- Scheduler
@@ -17,6 +17,7 @@ Scheduler -- Scheduler
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-06-27    shenely         1.0         Initial revision
+2013-06-29    shenely         1.1         Refactored to agenda
 
 """
 
@@ -51,7 +52,7 @@ __all__ = ["Scheduler",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 
 TIMEOUT = timedelta(0,0,0,100)#time between running
 
@@ -105,13 +106,13 @@ class Scheduler(object):
         def callback():
             self.schedule(None,None,routine)
             
-        return ioloop.PeriodicCallback(callback,timeout)
+        return ioloop.PeriodicCallback(callback,timeout,self.loop)
 
     def delayed(self,routine,timeout):
         def callback():
             self.schedule((None,None),routine)
             
-        return ioloop.DelayedCallback(callback,timeout)
+        return ioloop.DelayedCallback(callback,timeout,self.loop)
 
     def handler(self,pipeline,handle,event=ioloop.POLLIN):
         def callback(socket,events):
