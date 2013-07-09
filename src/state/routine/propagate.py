@@ -36,7 +36,7 @@ from scipy.optimize import newton
 
 #Internal libraries
 from core.routine import ActionRoutine
-#from .. import KeplerianState
+from .. import KeplerianState
 #from model.ephemeris import BaseEphemeris
 #
 ##################
@@ -110,19 +110,24 @@ class KeplerPropagate(PropagateAction):
     def _execute(self,message):
         logging.info("{0}:  Propagating from {1}".\
                      format(self.name,self.state.epoch))
-        
-        self.state.epoch += self.step
 
-#        e = self.state.e
-#        M = (self.state.M +\
-#             self.state.n * self.step.total_seconds()) % (2 * pi)
-#        E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,e),ANOMALY_ERROR)
-#        self.state.theta = 2 * atan2(sqrt(1 + e) * sin(E / 2),
-#                                sqrt(1 - e) * cos(E / 2))
+        e = self.state.e
+        M = (self.state.M +\
+             self.state.n * self.step.total_seconds()) % (2 * pi)
+        E = newton(KEPLER_EQUATION,M,KEPLER_DERIVATIVE,(M,e),ANOMALY_ERROR)
+                
+        self.state = KeplerianState(self.state.epoch + self.step,
+                                    self.state.a,
+                                    2 * atan2(sqrt(1 + e) * sin(E / 2),
+                                           sqrt(1 - e) * cos(E / 2)),
+                                    self.state.e,
+                                    self.state.omega,
+                                    self.state.i,
+                                    self.state.OMEGA)
 
         logging.info("{0}:  Propagated to {1}".\
                      format(self.name,self.state.epoch))
-                
+        
         return self.state
 
 

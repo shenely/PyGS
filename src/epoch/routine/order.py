@@ -101,7 +101,12 @@ class BeforeEpoch(ConditionRoutine):
         self.margin = margin
     
     def _satisfy(self,message):
-        return message.epoch < (self.reference.epoch - self.margin)
+        before = self.reference.epoch - message.epoch
+        
+        logging.info("{0}:  Before by {1}".\
+                     format(self.name,before))
+            
+        return before > self.margin
     
     def set_reference(self,reference):
         assert isinstance(reference,EpochState)
@@ -153,7 +158,12 @@ class AfterEpoch(ConditionRoutine):
         self.margin = margin
     
     def _satisfy(self,message):
-        return message.epoch > (self.reference.epoch + self.margin)
+        after = message.epoch - self.reference.epoch
+        
+        logging.info("{0}:  After by {1}".\
+                     format(self.name,after))
+        
+        return after > self.margin
     
     def set_reference(self,reference):
         assert isinstance(reference,EpochState)

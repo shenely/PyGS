@@ -4,13 +4,12 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   20 June 2013
+Modified:   03 July 2013
 
-Provides routines for epoch manipulation.
+Provides the epoch state object.
 
 Classes:
-ParseEpoch  -- Parse epoch
-FormatEpoch -- Format epoch
+EpochState  -- Epoch state
 
 """
 
@@ -18,7 +17,7 @@ FormatEpoch -- Format epoch
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-06-20    shenely         1.0         Initial revision
+2013-07-03    shenely         1.0         Initial revision
 
 """
 

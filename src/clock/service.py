@@ -43,7 +43,7 @@ from . import routine
 __version__ = "1.0"#current version [major.minor]
 
 EPOCH_ADDRESS = "Kepler.Epoch"
-EPOCH_SCALE = 60
+EPOCH_SCALE = 10
 #
 ####################
 
@@ -75,9 +75,11 @@ def main():
     formatter = epoch.FormatEpoch()
     output = socket.PublishSocket(epoch_socket,EPOCH_ADDRESS)
 
-    segment = Application("Clock segment",processor).\
-        Behavior("Main clock").\
-            Scenario("Send epoch").\
+    segment = Application("Clock segment",processor)
+    
+    segment.Behavior("Main clock")
+    
+    segment.Scenario("Send epoch").\
                 From("Clock source",input).\
                 Then("Format epoch",formatter).\
                 To("Publish target",output)

@@ -29,6 +29,7 @@ from epoch import routine as epoch
 from epoch.routine import order
 from epoch import EpochState
 from state.routine import propagate
+from state import KeplerianState
 #from . import routine
 #
 ##################
@@ -51,7 +52,7 @@ STATE_ADDRESS = "Kepler.State"
 
 ITERATE_MARGIN = timedelta(seconds=300)
 PUBLISH_MARGIN = timedelta(seconds=180)
-REMOVE_MARGIN = timedelta(seconds=120)
+REMOVE_MARGIN = timedelta(seconds=0)
 
 STEP_SIZE = timedelta(seconds=60)
 #
@@ -65,7 +66,8 @@ def main():
     context = zmq.Context(1)
     
     clock_epoch = EpochState(datetime(2010,1,1,tzinfo=utc))
-    state_epoch = EpochState(datetime(2010,1,1,tzinfo=utc))
+    state_epoch = KeplerianState(datetime(2010,1,1,tzinfo=utc),
+                                 7000.0,0.0,0.0,0.0,0.0,0.0)
         
     epoch_socket = context.socket(zmq.SUB)
     epoch_socket.connect("tcp://localhost:5556")
@@ -96,6 +98,7 @@ def main():
     update_publish = method.ExecuteMethod(publish_after.set_reference)
     update_remove = method.ExecuteMethod(remove_after.set_reference)
     iterator = propagate.KeplerPropagate(state_epoch)
+    update_iterate = method.ExecuteMethod(iterate_before.set_reference)
     put_state = queue.PutQueue(state_queue)
     get_state = queue.GetQueue(state_queue)
     formatter = epoch.FormatEpoch()
@@ -116,6 +119,7 @@ def main():
         From("Split epoch",split).\
         Given("After state",iterate_before).Is(False).\
         Then("Keplar propagator",iterator).\
+        And("Update iterate",update_iterate).\
         And("Put state",put_state)
     
     segment.Scenario("Publish state").\
