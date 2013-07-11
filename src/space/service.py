@@ -25,11 +25,12 @@ from bson.tz_util import utc
 from core.agenda import *
 from core.engine import *
 from core.routine import socket,control,queue,method
+from epoch import EpochState
 from epoch import routine as epoch
 from epoch.routine import order
-from epoch import EpochState
-from state.routine import propagate
 from state import KeplerianState
+from state import routine as state
+from state.routine import propagate,transform
 #from . import routine
 #
 ##################
@@ -101,7 +102,8 @@ def main():
     update_iterate = method.ExecuteMethod(iterate_before.set_reference)
     put_state = queue.PutQueue(state_queue)
     get_state = queue.GetQueue(state_queue)
-    formatter = epoch.FormatEpoch()
+    formatter = state.FormatState()
+    transformer = transform.KeplerianToInertialTransform()
     output = socket.PublishSocket(state_socket,STATE_ADDRESS)
 
     segment = Application("Space segment",processor)
@@ -127,7 +129,8 @@ def main():
         When("Get state",get_state).\
         Given("After lower",remove_after).Is(True).\
         And("After upper",publish_after).Is(False).\
-        Then("Format state",formatter).\
+        Then("Transform state",transformer).\
+        And("Format state",formatter).\
         To("Publish target",output)
     
     segment.Scenario("Requeue state").\

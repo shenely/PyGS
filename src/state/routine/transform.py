@@ -83,7 +83,7 @@ UNIT_VECTOR_X = matrix([1,0,0]).T
 UNIT_VECTOR_Y = matrix([0,1,0]).T
 UNIT_VECTOR_Z = matrix([0,0,1]).T
 
-#Rotiation matrices
+#Rotation matrices
 ROTATION_X_AXIS = lambda theta:matrix([[1,0,0],
                                        [0,cos(theta),-sin(theta)],
                                        [0,sin(theta),cos(theta)]])
@@ -326,7 +326,7 @@ class InertialToGeographicTransform(TransformAction):
 class GeographicToHorizontalTransform(TransformAction):
     """Story:  Geographic to horizontal
     
-    IN ORDER TO determine the azimuth and eleveation of a spacecraft
+    IN ORDER TO determine the azimuth and elevation of a spacecraft
     AS A generic segment
     I WANT TO convert geographic coordinates into horizontal coordinates
     

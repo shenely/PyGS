@@ -9,8 +9,8 @@ Modified:   08 July 2013
 Provides routines for state manipulation.
 
 Classes:
-ParseState  -- Parse state
-FormatState -- Format state
+ParseState  -- Parse state message
+FormatState -- Format state message
 
 """
 
@@ -18,7 +18,7 @@ FormatState -- Format state
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-07-14    shenely         1.0         Initial revision
+2013-07-11    shenely         1.0         Initial revision
 
 """
 
@@ -27,7 +27,6 @@ Date          Author          Version     Description
 # Import section #
 #
 #Built-in libraries
-from datetime import timedelta
 import logging
 import types
 
@@ -36,7 +35,7 @@ import types
 #Internal libraries
 from core import encoder,decoder
 from core.routine import EventRoutine,ActionRoutine
-from .. import EpochState
+from .. import InertialState
 #
 ##################
 
@@ -44,8 +43,8 @@ from .. import EpochState
 ##################
 # Export section #
 #
-__all__ = ["ParseKeplerian",
-           "FormatEpoch"]
+__all__ = ["ParseState",
+           "FormatState"]
 #
 ##################
 
@@ -58,68 +57,71 @@ __version__ = "1.2"#current version [major.minor]
 ####################
 
 
-class ParseEpoch(EventRoutine):
-    """Story:  Parse epoch message
+class ParseState(EventRoutine):
+    """Story:  Parse state message
     
-    IN ORDER TO process messages for synchronizing the current epoch
+    IN ORDER TO process messages for synchronizing the current state
     AS A generic segment
-    I WANT TO decode the a formatted string as an epoch
+    I WANT TO decode the a formatted string as an state
         
     """
     
-    """Specification:  Parse epoch message
+    """Specification:  Parse state message
     
     GIVEN a downstream pipeline (default null)
         
     Scenario 1:  Upstream message received
     WHEN a message is received from upstream
-    THEN the message SHALL be decoded as an epoch
-        AND the epoch SHALL be sent downstream
+    THEN the message SHALL be decoded as an state
+        AND the state SHALL be sent downstream
     
     """
     
-    name = "Epoch.Parse"
+    name = "State.Parse"
     
-    def _occur(self,message):        
+    def _occur(self,message):
+        assert isinstance(message,types.StringTypes)
+        
         logging.info("{0}:  Parsing from {1}".\
                      format(self.name,message))
         
-        epoch =  EpochState(**decoder(message))
+        state =  InertialState(**decoder(message))
         
         logging.info("{0}:  Parsed to {1}".\
-                     format(self.name,epoch.epoch))
+                     format(self.name,state.epoch))
                      
-        return epoch
+        return state
 
-class FormatEpoch(ActionRoutine):
-    """Story:  Format epoch message
+class FormatState(ActionRoutine):
+    """Story:  Format state message
     
-    IN ORDER TO generate messages for distributing the current epoch
-    AS A clock segment
-    I WANT TO encode a epoch in a defined string format
+    IN ORDER TO generate messages for distributing the current state
+    AS A generic segment
+    I WANT TO encode a state in a defined string format
         
     """
     
-    """Specification:  Format epoch message
+    """Specification:  Format state message
     
     GIVEN an address for the message envelope
         AND a downstream pipeline (default null)
         
-    Scenario 1:  Upstream epoch received
-    WHEN an epoch is received from upstream
-    THEN the epoch SHALL be encoded as a message
+    Scenario 1:  Upstream state received
+    WHEN an state is received from upstream
+    THEN the state SHALL be encoded as a message
         AND the message SHALL be sent downstream
     
     """
     
-    name = "Epoch.Format"
+    name = "State.Format"
     
-    def _execute(self,epoch):
+    def _execute(self,state):
+        assert isinstance(state,InertialState)
         
         logging.info("{0}:  Formatting from {1}".\
-                     format(self.name,epoch.epoch))
+                     format(self.name,state.epoch))
         
-        message = encoder(epoch)
+        message = encoder(state)
         
         logging.info("{0}:  Formatted to {1}".\
                      format(self.name,message))

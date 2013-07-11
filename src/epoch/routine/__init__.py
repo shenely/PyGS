@@ -4,13 +4,13 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 June 2013
+Modified:   11 July 2013
 
 Provides routines for order tasks.
 
 Classes:
-BeforeEpoch  -- Before reference
-AfterEpoch   -- After reference
+ParseEpoch  -- Parse epoch message
+FormatEpoch -- Format epoch message
 
 """
 
@@ -22,6 +22,7 @@ Date          Author          Version     Description
 2013-06-26    shenely         1.1         Modifying routine structure
 2013-06-29    shenely                     Accounted for address
 2013-06-29    shenely         1.2         Addresses handled by sockets
+2013-07-11    shenely                     Added assert statements
 
 """
 
@@ -30,7 +31,6 @@ Date          Author          Version     Description
 # Import section #
 #
 #Built-in libraries
-from datetime import timedelta
 import logging
 import types
 
@@ -83,7 +83,9 @@ class ParseEpoch(EventRoutine):
     
     name = "Epoch.Parse"
     
-    def _occur(self,message):        
+    def _occur(self,message):
+        assert isinstance(message,types.StringTypes)
+        
         logging.info("{0}:  Parsing from {1}".\
                      format(self.name,message))
         
@@ -118,6 +120,7 @@ class FormatEpoch(ActionRoutine):
     name = "Epoch.Format"
     
     def _execute(self,epoch):
+        assert isinstance(epoch,EpochState)
         
         logging.info("{0}:  Formatting from {1}".\
                      format(self.name,epoch.epoch))
