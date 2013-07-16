@@ -120,7 +120,7 @@ def main():
     segment.Scenario("Propagate state").\
         From("Split epoch",split).\
         Given("After state",iterate_before).Is(False).\
-        Then("Keplar propagator",iterator).\
+        Then("Kepler propagator",iterator).\
         And("Update iterate",update_iterate).\
         And("Put state",put_state)
     
