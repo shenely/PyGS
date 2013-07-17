@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   15 July 2013
+Modified:   16 July 2013
 
 Provides routines for orbit events.
 
@@ -24,6 +24,8 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-12    shenely         1.0         Initial revision
 2013-07-15    shenely         1.1         Changed to events
+2013-07-16    shenely         1.2         Correctly outputting 
+                                              EpochStates
 
 
 """
@@ -41,6 +43,7 @@ from numpy import poly1d,where
 
 #Internal libraries
 from core.routine import EventRoutine
+from epoch import EpochState
 from .. import InertialState
 #
 ##################
@@ -62,7 +65,7 @@ __all__ = ["OrbitPerigee",
 ####################
 # Constant section #
 #
-__version__ = "1.1"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 
 #Earth parameters
 EARTH_GRAVITATION = 398600.4
@@ -80,7 +83,18 @@ HERMITE_DERIVATIVE = lambda p0,m0,p1,m1:\
 ####################
 
 
-class OrbitEvent(EventRoutine):pass
+class OrbitEvent(EventRoutine):
+    def __init__(self):
+        self.prev = None
+        self.next = None
+        
+    def _ready(self,message):
+        assert isinstance(message,InertialState)
+        
+        self.prev = self.next
+        self.next = message
+        
+        return (self.prev is not None) and (self.next is not None)
 
 class OrbitPerigee(OrbitEvent):
     """Story:  Orbit perigee
@@ -103,10 +117,10 @@ class OrbitPerigee(OrbitEvent):
     AND the following criterion is true for the previous state:
             r∙v<0
     THEN the next state SHALL be defined as the state
-        AND the state SHALL be determined where the following criterion
+        AND the epoch SHALL be determined where the following criterion
             is true:
                 r∙v=0
-        AND the state SHALL be sent downstream
+        AND the epoch SHALL be sent downstream
     
     Scenario 2:  Criterion not achieved
     WHEN a state is received from upstream
@@ -121,34 +135,32 @@ class OrbitPerigee(OrbitEvent):
     name = "Orbit.Perigee"
     
     def _occur(self,message):
-        assert isinstance(message,InertialState)
-        
-        self.prev = self.next
-        self.next = message
-        
-        p0 = (self.prev.position.T * self.prev.velocity)[0,0]
-        p1 = (self.next.position.T * self.next.velocity)[0,0]
+        if self._ready(message):
+            p0 = (self.prev.position.T * self.prev.velocity)[0,0]
+            p1 = (self.next.position.T * self.next.velocity)[0,0]
+                
+            if (p0 <= 0 and p1 >= 0):
+                x0 = self.prev.epoch
+                x1 = self.next.epoch
+                dx = (x1 - x0).total_seconds()
+                
+                m0 = - EARTH_GRAVITATION / self.prev.R * dx
+                m1 = - EARTH_GRAVITATION / self.next.R * dx
+                
+                p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
+                #m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
+                
+                r = p.r
+                t = r[where((r > 0) & (r < 1))][0]
+                
+                x = x0 + timedelta(seconds = t * dx)
+                
+                epoch = EpochState(x)
             
-        if (p0 <= 0 and p1 >= 0):
-            x0 = self.prev.epoch
-            x1 = self.next.epoch
-            dx = (x1 - x0).total_seconds()
+                logging.info("{0}:  Achieved at {1}".\
+                             format(self.name,epoch.epoch))
             
-            m0 = - EARTH_GRAVITATION / self.prev.R * dx
-            m1 = - EARTH_GRAVITATION / self.next.R * dx
-            
-            p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
-            #m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
-            
-            r = p.r
-            t = r[where((r > 0) & (r < 1))][0]
-            
-            epoch = x0 + timedelta(seconds = t * dx)
-        
-            logging.info("{0}:  Achieved at {1}".\
-                         format(self.name,epoch))
-        
-            return epoch
+                return epoch
 
 class OrbitApogee(OrbitEvent):
     """Story:  Orbit apogee
@@ -171,10 +183,10 @@ class OrbitApogee(OrbitEvent):
     AND the following criterion is true for the previous state:
             r∙v>0
     THEN the next state SHALL be defined as the state
-        AND the state SHALL be determined where the following criterion
+        AND the epoch SHALL be determined where the following criterion
             is true:
                 r∙v=0
-        AND the state SHALL be sent downstream
+        AND the epoch SHALL be sent downstream
     
     Scenario 2:  Criterion not achieved
     WHEN a state is received from upstream
@@ -189,34 +201,32 @@ class OrbitApogee(OrbitEvent):
     name = "Orbit.Apogee"
     
     def _occur(self,message):
-        assert isinstance(message,InertialState)
-        
-        self.prev = self.next
-        self.next = message
-        
-        p0 = (self.prev.position.T * self.prev.velocity)[0,0]
-        p1 = (self.next.position.T * self.next.velocity)[0,0]
+        if self._ready(message):
+            p0 = (self.prev.position.T * self.prev.velocity)[0,0]
+            p1 = (self.next.position.T * self.next.velocity)[0,0]
+                
+            if (p0 >= 0 and p1 <= 0):
+                x0 = self.prev.epoch
+                x1 = self.next.epoch
+                dx = (x1 - x0).total_seconds()
+                
+                m0 = - EARTH_GRAVITATION / self.prev.R * dx
+                m1 = - EARTH_GRAVITATION / self.next.R * dx
+                
+                p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
+                #m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
+                
+                r = p.r
+                t = r[where((r > 0) & (r < 1))][0]
+                
+                x = x0 + timedelta(seconds = t * dx)
+                
+                epoch = EpochState(x)
             
-        if (p0 >= 0 and p1 <= 0):
-            x0 = self.prev.epoch
-            x1 = self.next.epoch
-            dx = (x1 - x0).total_seconds()
+                logging.info("{0}:  Achieved at {1}".\
+                             format(self.name,epoch.epoch))
             
-            m0 = - EARTH_GRAVITATION / self.prev.R * dx
-            m1 = - EARTH_GRAVITATION / self.next.R * dx
-            
-            p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
-            #m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
-            
-            r = p.r
-            t = r[where((r > 0) & (r < 1))][0]
-            
-            epoch = x0 + timedelta(seconds = t * dx)
-        
-            logging.info("{0}:  Achieved at {1}".\
-                         format(self.name,epoch))
-        
-            return epoch
+                return epoch
 
 class OrbitAscendingNode(OrbitEvent):
     """Story:  Orbit ascending node
@@ -239,10 +249,10 @@ class OrbitAscendingNode(OrbitEvent):
     AND the following criterion is true for the previous state:
             r[z]<0
     THEN the next state SHALL be defined as the state
-        AND the state SHALL be determined where the following criterion
+        AND the epoch SHALL be determined where the following criterion
             is true:
                 r[z]=0
-        AND the state SHALL be sent downstream
+        AND the epoch SHALL be sent downstream
     
     Scenario 2:  Criterion not achieved
     WHEN a state is received from upstream
@@ -257,34 +267,32 @@ class OrbitAscendingNode(OrbitEvent):
     name = "Orbit.AscendingNode"
     
     def _occur(self,message):
-        assert isinstance(message,InertialState)
-        
-        self.prev = self.next
-        self.next = message
-        
-        p0 = self.prev.z
-        p1 = self.next.z
+        if self._ready(message):
+            p0 = self.prev.z
+            p1 = self.next.z
+                
+            if (p0 <= 0 and p1 >= 0):
+                x0 = self.prev.epoch
+                x1 = self.next.epoch
+                dx = (x1 - x0).total_seconds()
+                
+                m0 = self.prev.w * dx
+                m1 = self.next.w * dx
+                
+                p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
+                #m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
+                
+                r = p.r
+                t = r[where((r > 0) & (r < 1))][0]
+                
+                x = x0 + timedelta(seconds = t * dx)
+                
+                epoch = EpochState(x)
             
-        if (p0 <= 0 and p1 >= 0):
-            x0 = self.prev.epoch
-            x1 = self.next.epoch
-            dx = (x1 - x0).total_seconds()
+                logging.info("{0}:  Achieved at {1}".\
+                             format(self.name,epoch.epoch))
             
-            m0 = self.prev.w * dx
-            m1 = self.next.w * dx
-            
-            p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
-            #m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
-            
-            r = p.r
-            t = r[where((r > 0) & (r < 1))][0]
-            
-            epoch = x0 + timedelta(seconds = t * dx)
-        
-            logging.info("{0}:  Achieved at {1}".\
-                         format(self.name,epoch))
-        
-            return epoch
+                return epoch
 
 class OrbitDescendingNode(OrbitEvent):
     """Story:  Orbit descending node
@@ -307,10 +315,10 @@ class OrbitDescendingNode(OrbitEvent):
     AND the following criterion is true for the previous state:
             r[z]>0
     THEN the next state SHALL be defined as the state
-        AND the state SHALL be determined where the following criterion
+        AND the epoch SHALL be determined where the following criterion
             is true:
                 r[z]=0
-        AND the state SHALL be sent downstream
+        AND the epoch SHALL be sent downstream
     
     Scenario 2:  Criterion not achieved
     WHEN a state is received from upstream
@@ -325,34 +333,32 @@ class OrbitDescendingNode(OrbitEvent):
     name = "Orbit.DescendingNode"
     
     def _occur(self,message):
-        assert isinstance(message,InertialState)
-        
-        self.prev = self.next
-        self.next = message
-        
-        p0 = self.prev.z
-        p1 = self.next.z
+        if self._ready(message):
+            p0 = self.prev.z
+            p1 = self.next.z
+                
+            if (p0 >= 0 and p1 <= 0):
+                x0 = self.prev.epoch
+                x1 = self.next.epoch
+                dx = (x1 - x0).total_seconds()
+                
+                m0 = self.prev.w * dx
+                m1 = self.next.w * dx
+                
+                p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
+                #m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
+                
+                r = p.r
+                t = r[where((r > 0) & (r < 1))][0]
+                
+                x = x0 + timedelta(seconds = t * dx)
+                
+                epoch = EpochState(x)
             
-        if (p0 >= 0 and p1 <= 0):
-            x0 = self.prev.epoch
-            x1 = self.next.epoch
-            dx = (x1 - x0).total_seconds()
+                logging.info("{0}:  Achieved at {1}".\
+                             format(self.name,epoch.epoch))
             
-            m0 = self.prev.w * dx
-            m1 = self.next.w * dx
-            
-            p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
-            #m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
-            
-            r = p.r
-            t = r[where((r > 0) & (r < 1))][0]
-            
-            epoch = x0 + timedelta(seconds = t * dx)
-        
-            logging.info("{0}:  Achieved at {1}".\
-                         format(self.name,epoch))
-        
-            return epoch
+                return epoch
 
 class OrbitNorthernPole(OrbitEvent):
     """Story:  Orbit northern pole
@@ -375,10 +381,10 @@ class OrbitNorthernPole(OrbitEvent):
     AND the following criterion is true for the previous state:
             v[z]>0
     THEN the next state SHALL be defined as the state
-        AND the state SHALL be determined where the following criterion
+        AND the epoch SHALL be determined where the following criterion
             is true:
                 v[z]=0
-        AND the state SHALL be sent downstream
+        AND the epoch SHALL be sent downstream
     
     Scenario 2:  Criterion not achieved
     WHEN a state is received from upstream
@@ -393,37 +399,35 @@ class OrbitNorthernPole(OrbitEvent):
     name = "Orbit.NorthernPole"
     
     def _occur(self,message):
-        assert isinstance(message,InertialState)
-        
-        self.prev = self.next
-        self.next = message
+        if self._ready(message):
+            m0 = self.prev.w
+            m1 = self.next.w
+                
+            if (m0 >= 0 and m1 <= 0):
+                x0 = self.prev.epoch
+                x1 = self.next.epoch
+                dx = (x1 - x0).total_seconds()
             
-        m0 = self.prev.w
-        m1 = self.next.w
+                p0 = self.prev.z
+                p1 = self.next.z
+                
+                m0 *= dx
+                m1 *= dx
+                
+                #p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
+                m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
+                
+                r = m.r
+                t = r[where((r > 0) & (r < 1))][0]
+                
+                x = x0 + timedelta(seconds = t * dx)
+                
+                epoch = EpochState(x)
             
-        if (m0 >= 0 and m1 <= 0):
-            x0 = self.prev.epoch
-            x1 = self.next.epoch
-            dx = (x1 - x0).total_seconds()
-        
-            p0 = self.prev.z
-            p1 = self.next.z
+                logging.info("{0}:  Achieved at {1}".\
+                             format(self.name,epoch.epoch))
             
-            m0 *= dx
-            m1 *= dx
-            
-            #p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
-            m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
-            
-            r = m.r
-            t = r[where((r > 0) & (r < 1))][0]
-            
-            epoch = x0 + timedelta(seconds = t * dx)
-        
-            logging.info("{0}:  Achieved at {1}".\
-                         format(self.name,epoch))
-        
-            return epoch
+                return epoch
 
 class OrbitSouthernPole(OrbitEvent):
     """Story:  Orbit southern pole
@@ -446,10 +450,10 @@ class OrbitSouthernPole(OrbitEvent):
     AND the following criterion is true for the previous state:
             v[z]<0
     THEN the next state SHALL be defined as the state
-        AND the state SHALL be determined where the following criterion
+        AND the epoch SHALL be determined where the following criterion
             is true:
                 v[z]=0
-        AND the state SHALL be sent downstream
+        AND the epoch SHALL be sent downstream
     
     Scenario 2:  Criterion not achieved
     WHEN a state is received from upstream
@@ -464,34 +468,32 @@ class OrbitSouthernPole(OrbitEvent):
     name = "Orbit.SouthernPole"
     
     def _occur(self,message):
-        assert isinstance(message,InertialState)
-        
-        self.prev = self.next
-        self.next = message
+        if self._ready(message):
+            m0 = self.prev.w
+            m1 = self.next.w
+                
+            if (m0 <= 0 and m1 >= 0):
+                x0 = self.prev.epoch
+                x1 = self.next.epoch
+                dx = (x1 - x0).total_seconds()
             
-        m0 = self.prev.w
-        m1 = self.next.w
+                p0 = self.prev.z
+                p1 = self.next.z
+                
+                m0 *= dx
+                m1 *= dx
+                
+                #p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
+                m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
+                
+                r = m.r
+                t = r[where((r > 0) & (r < 1))][0]
+                
+                x = x0 + timedelta(seconds = t * dx)
+                
+                epoch = EpochState(x)
             
-        if (m0 <= 0 and m1 >= 0):
-            x0 = self.prev.epoch
-            x1 = self.next.epoch
-            dx = (x1 - x0).total_seconds()
-        
-            p0 = self.prev.z
-            p1 = self.next.z
+                logging.info("{0}:  Achieved at {1}".\
+                             format(self.name,epoch.epoch))
             
-            m0 *= dx
-            m1 *= dx
-            
-            #p = HERMITE_POLYNOMIAL(p0,m0,p1,m1)
-            m = HERMITE_DERIVATIVE(p0,m0,p1,m1)
-            
-            r = m.r
-            t = r[where((r > 0) & (r < 1))][0]
-            
-            epoch = x0 + timedelta(seconds = t * dx)
-        
-            logging.info("{0}:  Achieved at {1}".\
-                         format(self.name,epoch))
-        
-            return epoch
+                return epoch

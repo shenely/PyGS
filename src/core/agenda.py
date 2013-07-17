@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 June 2013
+Modified:   16 July 2013
 
 Provides a agenda service.
 
@@ -19,6 +19,7 @@ Date          Author          Version     Description
 2013-06-27    shenely         1.0         Initial revision
 2013-06-29    shenely         1.1         Refactored to agenda
 2013-06-29    shenely         1.2         Generalized to processor
+2013-07-16    shenely         1.3         Fixed pipe issue
 
 """
 
@@ -53,7 +54,7 @@ __all__ = ["Processor",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 
 TIMEOUT = timedelta(0,0,0,100)#time between running
 
@@ -146,8 +147,9 @@ class Processor(object):
     def dispatch(self):
         message,fpipe,tpipe = self.queue.get()
         
-        fpipe = tpipe
+        temp = tpipe
         message,tpipe = tpipe.routine.send((message,fpipe))
+        fpipe = temp
         
         return message,fpipe,tpipe
         

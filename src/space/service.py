@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 June 2013
+Modified:   16 July 2013
 
 Purpose:    
 """
@@ -29,7 +29,7 @@ from epoch import EpochState
 from epoch import routine as epoch
 from epoch.routine import order
 from state import KeplerianState
-from state import routine as state
+from message.routine import telemetry
 from state.routine import propagate,transform
 #from . import routine
 #
@@ -90,55 +90,62 @@ def main():
 #
 #    scheduler.periodic(segment["Send epoch"],200).start()
 
-    input = socket.SubscribeSocket(epoch_socket,EPOCH_ADDRESS)
-    parser = epoch.ParseEpoch()
-    split = control.SplitControl(processor)
+    clock_input = socket.SubscribeSocket(epoch_socket,EPOCH_ADDRESS)
+    parse_epoch = epoch.ParseEpoch()
+    split_epoch = control.SplitControl(processor)
     iterate_before = order.BeforeEpoch(state_epoch,ITERATE_MARGIN)
     publish_after = order.AfterEpoch(clock_epoch,PUBLISH_MARGIN)
     remove_after = order.AfterEpoch(clock_epoch,REMOVE_MARGIN)
     update_publish = method.ExecuteMethod(publish_after.set_reference)
     update_remove = method.ExecuteMethod(remove_after.set_reference)
-    iterator = propagate.KeplerPropagate(state_epoch)
+    iterate_state = propagate.KeplerPropagate(state_epoch)
     update_iterate = method.ExecuteMethod(iterate_before.set_reference)
-    put_state = queue.PutQueue(state_queue)
-    get_state = queue.GetQueue(state_queue)
-    formatter = state.FormatState()
-    transformer = transform.KeplerianToInertialTransform()
-    output = socket.PublishSocket(state_socket,STATE_ADDRESS)
+    state_transformer = transform.KeplerianToInertialTransform()
+    merge_telemetry = control.MergeControl()
+    generate_telemetry = telemetry.GenerateTelemetry()
+    put_telemetry = queue.PutQueue(state_queue)
+    get_telemetry = queue.GetQueue(state_queue)
+    format_telemetry = telemetry.FormatTelemetry()
+    space_output = socket.PublishSocket(state_socket,STATE_ADDRESS)
 
     segment = Application("Space segment",processor)
     
     segment.Behavior("Propagate state")
     
     segment.Scenario("Receive epoch").\
-        From("Subscribe source",input).\
-        When("Parse epoch",parser).\
+        From("Subscribe source",clock_input).\
+        When("Parse epoch",parse_epoch).\
         Then("Update publish",update_publish).\
         And("Update remove",update_remove).\
-        To("Split epoch",split)
+        To("Split epoch",split_epoch)
     
     segment.Scenario("Propagate state").\
-        From("Split epoch",split).\
+        From("Split epoch",split_epoch).\
         Given("After state",iterate_before).Is(False).\
-        Then("Kepler propagator",iterator).\
+        Then("Iterate state",iterate_state).\
         And("Update iterate",update_iterate).\
-        And("Put state",put_state)
+        And("Transform state",state_transformer).\
+        To("Merge telemetry",merge_telemetry)
     
-    segment.Scenario("Publish state").\
-        From("Split epoch",split).\
-        When("Get state",get_state).\
+    segment.Scenario("Generate telemetry").\
+        From("Merge telemetry",merge_telemetry).\
+        Then("Generate telemetry",generate_telemetry).\
+        And("Put state",put_telemetry)
+    
+    segment.Scenario("Publish telemetry").\
+        From("Split epoch",split_epoch).\
+        When("Get telemetry",get_telemetry).\
         Given("After lower",remove_after).Is(True).\
         And("After upper",publish_after).Is(False).\
-        Then("Transform state",transformer).\
-        And("Format state",formatter).\
-        To("Publish target",output)
+        Then("Format telemetry",format_telemetry).\
+        To("Publish target",space_output)
     
-    segment.Scenario("Requeue state").\
+    segment.Scenario("Requeue telemetry").\
         Given("After upper",publish_after).Is(True).\
-        Then("Put state",put_state)
+        Then("Put telemetry",put_telemetry)
     
-    segment.Scenario("Remove state").\
+    segment.Scenario("Remove telemetry").\
         Given("After lower",remove_after).Is(False).\
-        Then("Put state",put_state)
+        Then("Put telemetry",put_telemetry)
                 
 if __name__ == '__main__':main()
