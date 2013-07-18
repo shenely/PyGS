@@ -29,6 +29,7 @@ from epoch import EpochState
 from epoch import routine as epoch
 from epoch.routine import order
 from state import KeplerianState
+from message import ORBIT_TELEMETRY
 from message.routine import telemetry
 from state.routine import propagate,transform
 #from . import routine
@@ -49,7 +50,7 @@ from state.routine import propagate,transform
 __version__ = "1.0"#current version [major.minor]
 
 EPOCH_ADDRESS = "Kepler.Epoch"
-STATE_ADDRESS = "Kepler.State"
+TELEMETRY_ADDRESS = "Kepler.Telemetry"
 
 ITERATE_MARGIN = timedelta(seconds=300)
 PUBLISH_MARGIN = timedelta(seconds=180)
@@ -73,22 +74,10 @@ def main():
     epoch_socket = context.socket(zmq.SUB)
     epoch_socket.connect("tcp://localhost:5556")
         
-    state_socket = context.socket(zmq.PUB)
-    state_socket.connect("tcp://localhost:5555")
+    space_socket = context.socket(zmq.PUB)
+    space_socket.connect("tcp://localhost:5555")
     
     state_queue = PriorityQueue()
-        
-#    segment = application("Clock segment")
-#
-#    segment.workflow("Send epoch").\
-#        source("Iterate epoch",routine.continuous,clock.epoch,EPOCH_SCALE).\
-#        sequence("Format epoch",epoch.format,EPOCH_ADDRESS).\
-#        sink("Publish epoch",socket.publish,epoch_socket)
-#    
-#    segment.clean()
-#    segment.build()
-#
-#    scheduler.periodic(segment["Send epoch"],200).start()
 
     clock_input = socket.SubscribeSocket(epoch_socket,EPOCH_ADDRESS)
     parse_epoch = epoch.ParseEpoch()
@@ -102,11 +91,11 @@ def main():
     update_iterate = method.ExecuteMethod(iterate_before.set_reference)
     state_transformer = transform.KeplerianToInertialTransform()
     merge_telemetry = control.MergeControl()
-    generate_telemetry = telemetry.GenerateTelemetry()
+    generate_telemetry = telemetry.GenerateTelemetry(ORBIT_TELEMETRY)
     put_telemetry = queue.PutQueue(state_queue)
     get_telemetry = queue.GetQueue(state_queue)
     format_telemetry = telemetry.FormatTelemetry()
-    space_output = socket.PublishSocket(state_socket,STATE_ADDRESS)
+    telemetry_output = socket.PublishSocket(space_socket,TELEMETRY_ADDRESS)
 
     segment = Application("Space segment",processor)
     
@@ -138,14 +127,10 @@ def main():
         Given("After lower",remove_after).Is(True).\
         And("After upper",publish_after).Is(False).\
         Then("Format telemetry",format_telemetry).\
-        To("Publish target",space_output)
+        To("Publish target",telemetry_output)
     
     segment.Scenario("Requeue telemetry").\
         Given("After upper",publish_after).Is(True).\
-        Then("Put telemetry",put_telemetry)
-    
-    segment.Scenario("Remove telemetry").\
-        Given("After lower",remove_after).Is(False).\
         Then("Put telemetry",put_telemetry)
                 
 if __name__ == '__main__':main()

@@ -39,7 +39,6 @@ from scipy.linalg import norm
 
 #Internal libraries
 from epoch import EpochState
-from state import InertialState
 #
 ##################
 
@@ -60,19 +59,24 @@ __all__ = ["TelemetryMessage",
 #
 __version__ = "1.0"#current version [major.minor]
 
+ORBIT_TELEMETRY = 10
+INERTIAL_PRODUCT = 20
+GEOGRAPHIC_PRODUCT = 21
 #
 ####################
 
 
-class BaseMessage(EpochState):pass
-
-class TelemetryMessage(BaseMessage):
-    def __init__(self,epoch,state,*args,**kwargs):
+class BaseMessage(EpochState):
+    def __init__(self,epoch,data,type,*args,**kwargs):
         EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(state,InertialState)
+        assert isinstance(data,EpochState)
+        assert isinstance(type,types.IntType)
         
-        self.state = state
+        self.data = data
+        self.type = type
+
+class TelemetryMessage(BaseMessage):pass
 
 class CommandMessage(BaseMessage):pass
 

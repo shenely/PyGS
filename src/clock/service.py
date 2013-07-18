@@ -56,24 +56,12 @@ def main():
     
     clock_epoch = datetime(2010,1,1,tzinfo=utc)
         
-    epoch_socket = context.socket(zmq.PUB)
-    epoch_socket.connect("tcp://localhost:5555")
-        
-#    segment = application("Clock segment")
-#
-#    segment.workflow("Send epoch").\
-#        source("Iterate epoch",routine.continuous,clock.epoch,EPOCH_SCALE).\
-#        sequence("Format epoch",epoch.format,EPOCH_ADDRESS).\
-#        sink("Publish epoch",socket.publish,epoch_socket)
-#    
-#    segment.clean()
-#    segment.build()
-#
-#    scheduler.periodic(segment["Send epoch"],200).start()
+    clock_socket = context.socket(zmq.PUB)
+    clock_socket.connect("tcp://localhost:5555")
 
     input = routine.ContinuousClock(clock_epoch,EPOCH_SCALE)
     formatter = epoch.FormatEpoch()
-    output = socket.PublishSocket(epoch_socket,EPOCH_ADDRESS)
+    output = socket.PublishSocket(clock_socket,EPOCH_ADDRESS)
 
     segment = Application("Clock segment",processor)
     

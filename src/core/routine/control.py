@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 June 2013
+Modified:   16 July 2013
 
 Provides routines for controlling the flow of data.
 
@@ -23,6 +23,8 @@ Date          Author          Version     Description
 2013-05-02    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
 2013-06-29    shenely                     Refactored for agenda
+2013-07-17    shenely                     Corrected merge log message
+
 
 """
 
@@ -161,7 +163,7 @@ class MergeControl(SourceRoutine,TargetRoutine):
                           format(self.name))
             
         if len(self.message) == len(self.source):
-            logging.info("{0}:  %d-way merge".\
+            logging.info("{0}:  {1:d}-way merge".\
                          format(self.name,len(self.source)))
             
             message = self.message.values()

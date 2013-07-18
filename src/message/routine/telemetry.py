@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 July 2013
+Modified:   17 July 2013
 
 Provides routines for telemetry manipulation.
 
@@ -12,6 +12,7 @@ Classes:
 ParseTelemetry  -- Parse telemetry message
 FormatTelemetry -- Format telemetry message
 GenerateTelemetry -- Generate telemetry message
+Extract state -- Extract state object
 
 """
 
@@ -19,7 +20,8 @@ GenerateTelemetry -- Generate telemetry message
                                         
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
-2013-07-11    shenely         1.0         Initial revision
+2013-07-16    shenely         1.0         Initial revision
+2013-07-17    shenely         1.1         Added ExtractState
 
 """
 
@@ -38,6 +40,7 @@ from core import encoder,decoder
 from core.routine import EventRoutine,ActionRoutine
 from .. import TelemetryMessage
 from state import InertialState
+from .. import ORBIT_TELEMETRY
 #
 ##################
 
@@ -47,7 +50,8 @@ from state import InertialState
 #
 __all__ = ["ParseTelemetry",
            "FormatTelemetry",
-           "GenerateTelemetry"]
+           "GenerateTelemetry",
+           "ExtractState"]
 #
 ##################
 
@@ -55,7 +59,7 @@ __all__ = ["ParseTelemetry",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 
@@ -69,7 +73,7 @@ class ParseTelemetry(EventRoutine):
         
     """
     
-    """Specification:  Parse state message
+    """Specification:  Parse telemetry message
     
     GIVEN a downstream pipeline (default null)
         
@@ -104,7 +108,7 @@ class FormatTelemetry(ActionRoutine):
         
     """
     
-    """Specification:  Format state message
+    """Specification:  Format telemetry message
     
     GIVEN an address for the message envelope
         AND a downstream pipeline (default null)
@@ -140,7 +144,7 @@ class GenerateTelemetry(ActionRoutine):
         
     """
     
-    """Specification:  Format telemetry message
+    """Specification:  Generate telemetry message
     
     GIVEN 
         
@@ -151,6 +155,13 @@ class GenerateTelemetry(ActionRoutine):
     """
     
     name = "Telemetry.Generate"
+    
+    def __init__(self,type):
+        ActionRoutine.__init__(self)
+        
+        assert isinstance(type,types.IntType)
+        
+        self.type = type
     
     def _execute(self,systems):
         assert isinstance(systems,types.ListType)
@@ -167,9 +178,38 @@ class GenerateTelemetry(ActionRoutine):
             
         epoch = state.epoch
         
-        telemetry = TelemetryMessage(epoch,state)
+        telemetry = TelemetryMessage(epoch,state,self.type)
         
         logging.info("{0}:  Formatted at {1}".\
                      format(self.name,telemetry.epoch))
                      
         return telemetry
+
+class ExtractState(EventRoutine):
+    """Story:  Extract state object
+    
+    IN ORDER TO 
+    AS A 
+    I WANT TO 
+        
+    """
+    
+    """Specification:  Extract state object
+    
+    GIVEN 
+        
+    Scenario 1:  
+    WHEN 
+    THEN 
+    
+    """
+    
+    name = "State.Extract"
+    
+    def _occur(self,message):
+        assert isinstance(message,TelemetryMessage)
+        assert message.type == ORBIT_TELEMETRY
+        
+        state = message.state
+        
+        return state

@@ -469,7 +469,7 @@ class Split(Sink):
             if self.downstream[name].built:
                 self.opipes.append(self.downstream[name].pipeline)
 
-class Merge(Source):
+class Split stateMerge(Source):
     def __new__(cls,context,name):
         obj = object.__new__(cls)
         

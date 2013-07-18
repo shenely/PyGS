@@ -31,7 +31,7 @@ import logging
 #External libraries
 
 #Internal libraries
-from core.routine import ActionRoutine
+from core.routine import EventRoutine
 from epoch import EpochState
 from .. import InertialState
 #
@@ -59,9 +59,9 @@ HERMITE_SPLINE_11 = lambda t: t ** 3 - t ** 2
 ####################
 
 
-class InterpolateAction(ActionRoutine):pass
+class InterpolateEvent(EventRoutine):pass
 
-class HermiteInterpolate(InterpolateAction):
+class HermiteInterpolate(InterpolateEvent):
     """Story:  Cubic Hermite spline
     
     IN ORDER TO approximate the state between propagation points
@@ -138,13 +138,13 @@ class HermiteInterpolate(InterpolateAction):
     name = "Interpolate.Hermite"
     
     def __init__(self):
-        InterpolateAction.__init__(self)
+        InterpolateEvent.__init__(self)
         
         self.prev = None
         self.curr = None
         self.next = None
     
-    def _execute(self,message):
+    def _occur(self,message):
         assert isinstance(message,EpochState)
         
         if (self.prev is not None) and (self.next is not None):

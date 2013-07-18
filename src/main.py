@@ -4,6 +4,7 @@ from core import broker
 from core import agenda
 from clock import service as clock
 from space import service as space
+from ground import service as ground
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -14,6 +15,7 @@ def main():
         
     clock.main()
     space.main()
+    ground.main()
     
     processor.start()
     
