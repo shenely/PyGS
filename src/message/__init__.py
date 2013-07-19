@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 July 2013
+Modified:   18 July 2013
 
 Provides the message objects.
 
@@ -21,6 +21,7 @@ ProductMessage     -- Product message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-16    shenely         1.0         Initial revision
+2013-07-18    shenely         1.1         Builds data from message type
 
 """
 
@@ -39,6 +40,7 @@ from scipy.linalg import norm
 
 #Internal libraries
 from epoch import EpochState
+from state import InertialState
 #
 ##################
 
@@ -57,7 +59,7 @@ __all__ = ["TelemetryMessage",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 
 ORBIT_TELEMETRY = 10
 INERTIAL_PRODUCT = 20
@@ -70,8 +72,12 @@ class BaseMessage(EpochState):
     def __init__(self,epoch,data,type,*args,**kwargs):
         EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(data,EpochState)
         assert isinstance(type,types.IntType)
+        
+        if type == ORBIT_TELEMETRY:
+            data = InertialState(**data)
+        
+        assert isinstance(data,EpochState)
         
         self.data = data
         self.type = type

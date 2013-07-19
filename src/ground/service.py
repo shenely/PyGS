@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   17 July 2013
+Modified:   18 July 2013
 
 Purpose:    
 """
@@ -53,8 +53,7 @@ EPOCH_ADDRESS = "Kepler.Epoch"
 TELEMETRY_ADDRESS = "Kepler.Telemetry"
 PRODUCT_ADDRESS = "Kepler.Product"
 
-INTERPOLATE_MARGIN = timedelta(seconds=0)
-PUBLISH_MARGIN = timedelta(seconds=180)
+INTERPOLATE_MARGIN = timedelta(seconds=60)
 REMOVE_MARGIN = timedelta(seconds=0)
 
 STEP_SIZE = timedelta(seconds=60)
@@ -74,24 +73,22 @@ def main():
     epoch_socket.connect("tcp://localhost:5556")
         
     telemetry_socket = context.socket(zmq.SUB)
-    epoch_socket.connect("tcp://localhost:5556")
+    telemetry_socket.connect("tcp://localhost:5556")
     
     ground_socket = context.socket(zmq.PUB)
     ground_socket.connect("tcp://localhost:5555")
     
     state_queue = PriorityQueue()
-    product_queue = PriorityQueue()
 
     epoch_input = socket.SubscribeSocket(epoch_socket,EPOCH_ADDRESS)
     parse_epoch = epoch.ParseEpoch()
     split_epoch = control.SplitControl(processor)
-    interpolate_after = order.BeforeEpoch(clock_epoch,INTERPOLATE_MARGIN)
-    publish_after = order.AfterEpoch(clock_epoch,PUBLISH_MARGIN)
+    interpolate_after = order.AfterEpoch(clock_epoch,INTERPOLATE_MARGIN)
     remove_after = order.AfterEpoch(clock_epoch,REMOVE_MARGIN)
-    update_publish = method.ExecuteMethod(publish_after.set_reference)
     update_remove = method.ExecuteMethod(remove_after.set_reference)
     interpolate_state = interpolate.HermiteInterpolate()
     update_interpolate = method.ExecuteMethod(interpolate_after.set_reference)
+    update_state = method.ExecuteMethod(interpolate_state.set_state)
     transform_geographic = transform.InertialToGeographicTransform()
     telemetry_input = socket.SubscribeSocket(telemetry_socket,TELEMETRY_ADDRESS)
     parse_telemetry = telemetry.ParseTelemetry()
@@ -102,8 +99,6 @@ def main():
     extract_state = telemetry.ExtractState()
     generate_inertial = product.GenerateProduct(INERTIAL_PRODUCT)
     generate_geographic = product.GenerateProduct(GEOGRAPHIC_PRODUCT)
-    put_product = queue.PutQueue(product_queue)
-    get_product = queue.GetQueue(product_queue)
     format_product = product.FormatProduct()
     
     product_output = socket.PublishSocket(ground_socket,PRODUCT_ADDRESS)
@@ -115,13 +110,13 @@ def main():
     segment.Scenario("Receive epoch").\
         From("Subscribe source",epoch_input).\
         When("Parse epoch",parse_epoch).\
+        Then("Update remove",update_remove).\
+        And("Update interpolate",update_interpolate).\
         To("Split epoch",split_epoch)
     
     segment.Scenario("Receive telemetry").\
         From("Subscribe source",telemetry_input).\
         When("Parse telemetry",parse_telemetry).\
-        Then("Update remove",update_remove).\
-        And("Update publish",update_publish).\
         To("Split telemetry",split_telemetry)
     
     segment.Scenario("State extraction").\
@@ -134,11 +129,11 @@ def main():
         When("Get state",get_state).\
         Given("After lower",remove_after).Is(True).\
         And("After upper",interpolate_after).Is(False).\
-        Then("Update state",update_interpolate)
+        Then("Update state",update_state)
     
     segment.Scenario("Requeue state").\
         Given("After upper",interpolate_after).Is(True).\
-        Then("Put telemetry",put_state)     
+        Then("Put state",put_state)     
     
     segment.Scenario("Hermite interpolator").\
         From("Split epoch",split_epoch).\
@@ -148,24 +143,13 @@ def main():
     segment.Scenario("Generate inertial product").\
         From("Split state",split_state).\
         Then("Generate inertial",generate_inertial).\
-        And("Put inertial",put_product)
+        And("Format product",format_product).\
+        To("Publish target",product_output)
     
     segment.Scenario("Generate geographic product").\
         From("Split state",split_state).\
         Then("Transform geographic",transform_geographic).\
         And("Generate geographic",generate_geographic).\
-        And("Put product",put_product)
-    
-    segment.Scenario("Publish product").\
-        From("Split epoch",split_epoch).\
-        When("Get product",get_product).\
-        Given("After lower",remove_after).Is(True).\
-        And("After upper",publish_after).Is(False).\
-        Then("Format product",format_product).\
-        To("Publish target",product_output)
-    
-    segment.Scenario("Requeue product").\
-        Given("After upper",publish_after).Is(True).\
-        Then("Put telemetry",put_product)
+        And("Format product",format_product)
                 
 if __name__ == '__main__':main()

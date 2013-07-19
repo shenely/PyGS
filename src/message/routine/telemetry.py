@@ -210,6 +210,6 @@ class ExtractState(EventRoutine):
         assert isinstance(message,TelemetryMessage)
         assert message.type == ORBIT_TELEMETRY
         
-        state = message.state
+        state = message.data
         
         return state

@@ -5,7 +5,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   11 July 2013
+Modified:   18 July 2013
 
 Provides routines for state interpolation.
 
@@ -18,6 +18,7 @@ HermiteInterpolate -- Cubic Hermite spline interpolation
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-11    shenely         1.0         Initial revision
+2013-07-18    shenely                     Fixed some naming issues
 
 """
 
@@ -149,7 +150,7 @@ class HermiteInterpolate(InterpolateEvent):
         
         if (self.prev is not None) and (self.next is not None):
             logging.info("{0}:  Interpolating from {1}".\
-                         format(self.name,self.state.epoch))
+                         format(self.name,self.prev.epoch))
             
             x = message.epoch
             t = (x - self.x0).total_seconds() / self.dx
@@ -176,7 +177,7 @@ class HermiteInterpolate(InterpolateEvent):
         assert isinstance(state,InertialState)
         
         #cycle the states if a new state is received
-        self.prev,self.next = state,self.prev
+        self.prev,self.next = self.next,state
     
         #set the parameters for interpolation
         if (self.prev is not None) and (self.next is not None):

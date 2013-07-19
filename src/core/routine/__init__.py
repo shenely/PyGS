@@ -47,8 +47,8 @@ class BaseRoutine(object):
         assert isinstance(source,BaseRoutine)
         
         if len(self.source) == 0:
-            logging.info("{0}:  Single source defined".\
-                         format(self.name))
+            logging.debug("{0}:  Single source defined".\
+                          format(self.name))
         else:
             logging.warn("{0}:  Multiple sources defined".\
                          format(self.name))
@@ -59,8 +59,8 @@ class BaseRoutine(object):
         assert isinstance(target,BaseRoutine)
         
         if self.target is None:
-            logging.info("{0}:  Target defined".\
-                         format(self.name))
+            logging.debug("{0}:  Target defined".\
+                          format(self.name))
         else:
             logging.error("{0}:  Target redefined".\
                           format(self.name))
@@ -115,12 +115,12 @@ class ConditionRoutine(BaseRoutine):
         self.target[True] = None
     
     def _process(self,message,ipipe):
-        logging.info("{0}:  Satisfying".\
-                     format(self.name))
+        logging.debug("{0}:  Satisfying".\
+                      format(self.name))
             
         if self._satisfy(message):
-            logging.info("{0}:  Satisfied".\
-                         format(self.name))
+            logging.debug("{0}:  Satisfied".\
+                          format(self.name))
             
             opipe = self.target[True]
         else:
@@ -138,8 +138,8 @@ class ConditionRoutine(BaseRoutine):
         assert isinstance(target,BaseRoutine)
         
         if self.mode not in self.target:
-            logging.info("{0}:  {1} target defined".\
-                         format(self.name,self.mode))
+            logging.debug("{0}:  {1} target defined".\
+                          format(self.name,self.mode))
         else:
             logging.error("{0}:  {1} target redefined".\
                           format(self.name,self.mode))
@@ -151,7 +151,7 @@ class EventRoutine(BaseRoutine):
     
     def _process(self,message,ipipe):
         logging.debug("{0}:  Occurring".\
-                     format(self.name))
+                      format(self.name))
         
         message = self._occur(message)
         
@@ -176,7 +176,7 @@ class ActionRoutine(BaseRoutine):
     
     def _process(self,message,ipipe):
         logging.debug("{0}:  Executing".\
-                     format(self.name))
+                      format(self.name))
         
         message = self._execute(message)
         opipe = self.target
