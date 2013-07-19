@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   17 July 2013
+Modified:   19 July 2013
 
 Provides routines for telemetry manipulation.
 
@@ -22,6 +22,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-16    shenely         1.0         Initial revision
 2013-07-17    shenely         1.1         Added ExtractState
+2013-07-19    shenely         1.2         Mirrored changes in product
 
 """
 
@@ -39,7 +40,7 @@ import types
 from core import encoder,decoder
 from core.routine import EventRoutine,ActionRoutine
 from .. import TelemetryMessage
-from state import InertialState
+from epoch import EpochState
 from .. import ORBIT_TELEMETRY
 #
 ##################
@@ -59,7 +60,7 @@ __all__ = ["ParseTelemetry",
 ####################
 # Constant section #
 #
-__version__ = "1.1"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 #
 ####################
 
@@ -163,22 +164,12 @@ class GenerateTelemetry(ActionRoutine):
         
         self.type = type
     
-    def _execute(self,systems):
-        assert isinstance(systems,types.ListType)
+    def _execute(self,message):
+        assert isinstance(message,EpochState)
         
-        states = [system for system in systems if isinstance(system,InertialState)]
-        if len(states) > 0:
-            logging.debug("{0}:  State defined".\
-                         format(self.name))
-            
-            state = states[0]
-        else:
-            logging.error("{0}:  State not defined".\
-                         format(self.name))
-            
-        epoch = state.epoch
+        epoch = message.epoch
         
-        telemetry = TelemetryMessage(epoch,state,self.type)
+        telemetry = TelemetryMessage(epoch,message,self.type)
         
         logging.info("{0}:  Formatted at {1}".\
                      format(self.name,telemetry.epoch))

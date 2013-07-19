@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 July 2013
+Modified:   19 July 2013
 
 Purpose:    
 """
@@ -104,23 +104,9 @@ def main():
     segment.Scenario("Receive epoch").\
         From("Subscribe source",clock_input).\
         When("Parse epoch",parse_epoch).\
-        Then("Update publish",update_publish).\
-        And("Update remove",update_remove).\
         To("Split epoch",split_epoch)
     
-    segment.Scenario("Propagate state").\
-        From("Split epoch",split_epoch).\
-        Given("After state",iterate_before).Is(False).\
-        Then("Iterate state",iterate_state).\
-        And("Update iterate",update_iterate).\
-        And("Transform state",state_transformer).\
-        To("Merge telemetry",merge_telemetry)
-    
-    segment.Scenario("Generate telemetry").\
-        From("Merge telemetry",merge_telemetry).\
-        Then("Generate telemetry",generate_telemetry).\
-        And("Put state",put_telemetry)
-    
+    # General asset section
     segment.Scenario("Publish telemetry").\
         From("Split epoch",split_epoch).\
         When("Get telemetry",get_telemetry).\
@@ -132,5 +118,22 @@ def main():
     segment.Scenario("Requeue telemetry").\
         Given("After upper",publish_after).Is(True).\
         Then("Put telemetry",put_telemetry)
+    # End section
+    
+    # Special asset section
+    segment.Scenario("Update epoch").\
+        From("Split epoch",split_epoch).\
+        Then("Update publish",update_publish).\
+        And("Update remove",update_remove)
+        
+    segment.Scenario("Propagate state").\
+        From("Split epoch",split_epoch).\
+        Given("After state",iterate_before).Is(False).\
+        Then("Iterate state",iterate_state).\
+        And("Update iterate",update_iterate).\
+        And("Transform state",state_transformer).\
+        And("Generate telemetry",generate_telemetry).\
+        And("Put state",put_telemetry)
+    # End section
                 
 if __name__ == '__main__':main()

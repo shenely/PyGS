@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   18 July 2013
+Modified:   19 July 2013
 
 Purpose:    
 """
@@ -28,7 +28,6 @@ from core.routine import socket,control,queue,method
 from epoch import EpochState
 from epoch import routine as epoch
 from epoch.routine import order
-from state import KeplerianState
 from message import INERTIAL_PRODUCT,GEOGRAPHIC_PRODUCT
 from message.routine import telemetry,product
 from state.routine import interpolate,transform
@@ -55,8 +54,6 @@ PRODUCT_ADDRESS = "Kepler.Product"
 
 INTERPOLATE_MARGIN = timedelta(seconds=60)
 REMOVE_MARGIN = timedelta(seconds=0)
-
-STEP_SIZE = timedelta(seconds=60)
 #
 ####################
 
@@ -79,6 +76,7 @@ def main():
     ground_socket.connect("tcp://localhost:5555")
     
     state_queue = PriorityQueue()
+    product_queue = PriorityQueue()
 
     epoch_input = socket.SubscribeSocket(epoch_socket,EPOCH_ADDRESS)
     parse_epoch = epoch.ParseEpoch()
@@ -96,6 +94,8 @@ def main():
     split_state = control.SplitControl(processor)
     put_state = queue.PutQueue(state_queue)
     get_state = queue.GetQueue(state_queue)
+    put_product = queue.PutQueue(product_queue)
+    get_product = queue.GetQueue(product_queue)
     extract_state = telemetry.ExtractState()
     generate_inertial = product.GenerateProduct(INERTIAL_PRODUCT)
     generate_geographic = product.GenerateProduct(GEOGRAPHIC_PRODUCT)
@@ -110,15 +110,30 @@ def main():
     segment.Scenario("Receive epoch").\
         From("Subscribe source",epoch_input).\
         When("Parse epoch",parse_epoch).\
-        Then("Update remove",update_remove).\
-        And("Update interpolate",update_interpolate).\
         To("Split epoch",split_epoch)
     
+    # General asset section
+    segment.Scenario("Update epoch").\
+        From("Split epoch",split_epoch).\
+        Then("Update remove",update_remove)
+        
     segment.Scenario("Receive telemetry").\
         From("Subscribe source",telemetry_input).\
         When("Parse telemetry",parse_telemetry).\
         To("Split telemetry",split_telemetry)
     
+    segment.Scenario("Publish product").\
+        From("Split epoch",split_epoch).\
+        When("Get product",get_product).\
+        Then("Format product",format_product).\
+        To("Publish target",product_output)
+    # End section
+    
+    # Special asset section
+    segment.Scenario("Update epoch").\
+        From("Split epoch",split_epoch).\
+        Then("Update interpolate",update_interpolate)
+        
     segment.Scenario("State extraction").\
         From("Split telemetry",split_telemetry).\
         When("Extract state",extract_state).\
@@ -143,13 +158,13 @@ def main():
     segment.Scenario("Generate inertial product").\
         From("Split state",split_state).\
         Then("Generate inertial",generate_inertial).\
-        And("Format product",format_product).\
-        To("Publish target",product_output)
+        And("Put product",put_product)
     
     segment.Scenario("Generate geographic product").\
         From("Split state",split_state).\
         Then("Transform geographic",transform_geographic).\
         And("Generate geographic",generate_geographic).\
-        And("Format product",format_product)
+        And("Put product",put_product)
+    # End section
                 
 if __name__ == '__main__':main()
