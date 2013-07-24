@@ -22,7 +22,6 @@ import zmq
 from core.agenda import *
 from core.engine import *
 from core.routine import socket,control
-from message import INERTIAL_PRODUCT,GEOGRAPHIC_PRODUCT
 from message.routine import product
 #from . import routine
 #
