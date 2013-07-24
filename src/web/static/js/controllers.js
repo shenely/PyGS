@@ -295,24 +295,22 @@ function FootPrintControl( $scope, $element, geographic ) {
         context.clearRect(0,0,$scope.width,$scope.height);
         
         context.lineWidth = 0.5;
-        
-        for (name in feet) {           
-            context.beginPath();
-            $scope.path( feet[name].circle() );
-            context.fillStyle = feet[name].data.color;
-            context.fill();
-        }
+                 
+        context.beginPath();
+        $scope.path( feet.circle() );
+        context.fillStyle = "#077";
+        context.fill();
         
         $scope.$parent.redraw();
     };
     
-    geographic.assets(function(assets) {
-    	assets.forEach(function(d,i) {
-            if ((d.name in feet) == false) { feet[d.name] = { circle: d3.geo.circle() }; }
-            
-            feet[d.name].data = d;
-            feet[d.name].circle.origin([ d.state.long, d.state.lat ]).angle(d.state.arc);
-        });
+    geographic.state(function(state) {
+    	feet = { 
+			circle: d3.geo.circle()
+				.origin([ state.long, state.lat ])
+				.angle(state.arc),
+			data: state
+    	};
         
         $scope.redraw();
     });
@@ -328,7 +326,7 @@ function GroundTrackControl( $scope, $element, geographic ) {
             .node(),
         context = canvas.getContext("2d"),
         color = d3.scale.category10(),
-        tracks = {};
+        tracks = false;
     
     $scope.setAlpha = function(alpha) {        
         context.globalAlpha = alpha;
@@ -341,27 +339,23 @@ function GroundTrackControl( $scope, $element, geographic ) {
         
         context.lineWidth = 2.0;
         
-        for (name in tracks) {
-            context.beginPath();
-            $scope.path( tracks[name].path );
-            context.strokeStyle = tracks[name].data.color;
-            context.stroke();
-        }
+        context.beginPath();
+        $scope.path( tracks.path );
+        context.strokeStyle = "#077";
+        context.stroke();
         
         $scope.$parent.redraw();
     };
     
-    geographic.assets(function(assets) {
-    	assets.forEach(function(d,i) {
-            if ((d.name in tracks) == false) {
-                tracks[d.name] = { path: { "type": "LineString", "coordinates": [] } };
-            }
-            tracks[d.name].data = d;
-            tracks[d.name].path.coordinates.push([ d.state.long, d.state.lat ]);
-            if (tracks[d.name].path.coordinates.length > 100) {
-                tracks[d.name].path.coordinates.shift();
-            }
-        });
+    geographic.state(function(state) {
+        if (tracks == false) {
+            tracks = { path: { "type": "LineString", "coordinates": [] } };
+        }
+        tracks.data = state;
+        tracks.path.coordinates.push([ state.long, state.lat ]);
+        if (tracks.path.coordinates.length > 100) {
+            tracks.path.coordinates.shift();
+        }
         
         $scope.redraw();
     });
@@ -375,32 +369,30 @@ function SpaceControl( $scope, $element ) {
 function TrailPathControl( $scope, $element, inertial ) {
     var color = d3.scale.category10();
     
-    var trails = {};
-    inertial.assets(function (assets) {
-    	assets.forEach(function(d,i) {
-            if ((d.name in trails) == false) {
-                var geometry = new THREE.Geometry(),
-                    vector = new THREE.Vector3(d.state.position.$matrix[0][0],
-                            d.state.position.$matrix[0][2],
-                            -d.state.position.$matrix[0][1]);
-                
-                for (var j=0;j<100;j++) { geometry.vertices.push(vector); }
-                geometry.verticesNeedUpdate = true;
-                
-                trails[d.name] = { line: new THREE.Line(geometry,new THREE.LineBasicMaterial({ color: d.color, linewidth: 2 })) };
-                trails[d.name].line.dynamic = true;
-                
-                $scope.scene.add(trails[d.name].line);
-            }
-            var vector = new THREE.Vector3(d.state.position.$matrix[0][0],
-                    d.state.position.$matrix[0][2],
-                    -d.state.position.$matrix[0][1]);
+    var trails = false;
+    inertial.state(function (state) {
+        if (trails == false) {
+            var geometry = new THREE.Geometry(),
+                vector = new THREE.Vector3(state.position.$matrix[0][0],
+                        state.position.$matrix[0][2],
+                        -state.position.$matrix[0][1]);
             
-            trails[d.name].data = d;
-            trails[d.name].line.geometry.vertices.push(vector);
-            trails[d.name].line.geometry.vertices.shift();
-            trails[d.name].line.geometry.verticesNeedUpdate = true;
-        });
+            for (var j=0;j<100;j++) { geometry.vertices.push(vector); }
+            geometry.verticesNeedUpdate = true;
+            
+            trails = { line: new THREE.Line(geometry,new THREE.LineBasicMaterial({ color: "#077", linewidth: 2 })) };
+            trails.line.dynamic = true;
+            
+            $scope.scene.add(trails.line);
+        }
+        var vector = new THREE.Vector3(state.position.$matrix[0][0],
+                state.position.$matrix[0][2],
+                -state.position.$matrix[0][1]);
+        
+        trails.data = state;
+        trails.line.geometry.vertices.push(vector);
+        trails.line.geometry.vertices.shift();
+        trails.line.geometry.verticesNeedUpdate = true;
     });
 }
 
@@ -409,35 +401,33 @@ function SpaceCraftControl( $scope, $element, inertial ) {
     
     var status = THREE.ImageUtils.loadTexture( "/static/img/status-sprite.png" ),
         state = THREE.ImageUtils.loadTexture( "/static/img/state-sprite.png" ),
-    	material1 = new THREE.SpriteMaterial( { map: status, useScreenCoordinates: false, color: 0xffffff } ),
-    	material2 = new THREE.SpriteMaterial( { map: state, useScreenCoordinates: false, color: 0xffffff } );
+    	material1 = new THREE.SpriteMaterial( { map: status, useScreenCoordinates: false, color: 0x070 } ),
+    	material2 = new THREE.SpriteMaterial( { map: state, useScreenCoordinates: false, color: 0x077 } );
     
-    var spacecraft = {};
-    inertial.assets(function (assets) {
-    	assets.forEach(function(d,i) {
-            if ((d.name in spacecraft) == false) {
-                spacecraft[d.name] = {
-                        status: new THREE.Sprite( material1.clone() ),
-                        state: new THREE.Sprite( material2.clone() ),
-                        object: new THREE.Object3D()
-                };
+    var spacecraft = false;
+    inertial.state(function (state) {
+        if (spacecraft == false) {
+            spacecraft = {
+                    status: new THREE.Sprite( material1.clone() ),
+                    state: new THREE.Sprite( material2.clone() ),
+                    object: new THREE.Object3D()
+            };
 
-                spacecraft[d.name].state.scale.set( 400, 400 );
-                spacecraft[d.name].state.material.color.setStyle(d.color);
-                
-                spacecraft[d.name].status.scale.set( 400, 400 );
+            spacecraft.state.scale.set( 400, 400 );
+            spacecraft.state.material.color.setStyle("#077");
+            
+            spacecraft.status.scale.set( 400, 400 );
+            spacecraft.status.material.color.setStyle("#070");
 
-                spacecraft[d.name].object.add(spacecraft[d.name].state);
-                spacecraft[d.name].object.add(spacecraft[d.name].status);
-                $scope.scene.add(spacecraft[d.name].object);
-                
-            }
+            spacecraft.object.add(spacecraft.state);
+            spacecraft.object.add(spacecraft.status);
+            $scope.scene.add(spacecraft.object);
+            
+        }
 
-            spacecraft[d.name].data = d;
-        	spacecraft[d.name].status.material.color.setStyle(d.status.type);
-            spacecraft[d.name].object.position.x = d.state.position.$matrix[0][0];
-            spacecraft[d.name].object.position.y = d.state.position.$matrix[0][2];
-            spacecraft[d.name].object.position.z = -d.state.position.$matrix[0][1];
-        });
+        spacecraft.data = state;
+        spacecraft.object.position.x = state.position.$matrix[0][0];
+        spacecraft.object.position.y = state.position.$matrix[0][2];
+        spacecraft.object.position.z = -state.position.$matrix[0][1];
     });
 }

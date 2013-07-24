@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   23 July 2013
+Modified:   24 July 2013
 
 Purpose:    
 """
@@ -23,6 +23,7 @@ from core.agenda import *
 from core.engine import *
 from core.routine import socket,control
 from message.routine import product
+from epoch.routine import FormatEpoch
 #from . import routine
 #
 ##################
@@ -41,8 +42,8 @@ from message.routine import product
 __version__ = "1.0"#current version [major.minor]
 
 PRODUCT_ADDRESS = "Kepler.Product"
-INERTIAL_ADDRESS = "Kepler.Subscribe.Inertial"
-GEOGRAPHIC_ADDRESS = "Kepler.Subscribe.Geographic"
+INERTIAL_ADDRESS = "Kepler.Inertial"
+GEOGRAPHIC_ADDRESS = "Kepler.Geographic"
 #
 ####################
 
@@ -65,9 +66,11 @@ def main():
     extract_inertial = product.ExtractInertial()
     extract_geographic = product.ExtractGeographic()
     inertial_output = socket.PublishSocket(user_socket,INERTIAL_ADDRESS)
+    format_inertial = FormatEpoch()
+    format_geographic = FormatEpoch()
     geographic_output = socket.PublishSocket(user_socket,GEOGRAPHIC_ADDRESS)
 
-    segment = Application("Space segment",processor)
+    segment = Application("User segment",processor)
     
     segment.Behavior("Product distribution")
     
@@ -82,11 +85,13 @@ def main():
     segment.Scenario("Inertial extraction").\
         From("Split product",split_product).\
         When("Extract inertial",extract_inertial).\
+        Then("Format inertial",format_inertial).\
         To("Publish inertial",inertial_output)
     
     segment.Scenario("Geographic extraction").\
         From("Split product",split_product).\
         When("Extract geographic",extract_geographic).\
+        Then("Format geographic",format_geographic).\
         To("Publish geographic",geographic_output)
     # End section
                 

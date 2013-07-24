@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 June 2013
+Modified:   24 July 2013
 
 Purpose:    
 """
@@ -43,7 +43,7 @@ from . import routine
 __version__ = "1.0"#current version [major.minor]
 
 EPOCH_ADDRESS = "Kepler.Epoch"
-EPOCH_SCALE = 10
+EPOCH_SCALE = 60
 #
 ####################
 

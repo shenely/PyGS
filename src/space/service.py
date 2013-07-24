@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   19 July 2013
+Modified:   24 July 2013
 
 Purpose:    
 """
@@ -14,6 +14,7 @@ Purpose:
 # Import section #
 #
 #Built-in libraries
+from math import pi
 from datetime import datetime,timedelta
 from Queue import PriorityQueue
 
@@ -57,6 +58,9 @@ PUBLISH_MARGIN = timedelta(seconds=180)
 REMOVE_MARGIN = timedelta(seconds=0)
 
 STEP_SIZE = timedelta(seconds=60)
+
+RAD_TO_DEG = lambda rad:180 * rad / pi
+DEG_TO_RAD = lambda deg:pi * deg / 180
 #
 ####################
 
@@ -69,7 +73,7 @@ def main():
     
     clock_epoch = EpochState(datetime(2010,1,1,tzinfo=utc))
     state_epoch = KeplerianState(datetime(2010,1,1,tzinfo=utc),
-                                 7000.0,0.0,0.0,0.0,0.0,0.0)
+                                 10000.0,0.0,0.2,DEG_TO_RAD(90.0),DEG_TO_RAD(60.0),0.0)
         
     epoch_socket = context.socket(zmq.SUB)
     epoch_socket.connect("tcp://localhost:5556")

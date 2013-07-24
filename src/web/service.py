@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   23 July 2013
+Modified:   24 July 2013
 
 Purpose:    
 """
@@ -41,8 +41,8 @@ import tornado.websocket
 #
 __version__ = "1.0"#current version [major.minor]
 
-PUBLISH_ADDRESS = "Kepler.Publish.{!s}"
-SUBSCRIBE_ADDRESS = "Kepler.Subscribe.{!s}"
+PUBLISH_ADDRESS = "Kepler.{!s}"
+SUBSCRIBE_ADDRESS = "Kepler.{!s}"
 #
 ####################
 

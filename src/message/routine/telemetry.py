@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   19 July 2013
+Modified:   24 July 2013
 
 Provides routines for telemetry manipulation.
 
@@ -23,6 +23,7 @@ Date          Author          Version     Description
 2013-07-16    shenely         1.0         Initial revision
 2013-07-17    shenely         1.1         Added ExtractState
 2013-07-19    shenely         1.2         Mirrored changes in product
+2013-07-24    shenely         1.3         Was failing on no event
 
 """
 
@@ -60,7 +61,7 @@ __all__ = ["ParseTelemetry",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 #
 ####################
 
@@ -199,8 +200,8 @@ class ExtractState(EventRoutine):
     
     def _occur(self,message):
         assert isinstance(message,TelemetryMessage)
-        assert message.type == ORBIT_TELEMETRY
         
-        state = message.data
-        
-        return state
+        if message.type == ORBIT_TELEMETRY:
+            state = message.data
+            
+            return state

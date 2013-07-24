@@ -6,6 +6,7 @@ from core import agenda
 from clock import service as clock
 from space import service as space
 from ground import service as ground
+from user import service as user
 from web import service as web
 
 def main():
@@ -18,6 +19,7 @@ def main():
     clock.main()
     space.main()
     ground.main()
+    user.main()
     
     web.main()
     

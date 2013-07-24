@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   17 July 2013
+Modified:   24 July 2013
 
 Provides routines for product manipulation.
 
@@ -20,6 +20,7 @@ GenerateProduct -- Generate product message
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-17    shenely         1.0         Initial revision
+2013-07-24    shenely         1.1         Was failing on no event
 
 """
 
@@ -36,7 +37,7 @@ import types
 #Internal libraries
 from core import encoder,decoder
 from core.routine import EventRoutine,ActionRoutine
-from .. import ProductMessage
+from .. import *
 from epoch import EpochState
 #
 ##################
@@ -55,7 +56,7 @@ __all__ = ["ParseProduct",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 #
 ####################
 
@@ -118,13 +119,13 @@ class FormatProduct(ActionRoutine):
     
     name = "Product.Format"
     
-    def _execute(self,telemetry):
-        assert isinstance(telemetry,ProductMessage)
+    def _execute(self,product):
+        assert isinstance(product,ProductMessage)
         
         logging.info("{0}:  Formatting from {1}".\
-                     format(self.name,telemetry.epoch))
+                     format(self.name,product.epoch))
         
-        message = encoder(telemetry)
+        message = encoder(product)
         
         logging.info("{0}:  Formatted to {1}".\
                      format(self.name,message))
@@ -170,3 +171,61 @@ class GenerateProduct(ActionRoutine):
                      format(self.name,product.epoch))
                      
         return product
+
+class ExtractInertial(EventRoutine):
+    """Story:  Extract state object
+    
+    IN ORDER TO 
+    AS A 
+    I WANT TO 
+        
+    """
+    
+    """Specification:  Extract state object
+    
+    GIVEN 
+        
+    Scenario 1:  
+    WHEN 
+    THEN 
+    
+    """
+    
+    name = "State.Extract"
+    
+    def _occur(self,message):
+        assert isinstance(message,ProductMessage)
+        
+        if message.type == INERTIAL_PRODUCT:
+            state = message.data
+            
+            return state
+
+class ExtractGeographic(EventRoutine):
+    """Story:  Extract state object
+    
+    IN ORDER TO 
+    AS A 
+    I WANT TO 
+        
+    """
+    
+    """Specification:  Extract state object
+    
+    GIVEN 
+        
+    Scenario 1:  
+    WHEN 
+    THEN 
+    
+    """
+    
+    name = "State.Extract"
+    
+    def _occur(self,message):
+        assert isinstance(message,ProductMessage)
+        
+        if message.type == GEOGRAPHIC_PRODUCT:
+            state = message.data
+            
+            return state

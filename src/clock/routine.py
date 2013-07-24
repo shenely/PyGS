@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   27 June 2013
+Modified:   24 July 2013
 
 Provides routines for driving the simulation clock.
 
@@ -20,6 +20,7 @@ Date          Author          Version     Description
 2013-05-02    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
 2013-06-27    shenely         1.2         Properties for scheduler
+2013-07-24    shenely                     Adjusted timeout
 
 """
 
@@ -62,7 +63,7 @@ J2000 = datetime(2000,1,1,12,tzinfo=utc)#Julian epoch (2000-01-01T12:00:00Z)
 CLOCK_SCALE = 1.0#Clock rate scale (default 1:1, i.e. real-time)
 CLOCK_STEP = timedelta(seconds=60)#Clock step (default to 60 seconds)
 
-TIMEOUT = 500#time between running
+TIMEOUT = 100#time between running
 #
 ####################
 

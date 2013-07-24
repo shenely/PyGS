@@ -21,36 +21,36 @@ angular.module('kepler.services', [])
 	.factory("inertial", function() {		
 		var socket = new WebSocket("ws://" + location.host + "/sub/inertial"),
 			epoch = [],
-			assets = [];
+			state = [];
 		
 		var view = null;
 		socket.onmessage = function(event) {
 			view = JSON.parse(event.data);
 			
 			epoch.forEach(function(callback) { return callback(view.epoch.$date); });
-			assets.forEach(function(callback) { return callback(view.assets); });
+			state.forEach(function(callback) { return callback(view); });
 		};
 		
 		return {
 			epoch: function(callback) { epoch.push(callback) },
-			assets: function(callback) { assets.push(callback); }
+			state: function(callback) { state.push(callback); }
 		};
 	})
 	.factory("geographic", function() {		
 		var socket = new WebSocket("ws://" + location.host + "/sub/geographic"),
 			epoch = [],
-			assets = [];
+			state = [];
 		
 		var view = null;
 		socket.onmessage = function(event) {
 			view = JSON.parse(event.data);
 			
 			epoch.forEach(function(callback) { return callback(view.epoch.$date); });
-			assets.forEach(function(callback) { return callback(view.assets); });
+			state.forEach(function(callback) { return callback(view); });
 		};
 		
 		return {
 			epoch: function(callback) { epoch.push(callback) },
-			assets: function(callback) { assets.push(callback); }
+			state: function(callback) { state.push(callback); }
 		};
 	});
