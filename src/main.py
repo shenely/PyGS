@@ -15,9 +15,9 @@ def main():
     
     processor = agenda.Processor()
         
-    #clock.main()
-    #space.main()
-    #ground.main()
+    clock.main()
+    space.main()
+    ground.main()
     
     web.main()
     

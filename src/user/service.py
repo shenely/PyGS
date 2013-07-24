@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   19 July 2013
+Modified:   23 July 2013
 
 Purpose:    
 """
@@ -41,8 +41,8 @@ from message.routine import product
 __version__ = "1.0"#current version [major.minor]
 
 PRODUCT_ADDRESS = "Kepler.Product"
-INERTIAL_ADDRESS = "Kepler.Inertial"
-GEOGRAPHIC_ADDRESS = "Kepler.Geographic"
+INERTIAL_ADDRESS = "Kepler.Subscribe.Inertial"
+GEOGRAPHIC_ADDRESS = "Kepler.Subscribe.Geographic"
 #
 ####################
 

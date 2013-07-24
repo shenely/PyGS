@@ -3,11 +3,39 @@
     <head>
         <meta charset="utf-8">
         <title>kepler.js</title>
+        <link rel="stylesheet" href="{{ static_url('css/app.css') }}" type="text/css" />
+        <script src="{{ static_url('lib/jquery.min.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('lib/angular.min.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('lib/d3.min.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('lib/three.min.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('lib/topojson.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('lib/TrackballControls.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/app.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/services.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/controllers.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/filters.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/directives.js') }}" type="text/javascript"></script>
     </head>
     <body>
-        <script type="text/javascript">
-var pub = new WebSocket("ws://localhost:8080/pub/test/blah");
-var sub = new WebSocket("ws://localhost:8080/sub/test/blah");
-        </script>
+        <canvas universe>
+            <planet earth>
+                <canvas ground>
+                    <canvas background>
+                        <canvas sea></canvas>
+                        <canvas land></canvas>
+                        <canvas countries></canvas>
+                        <canvas graticule></canvas>
+                    </canvas>
+                    <canvas foreground>
+                        <canvas foot-print></canvas>
+                        <canvas ground-track></canvas>
+                    </canvas>
+                </canvas>
+                <div space>
+                    <div trail-path></div>
+                    <div space-craft></div>
+                </div>
+            </planet>
+        </canvas>
     </body>
 </html>
