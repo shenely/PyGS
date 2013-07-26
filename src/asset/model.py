@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   25 July 2013
+Modified:   26 July 2013
 
 Provides the asset model.
 
@@ -18,6 +18,7 @@ AssetModel   -- Asset model object
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-25    shenely         1.0         Initial revision
+2013-07-26    shenely         1.1         Rearranged arguments
 
 """
 
@@ -35,6 +36,8 @@ from bson.tz_util import utc
 
 #Internal libraries
 from . import BaseAsset
+from epoch import EpochState
+from state import KeplerianState
 import message
 from core.routine import queue,method,socket
 from epoch.routine import order
@@ -55,7 +58,7 @@ __all__ = ["AssetModel"]
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 
 EPOCH_ADDRESS = "{asset!s}.{segment!s}.Epoch"
 TELEMETRY_ADDRESS = "{asset!s}.{segment!s}.Telemetry"
@@ -74,11 +77,12 @@ J2000 = datetime(2000,1,1,12,tzinfo=utc)#Julian epoch (2000-01-01T12:00:00Z)
 ####################
 
 class AssetModel(BaseAsset):
-    def __init__(self,segment,name,seed,
+    def __init__(self,segment,name,
                  iterator=KEPLER_ITERATOR,
                  remove=REMOVE_MARGIN,
                  publish=PUBLISH_MARGIN,
-                 iterate=ITERATE_MARGIN):
+                 iterate=ITERATE_MARGIN,
+                 *args,**kwargs):
         BaseAsset.__init__(self,segment,name)
         
         telemetry_socket = self.context.socket(zmq.PUB)
@@ -89,6 +93,8 @@ class AssetModel(BaseAsset):
         pub_telemetry = socket.PublishSocket(telemetry_socket,telemetry_address)
         
         state_queue = PriorityQueue()
+        
+        seed = EpochState(**kwargs["seed"])
         
         put_telemetry = queue.PutQueue(state_queue)
         get_telemetry = queue.GetQueue(state_queue)
@@ -123,6 +129,8 @@ class AssetModel(BaseAsset):
         self.application.Behavior("Special asset model")
         
         if iterator is KEPLER_ITERATOR:
+            seed = KeplerianState(**kwargs["seed"])
+            
             iterate_before = order.BeforeEpoch(seed,iterate)
             update_iterate = method.ExecuteMethod(iterate_before.set_reference)
             

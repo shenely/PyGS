@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   24 July 2013
+Modified:   26 July 2013
 
 Provides the message objects.
 
@@ -23,6 +23,7 @@ Date          Author          Version     Description
 2013-07-16    shenely         1.0         Initial revision
 2013-07-18    shenely         1.1         Builds data from message type
 2013-07-24    shenely         1.2         Exports constants
+2013-07-26    shenely         1.3         Moved type check out of base
 
 """
 
@@ -63,7 +64,7 @@ __all__ = ["TelemetryMessage",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 
 ORBIT_TELEMETRY = 10
 INERTIAL_PRODUCT = 20
@@ -78,22 +79,25 @@ class BaseMessage(EpochState):
         
         assert isinstance(type,types.IntType)
         
-        if type == ORBIT_TELEMETRY:
-            data = InertialState(**data)
-        elif type == INERTIAL_PRODUCT:
-            data = InertialState(**data)
-        elif type == GEOGRAPHIC_PRODUCT:
-            data = GeographicState(**data)        
-        
-        assert isinstance(data,EpochState)
-        
         self.data = data
         self.type = type
 
-class TelemetryMessage(BaseMessage):pass
+class TelemetryMessage(BaseMessage):
+    def __init__(self,epoch,data,type,*args,**kwargs):
+        BaseMessage.__init__(self,epoch,data,type,*args,**kwargs)
+        
+        if type == ORBIT_TELEMETRY:
+            self.data = InertialState(**self.data)
 
 class CommandMessage(BaseMessage):pass
 
 class AcknowledgeMessage(BaseMessage):pass
 
-class ProductMessage(BaseMessage):pass
+class ProductMessage(BaseMessage):
+    def __init__(self,epoch,data,type,*args,**kwargs):
+        BaseMessage.__init__(self,epoch,data,type,*args,**kwargs)
+        
+        if type == INERTIAL_PRODUCT:
+            self.data = InertialState(**self.data)
+        elif type == GEOGRAPHIC_PRODUCT:
+            self.data = GeographicState(**self.data)

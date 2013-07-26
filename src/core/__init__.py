@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 June 2013
+Modified:   26 July 2013
 
 Purpose:    
 """
@@ -72,7 +72,7 @@ class ObjectDict(dict):
         del self[name]
 
 class BaseObject(ObjectDict):
-    def __init__(self,_id=None):
+    def __init__(self,_id=None,**kwargs):
         ObjectDict.__init__(self)
         
         assert isinstance(_id,ObjectId) or _id is None

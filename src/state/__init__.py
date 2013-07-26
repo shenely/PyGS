@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   03 July 2013
+Modified:   26 July 2013
 
 Provides the state objects.
 
@@ -21,6 +21,7 @@ HorizontalState -- Horizontal state
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-03    shenely         1.0         Initial revision
+2013-07-26    shenely         1.1         Float conversion for numbers
 
 """
 
@@ -57,7 +58,7 @@ __all__ = ["KeplerianState",
 ####################
 # Constant section #
 #
-__version__ = "0.1"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 
 DEG_TO_RAD = pi / 180
 RAD_TO_DEG = 180 / pi
@@ -74,11 +75,11 @@ class KeplerianState(EpochState):
     def __init__(self,epoch,a,theta,e,omega,i,OMEGA,*args,**kwargs):
         EpochState.__init__(self,epoch,*args,**kwargs)
         
-        assert isinstance(a,types.FloatType)
+        assert isinstance(a,(types.IntType,types.FloatType))
         assert a > EARTH_RADIUS
-        assert isinstance(e,types.FloatType)
+        assert isinstance(e,(types.IntType,types.FloatType))
         assert e < 1
-        assert isinstance(i,types.FloatType)
+        assert isinstance(i,(types.IntType,types.FloatType))
         
         i %= 2 * pi
         if i < 0 or i >= pi:
@@ -86,20 +87,20 @@ class KeplerianState(EpochState):
             omega += pi
             
         assert i < pi
-        assert isinstance(theta,types.FloatType)
-        assert isinstance(omega,types.FloatType)
-        assert isinstance(OMEGA,types.FloatType)
+        assert isinstance(theta,(types.IntType,types.FloatType))
+        assert isinstance(omega,(types.IntType,types.FloatType))
+        assert isinstance(OMEGA,(types.IntType,types.FloatType))
         
         theta %= 2 * pi
         omega %= 2 * pi
         OMEGA %= 2 * pi
         
-        self.a = a
-        self.theta = theta
-        self.e = e
-        self.omega = omega
-        self.i = i
-        self.OMEGA = OMEGA
+        self.a = float(a)
+        self.theta = float(theta)
+        self.e = float(e)
+        self.omega = float(omega)
+        self.i = float(i)
+        self.OMEGA = float(OMEGA)
     
     @property
     def epsilon(self):

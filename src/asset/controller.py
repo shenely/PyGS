@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   25 July 2013
+Modified:   26 July 2013
 
 Provides the asset objects.
 
@@ -18,6 +18,7 @@ AssetController   -- Asset controller object
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-25    shenely         1.0         Initial revision
+2013-07-26    shenely         1.1         Rearranged arguments
 
 """
 
@@ -35,6 +36,7 @@ from bson.tz_util import utc
 
 #Internal libraries
 from . import BaseAsset
+from epoch import EpochState
 from core.routine import control,queue,method,socket
 from message import INERTIAL_PRODUCT,GEOGRAPHIC_PRODUCT
 from message.routine import telemetry,product
@@ -55,7 +57,7 @@ __all__ = ["AssetController"]
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 
 EPOCH_ADDRESS = "{asset!s}.{segment!s}.Epoch"
 TELEMETRY_ADDRESS = "{asset!s}.{segment!s}.Telemetry"
@@ -74,11 +76,12 @@ REMOVE_MARGIN = timedelta(seconds=0)
 
     
 class AssetController(BaseAsset):
-    def __init__(self,segment,name,seed,
+    def __init__(self,segment,name,
                  interpolator=HERMITE_INTERPOLATOR,
                  products=[INERTIAL_PRODUCT,GEOGRAPHIC_PRODUCT],
                  remove=REMOVE_MARGIN,
-                 interpolate1=INTERPOLATE_MARGIN):
+                 interpolate1=INTERPOLATE_MARGIN,
+                 *args,**kwargs):
         BaseAsset.__init__(self,segment,name)
         
         telemetry_socket = self.context.socket(zmq.SUB)
@@ -112,6 +115,8 @@ class AssetController(BaseAsset):
         self.application.Behavior("Special asset controller")
         
         if interpolator is HERMITE_INTERPOLATOR:
+            seed = EpochState(**kwargs["seed"])
+            
             state_queue = PriorityQueue()
             
             put_state = queue.PutQueue(state_queue)

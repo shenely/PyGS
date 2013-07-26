@@ -73,7 +73,7 @@ function EarthControl( $scope, $element, inertial ) {
     });
 }
 
-function GroundControl( $scope, $element, cartograph ) {
+function GroundControl( $scope, $element, cartograph, test ) {
     $scope.width = 2000;
     $scope.height = 1000;
     

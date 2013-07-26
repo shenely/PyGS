@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   25 July 2013
+Modified:   26 July 2013
 
 Purpose:    
 """
@@ -62,7 +62,7 @@ class PublishWebSocket(ZMQWebSocket):
     type = zmq.PUB
     
     def on_message(self,message):
-        messages = self.address,message
+        messages = self.address,str(message)
         
         self.socket.send_multipart(messages)
     
