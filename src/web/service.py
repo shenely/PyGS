@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   24 July 2013
+Modified:   25 July 2013
 
 Purpose:    
 """
@@ -40,9 +40,6 @@ import tornado.websocket
 # Constant section #
 #
 __version__ = "1.0"#current version [major.minor]
-
-PUBLISH_ADDRESS = "Kepler.{!s}"
-SUBSCRIBE_ADDRESS = "Kepler.{!s}"
 #
 ####################
 
@@ -72,7 +69,7 @@ class PublishWebSocket(ZMQWebSocket):
     def open(self,path):
         ZMQWebSocket.open(self)
         
-        self.address = PUBLISH_ADDRESS.format(".".join(map(str.capitalize,path.split("/"))))
+        self.address = ".".join(map(str.capitalize,path.split("/")))
         
         self.socket.connect("tcp://127.0.0.1:5555")
 
@@ -87,7 +84,7 @@ class SubscribeWebSocket(ZMQWebSocket):
     def open(self,path):
         ZMQWebSocket.open(self)
         
-        self.address = SUBSCRIBE_ADDRESS.format(".".join(map(str.capitalize,path.split("/"))))
+        self.address = ".".join(map(str.capitalize,path.split("/")))
         
         self.socket.connect("tcp://127.0.0.1:5556")
         self.socket.setsockopt(zmq.SUBSCRIBE,self.address)

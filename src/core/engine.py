@@ -4,9 +4,9 @@ from .routine import *
 __all__ = ["Application"]
 
 class Application(object):
-    def __init__(self,name,scheduler):
+    def __init__(self,name,processor):
         self.name = name
-        self.scheduler = scheduler
+        self.processor = processor
         
     def Behavior(self,name):
         assert isinstance(name,basestring)
@@ -28,11 +28,11 @@ class Application(object):
         self.context = FromClause(name,routine)
 
         if routine.type is PERIODIC:
-            self.scheduler.periodic(routine,routine.timeout).start()
+            self.processor.periodic(routine,routine.timeout).start()
         elif routine.type is DELAYED:
-            self.scheduler.delayed(routine,routine.timeout).start()
+            self.processor.delayed(routine,routine.timeout).start()
         elif routine.type is HANDLER:
-            self.scheduler.handler(routine,routine.handle,routine.event)
+            self.processor.handler(routine,routine.handle,routine.event)
         
         return self
     
@@ -53,7 +53,8 @@ class Application(object):
         return self
     
     def Then(self,name,routine):
-        assert isinstance(self.context,(FromClause,
+        assert isinstance(self.context,(Scenario,
+                                        FromClause,
                                         WhenClause,
                                         GivenClause))
         

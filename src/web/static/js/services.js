@@ -19,7 +19,7 @@ angular.module('kepler.services', [])
 		return $http.get("/static/dat/world-110m.json");
 	}])
 	.factory("inertial", function() {		
-		var socket = new WebSocket("ws://" + location.host + "/sub/inertial"),
+		var socket = new WebSocket("ws://" + location.host + "/sub/aqua/user/inertial"),
 			epoch = [],
 			state = [];
 		
@@ -37,7 +37,7 @@ angular.module('kepler.services', [])
 		};
 	})
 	.factory("geographic", function() {		
-		var socket = new WebSocket("ws://" + location.host + "/sub/geographic"),
+		var socket = new WebSocket("ws://" + location.host + "/sub/aqua/user/geographic"),
 			epoch = [],
 			state = [];
 		
