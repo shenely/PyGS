@@ -16,7 +16,7 @@ from segment.user import UserSegment
 from asset.model import AssetModel
 from asset.controller import AssetController
 from asset.view import AssetView
-from web import service as web
+import web
 
 J2000 = datetime(2000,1,1,12,tzinfo=utc)#Julian epoch (2000-01-01T12:00:00Z)
 

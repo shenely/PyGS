@@ -63,7 +63,7 @@ J2000 = datetime(2000,1,1,12,tzinfo=utc)#Julian epoch (2000-01-01T12:00:00Z)
 CLOCK_SCALE = 1.0#Clock rate scale (default 1:1, i.e. real-time)
 CLOCK_STEP = timedelta(seconds=60)#Clock step (default to 60 seconds)
 
-TIMEOUT = 500#time between running
+TIMEOUT = 200#time between running
 #
 ####################
 
