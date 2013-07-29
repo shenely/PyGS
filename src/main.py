@@ -7,7 +7,6 @@ from segment.clock import ClockSegment
 from segment.space import SpaceSegment
 from segment.ground import GroundSegment
 from segment.user import UserSegment
-import web
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -21,8 +20,6 @@ def main():
     space = SpaceSegment(application)
     ground = GroundSegment(application)
     user = UserSegment(application)
-    
-    web.main()
     
     processor.start()
     

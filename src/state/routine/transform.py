@@ -5,7 +5,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   08 July 2013
+Modified:   28 July 2013
 
 Provides routines for state transformation.
 
@@ -23,6 +23,7 @@ GeographicToHorizontalTransform -- Geographic to horizontal
 Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-07-08    shenely         1.0         Initial revision
+2013-07-28    shenely         1.1         Added time to geographic
 
 """
 
@@ -65,7 +66,7 @@ __all__ = ["identityTransfrom",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.1"#current version [major.minor]
 
 DEG_TO_RAD = pi / 180#Degrees to radians
 RAD_TO_DEG = 180 / pi#Radians to degrees
@@ -312,8 +313,8 @@ class InertialToGeographicTransform(TransformAction):
         
         t = message.epoch
         arc = acosd(EARTH_RADIUS / message.R)
-        long = (RAD_TO_DEG * message.alpha) % 360# +\
-                #360 * (t - J2000).total_seconds() / JULIAN_DAY) % 360
+        long = (RAD_TO_DEG * message.alpha % 360 +\
+                360 * (t - J2000).total_seconds() / JULIAN_DAY) % 360
         lat = RAD_TO_DEG * message.delta
 
         message = GeographicState(t,arc,long,lat)
