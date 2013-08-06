@@ -47,6 +47,10 @@ circle.node {
   stroke-width: 1px;
 }
 
+circle.node.able {
+  fill: #bbb;
+}
+
 path {
   fill: none;
   stroke-opacity: 50%;

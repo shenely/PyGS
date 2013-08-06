@@ -319,64 +319,24 @@ angular.module('workflow.services', [])
   ])
   .factory("nodeView", [
     "busService",
-    "dragService",
     "linkView",
-    function (busService, dragService, linkView) {
+    function (busService, linkView) {
       return function () {
         var origin = d3.select("svg").node().createSVGPoint();
         
         var node = function (selection) {
-          var links = [],
-              link = linkView(links);
+          var link = linkView();
           
           selection.append("g").call(link);
               
           busService.on("done.node", function () {
-            var node = selection.selectAll(".node");
-
-            node.on("mousedown", function (d) {
-              var mouse = d3.mouse(selection.node());
-              
-              links.push({ "source": this, "target": null });
-              
-              busService.link(mouse);
-                
-              node.on("mouseenter", function (d) {
-                  links[links.length-1].target = this;
-                  
-                  busService.link();
-                  
-                  selection.on("mousemove", null);
-                }).on("mouseleave", function () {
-                  links[links.length-1].target = null;
-                  
-                  selection.on("mousemove", function () {
-                    var mouse = d3.mouse(this);
-                    
-                    busService.link(mouse);
-                  });
-                });
-                
-              selection.on("mousemove", function () {
-                  var mouse = d3.mouse(this);
-                  
-                  busService.link(mouse);
-                })
-                .on("mouseup", function () {
-                  node.on("mouseenter",null).on("mouseleave",null);
-                  selection.on("mousemove",null).on("mouseup",null);
-                  
-                  if ((links[links.length-1].source === null) ||
-                      (links[links.length-1].target === null)) {
-                    links.pop();
-                  }
-                  
-                  busService.link();
-                  busService.drag();
-                });
-                
-              dragService.on("drag", null);
-            });
+            var input = selection.selectAll(".input .node"),
+                output = selection.selectAll(".output .node"),
+                require = selection.selectAll(".require .node"),
+                provide = selection.selectAll(".provide .node");
+            
+            link.blah(selection, output, input);
+            link.blah(selection, provide, require);
           });
         };
         
@@ -386,12 +346,14 @@ angular.module('workflow.services', [])
   ])
   .factory("linkView", [
     "busService",
+    "dragService",
     "lineService",
-    function (busService, lineService) {
-      return function (links) {
-        var origin = d3.select("svg").node().createSVGPoint();
+    function (busService, dragService, lineService) {
+      return function () {
+        var origin = d3.select("svg").node().createSVGPoint(),
+            links = [];
         
-        return function (selection) {
+        var link = function (selection) {
           var link = selection.selectAll(".link");
           
           busService.on("link", function (mouse) {
@@ -421,6 +383,118 @@ angular.module('workflow.services', [])
             link.exit().remove();
           });
         };
+        
+        link.blah = function (selection, source, target) {
+          source.on("mousedown", function (d) {
+            var mouse = d3.mouse(selection.node()),
+                node = d3.select(this);
+            
+            links.push({ "source": this, "target": null });
+            
+            node.classed("able", true);
+            target.classed("able", true);
+            
+            busService.link(mouse);
+              
+            target
+              .on("mouseenter", function (d) {
+                links[links.length-1].target = this;
+                
+                busService.link();
+                
+                selection.on("mousemove", null);
+              })
+              .on("mouseleave", function () {
+                links[links.length-1].target = null;
+                
+                selection.on("mousemove", function () {
+                  var mouse = d3.mouse(this);
+                  
+                  busService.link(mouse);
+                });
+              });
+              
+            selection
+              .on("mousemove", function () {
+                var mouse = d3.mouse(this);
+                
+                busService.link(mouse);
+              })
+              .on("mouseup", function () {
+                target.on("mouseenter",null).on("mouseleave",null);
+                selection.on("mousemove",null).on("mouseup",null);
+                
+                if ((links[links.length-1].source === null) ||
+                    (links[links.length-1].target === null)) {
+                  links.pop();
+                }
+            
+                node.classed("able", false);
+                target.classed("able", false);
+                
+                busService.link();
+                busService.drag();
+              });
+              
+            dragService.on("drag", null);
+          });
+              
+          target.on("mousedown", function (d) {
+            var mouse = d3.mouse(selection.node()),
+                node = d3.select(this);
+            
+            links.push({ "source": null, "target": this });
+            
+            node.classed("able", true);
+            source.classed("able", true);
+            
+            busService.link(mouse);
+              
+            source
+              .on("mouseenter", function (d) {
+                links[links.length-1].source = this;
+                
+                busService.link();
+                
+                selection.on("mousemove", null);
+              })
+              .on("mouseleave", function () {
+                links[links.length-1].source = null;
+                
+                selection.on("mousemove", function () {
+                  var mouse = d3.mouse(this);
+                  
+                  busService.link(mouse);
+                });
+              });
+              
+            selection
+              .on("mousemove", function () {
+                var mouse = d3.mouse(this);
+                
+                busService.link(mouse);
+              })
+              .on("mouseup", function () {
+                source.on("mouseenter",null).on("mouseleave",null);
+                selection.on("mousemove",null).on("mouseup",null);
+                
+                if ((links[links.length-1].source === null) ||
+                    (links[links.length-1].target === null)) {
+                  links.pop();
+                }
+            
+                node.classed("able", false);
+                source.classed("able", false);
+                
+                busService.link();
+                busService.drag();
+              });
+              
+            dragService.on("drag", null);
+          });
+        };
+        
+        return link;
       };
     }
   ])
