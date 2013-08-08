@@ -1,1 +1,5 @@
-angular.module('workflow', ['workflow.services', 'workflow.directives']);
+angular.module("workflow", [
+  "workflow.controllers",
+  "workflow.services",
+  "workflow.directives"
+]);

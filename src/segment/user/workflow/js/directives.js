@@ -3,6 +3,6 @@ angular.module("workflow.directives", [])
     return {
       restrict: "E",
       scope: true,
-      controller: WorkflowController
+      controller: "WorkflowController"
     };
   });

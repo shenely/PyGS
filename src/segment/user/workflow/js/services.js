@@ -172,9 +172,9 @@ angular.module('workflow.services', [])
             routine.select("rect")
               .attr("width", width)
               .attr("height", height);
-              
-            busService.done();
           }).call(dragService);
+          
+          busService.done();
         };
       
         return chart;
@@ -188,26 +188,77 @@ angular.module('workflow.services', [])
     "outputView",
     function (blockView, pathView,
               inputView, outputView) {
-      return function (template, inputs, outputs, paths) {
+      return function () {
         var width = 80,
-            height = 40;
+            height = 40,
+            margin = 10,
+            radius = 5,
+            classed = "default",
+            template = [],
+            inputs = [],
+            outputs = []
+            paths = [];
             
         var process = function (selection) {
           var block = blockView(template)
                 .width(width)
                 .height(height),
-              input = inputView(inputs),
-              output = outputView(outputs),
+              input = inputView(inputs)
+                .margin(margin)
+                .radius(radius),
+              output = outputView(outputs)
+                .margin(margin)
+                .radius(radius),
               path = pathView(paths)
                 .width(width)
                 .height(height);
               
           selection.append("g")
-            .classed("process", true)
+            .classed("process " + classed, true)
             .call(path)
             .call(block)
             .call(input)
             .call(output);
+        };
+        
+        process.classed = function (value) {
+          if (!arguments.length) return classed;
+          
+          classed = value;
+          
+          return process;
+        };
+        
+        process.template = function (value) {
+          if (!arguments.length) return template;
+          
+          template = value;
+          
+          return process;
+        };
+        
+        process.inputs = function (value) {
+          if (!arguments.length) return inputs;
+          
+          inputs = value;
+          
+          return process;
+        };
+        
+        process.outputs = function (value) {
+          if (!arguments.length) return outputs;
+          
+          outputs = value;
+          
+          return process;
+        };
+        
+        process.paths = function (value) {
+          if (!arguments.length) return paths;
+          
+          paths = value;
+          
+          return process;
         };
         
         return process;
@@ -259,8 +310,9 @@ angular.module('workflow.services', [])
   ])
   .factory("pathView", [
     "busService",
-    "lineService",
-    function (busService, lineService) {
+    function (busService) {
+      var line = d3.svg.diagonal();
+      
       return function (paths) {
         var origin = d3.select("svg").node().createSVGPoint();
         
@@ -293,7 +345,7 @@ angular.module('workflow.services', [])
               d.target = origin.matrixTransform(transform);
             });
               
-            path.attr("d", lineService);
+            path.attr("d", line);
           });
         };
         
@@ -335,8 +387,8 @@ angular.module('workflow.services', [])
                 require = selection.selectAll(".require .node"),
                 provide = selection.selectAll(".provide .node");
             
-            link.blah(selection, output, input);
-            link.blah(selection, provide, require);
+            link.draw(selection, output, input);
+            link.draw(selection, provide, require);
           });
         };
         
@@ -360,7 +412,18 @@ angular.module('workflow.services', [])
             link = link.data(links);
             
             link.enter().append("path")
-              .classed("link", true);
+              .classed("link", true)
+              .on("mouseover", function () {
+                d3.select(this).classed("active", true);
+              })
+              .on("mouseout", function () {
+                d3.select(this).classed("active", false);
+              })
+              .on("click", function (d, i) {
+                links.splice(i, 1);
+                
+                busService.link();
+              });
             
             link.attr("d", function (d) {
               if (d.source !== null) {
@@ -384,114 +447,130 @@ angular.module('workflow.services', [])
           });
         };
         
-        link.blah = function (selection, source, target) {
-          source.on("mousedown", function (d) {
-            var mouse = d3.mouse(selection.node()),
-                node = d3.select(this);
-            
-            links.push({ "source": this, "target": null });
-            
-            node.classed("able", true);
-            target.classed("able", true);
-            
-            busService.link(mouse);
+        link.draw = function (selection, source, target) {
+          source
+            .on("mousedown", function (d) {
+              var mouse = d3.mouse(selection.node()),
+                  node = d3.select(this);
               
-            target
-              .on("mouseenter", function (d) {
-                links[links.length-1].target = this;
+              links.push({ "source": this, "handle": null, "target": null });
+              
+              node.classed("active", true);
+              target.classed("active", true);
+              
+              busService.link(mouse);
                 
-                busService.link();
+              target
+                .on("mouseenter", function (d) {
+                  links[links.length-1].target = this;
+                  
+                  busService.link();
+                  
+                  selection.on("mousemove", null);
+                })
+                .on("mouseleave", function () {
+                  links[links.length-1].target = null;
+                  
+                  selection.on("mousemove", function () {
+                    var mouse = d3.mouse(this);
+                    
+                    busService.link(mouse);
+                  });
+                });
                 
-                selection.on("mousemove", null);
-              })
-              .on("mouseleave", function () {
-                links[links.length-1].target = null;
-                
-                selection.on("mousemove", function () {
+              selection
+                .on("mousemove", function () {
                   var mouse = d3.mouse(this);
                   
                   busService.link(mouse);
+                })
+                .on("mouseup", function () {
+                  target.on("mouseenter",null).on("mouseleave",null);
+                  selection.on("mousemove",null).on("mouseup",null);
+                  
+                  if ((links[links.length-1].source === null) ||
+                      (links[links.length-1].target === null)) {
+                    links.pop();
+                  } else {
+                    links[links.length-1].handle = {
+                      "x": (links[links.length-1].source.x
+                          + links[links.length-1].target.x) / 2,
+                      "y": (links[links.length-1].source.y
+                          + links[links.length-1].target.y) / 2
+                    };
+                  }
+              
+                  node.classed("active", false);
+                  target.classed("active", false);
+                  
+                  busService.link();
+                  busService.drag();
                 });
-              });
+                
+              dragService.on("drag", null);
+            });
               
-            selection
-              .on("mousemove", function () {
-                var mouse = d3.mouse(this);
-                
-                busService.link(mouse);
-              })
-              .on("mouseup", function () {
-                target.on("mouseenter",null).on("mouseleave",null);
-                selection.on("mousemove",null).on("mouseup",null);
-                
-                if ((links[links.length-1].source === null) ||
-                    (links[links.length-1].target === null)) {
-                  links.pop();
-                }
-            
-                node.classed("able", false);
-                target.classed("able", false);
-                
-                busService.link();
-                busService.drag();
-              });
+          target
+            .on("mousedown", function (d) {
+              var mouse = d3.mouse(selection.node()),
+                  node = d3.select(this);
               
-            dragService.on("drag", null);
-          });
+              links.push({ "source": null, "target": this });
               
-          target.on("mousedown", function (d) {
-            var mouse = d3.mouse(selection.node()),
-                node = d3.select(this);
-            
-            links.push({ "source": null, "target": this });
-            
-            node.classed("able", true);
-            source.classed("able", true);
-            
-            busService.link(mouse);
+              node.classed("active", true);
+              source.classed("active", true);
               
-            source
-              .on("mouseenter", function (d) {
-                links[links.length-1].source = this;
+              busService.link(mouse);
                 
-                busService.link();
+              source
+                .on("mouseenter", function (d) {
+                  links[links.length-1].source = this;
+                  
+                  busService.link();
+                  
+                  selection.on("mousemove", null);
+                })
+                .on("mouseleave", function () {
+                  links[links.length-1].source = null;
+                  
+                  selection.on("mousemove", function () {
+                    var mouse = d3.mouse(this);
+                    
+                    busService.link(mouse);
+                  });
+                });
                 
-                selection.on("mousemove", null);
-              })
-              .on("mouseleave", function () {
-                links[links.length-1].source = null;
-                
-                selection.on("mousemove", function () {
+              selection
+                .on("mousemove", function () {
                   var mouse = d3.mouse(this);
                   
                   busService.link(mouse);
+                })
+                .on("mouseup", function () {
+                  source.on("mouseenter",null).on("mouseleave",null);
+                  selection.on("mousemove",null).on("mouseup",null);
+                  
+                  if ((links[links.length-1].source === null) ||
+                      (links[links.length-1].target === null)) {
+                    links.pop();
+                  } else {
+                    links[links.length-1].handle = {
+                      "x": (links[links.length-1].source.x
+                          + links[links.length-1].target.x) / 2,
+                      "y": (links[links.length-1].source.y
+                          + links[links.length-1].target.y) / 2
+                    };
+                  }
+              
+                  node.classed("active", false);
+                  source.classed("active", false);
+                  
+                  busService.link();
+                  busService.drag();
                 });
-              });
-              
-            selection
-              .on("mousemove", function () {
-                var mouse = d3.mouse(this);
                 
-                busService.link(mouse);
-              })
-              .on("mouseup", function () {
-                source.on("mouseenter",null).on("mouseleave",null);
-                selection.on("mousemove",null).on("mouseup",null);
-                
-                if ((links[links.length-1].source === null) ||
-                    (links[links.length-1].target === null)) {
-                  links.pop();
-                }
-            
-                node.classed("able", false);
-                source.classed("able", false);
-                
-                busService.link();
-                busService.drag();
-              });
-              
-            dragService.on("drag", null);
-          });
+              dragService.on("drag", null);
+            });
         };
         
         return link;
@@ -501,13 +580,14 @@ angular.module('workflow.services', [])
   .factory("sourceView", [
     "processView",
     function (processView) {
-      var template = [
-        { "x": -0.5, "y": -0.5 }, 
-        { "x": 0.5, "y": -0.5 }, 
-        { "x": 0.5, "y": 0 },
-        { "x": 0, "y": 0.5 },
-        { "x": -0.5, "y": 0 }
-      ];
+      var name = "source",
+          template = [
+            { "x": -0.5, "y": -0.5 }, 
+            { "x": 0.5, "y": -0.5 }, 
+            { "x": 0.5, "y": 0 },
+            { "x": 0, "y": 0.5 },
+            { "x": -0.5, "y": 0 }
+          ];
       
       var inputs = [ ], 
           outputs = [ "out" ],
@@ -516,20 +596,26 @@ angular.module('workflow.services', [])
           ];
       
       return function () {
-        return processView(template, inputs, outputs, paths);
+        return processView()
+          .classed(name)
+          .template(template)
+          .inputs(inputs)
+          .outputs(outputs)
+          .paths(paths);
       };
     }
   ])
   .factory("targetView", [
     "processView",
     function (processView) {
-      var template = [
-        { "x": -0.5, "y": 0 }, 
-        { "x": 0, "y": -0.5 }, 
-        { "x": 0.5, "y": 0 },
-        { "x": 0.5, "y": 0.5 },
-        { "x": -0.5, "y": 0.5 }
-      ];
+      var name = "target",
+          template = [
+            { "x": -0.5, "y": 0 }, 
+            { "x": 0, "y": -0.5 }, 
+            { "x": 0.5, "y": 0 },
+            { "x": 0.5, "y": 0.5 },
+            { "x": -0.5, "y": 0.5 }
+          ];
       
       var inputs = [ "in" ], 
           outputs = [ ],
@@ -538,19 +624,25 @@ angular.module('workflow.services', [])
           ];
       
       return function () {
-        return processView(template, inputs, outputs, paths);
+        return processView()
+          .classed(name)
+          .template(template)
+          .inputs(inputs)
+          .outputs(outputs)
+          .paths(paths);
       };
     }
   ])
   .factory("conditionView", [
     "processView",
     function (processView) {
-      var template = [
-          { "x": -0.5, "y": 0 }, 
-          { "x": 0, "y": -0.5 }, 
-          { "x": 0.5, "y": 0 },
-          { "x": 0, "y": 0.5 }
-        ];
+      var name = "condition",
+          template = [
+            { "x": -0.5, "y": 0 }, 
+            { "x": 0, "y": -0.5 }, 
+            { "x": 0.5, "y": 0 },
+            { "x": 0, "y": 0.5 }
+          ];
       
       var inputs = [ "in" ], 
           outputs = [ "true", "false" ],
@@ -561,19 +653,25 @@ angular.module('workflow.services', [])
           ];
       
       return function () {
-        return processView(template, inputs, outputs, paths);
+        return processView()
+          .classed(name)
+          .template(template)
+          .inputs(inputs)
+          .outputs(outputs)
+          .paths(paths);
       };
     }
   ])
   .factory("eventView", [
     "processView",
     function (processView) {
-      var template = [
-          { "x": -0.25, "y": -0.5 },
-          { "x": 0.5, "y": -0.5 },
-          { "x": 0.25, "y": 0.5 },
-          { "x": -0.5, "y": 0.5 }
-        ];
+      var name = "event",
+          template = [
+            { "x": -0.25, "y": -0.5 },
+            { "x": 0.5, "y": -0.5 },
+            { "x": 0.25, "y": 0.5 },
+            { "x": -0.5, "y": 0.5 }
+          ];
       
       var inputs = [ "in" ], 
           outputs = [ "out" ],
@@ -583,21 +681,27 @@ angular.module('workflow.services', [])
           ];
       
       return function () {
-        return processView(template, inputs, outputs, paths);
+        return processView()
+          .classed(name)
+          .template(template)
+          .inputs(inputs)
+          .outputs(outputs)
+          .paths(paths);
       };
     }
   ])
   .factory("actionView", [
     "processView",
     function (processView) {
-      var template = [
-        { "x": -0.5, "y": -0.5 },
-        { "x": 0, "y": -0.5 },
-        { "x": 0.5, "y": -0.5},
-        { "x": 0.5, "y": 0.5 },
-        { "x": 0, "y": 0.5 },
-        { "x": -0.5, "y": 0.5 }
-      ];
+      var name = "action",
+          template = [
+            { "x": -0.5, "y": -0.5 },
+            { "x": 0, "y": -0.5 },
+            { "x": 0.5, "y": -0.5},
+            { "x": 0.5, "y": 0.5 },
+            { "x": 0, "y": 0.5 },
+            { "x": -0.5, "y": 0.5 }
+          ];
       
       var inputs = [ "in" ], 
           outputs = [ "out" ],
@@ -607,7 +711,12 @@ angular.module('workflow.services', [])
           ];
       
       return function () {
-        return processView(template, inputs, outputs, paths);
+        return processView()
+          .classed(name)
+          .template(template)
+          .inputs(inputs)
+          .outputs(outputs)
+          .paths(paths);
       };
     }
   ])
@@ -660,6 +769,14 @@ angular.module('workflow.services', [])
               .attr("dy", "1em")
               .attr("text-anchor", "start");
           });
+        };
+        
+        group.margin = function (value) {
+          if (!arguments.length) return margin;
+          
+          margin = value;
+          
+          return group;
         };
         
         group.radius = function (value) {
@@ -723,6 +840,14 @@ angular.module('workflow.services', [])
           });
         };
         
+        group.margin = function (value) {
+          if (!arguments.length) return margin;
+          
+          margin = value;
+          
+          return group;
+        };
+        
         group.radius = function (value) {
           if (!arguments.length) return radius;
           
@@ -783,6 +908,14 @@ angular.module('workflow.services', [])
                                        + scale.rangeBand() / 2) + ")";
             });       
           });
+        };
+        
+        group.margin = function (value) {
+          if (!arguments.length) return margin;
+          
+          margin = value;
+          
+          return group;
         };
         
         group.radius = function (value) {
@@ -848,6 +981,14 @@ angular.module('workflow.services', [])
           });
         };
         
+        group.margin = function (value) {
+          if (!arguments.length) return margin;
+          
+          margin = value;
+          
+          return group;
+        };
+        
         group.radius = function (value) {
           if (!arguments.length) return radius;
           
@@ -857,6 +998,69 @@ angular.module('workflow.services', [])
         };
         
         return group;
+      };
+    }
+  ])
+  .factory("builderService", [
+    function () {
+      return function () {
+        var tree = function (selection) {
+          var routine = selection.selectAll(".routine"),
+              link = selection.selectAll(".link");
+          
+          routine.selectAll(".source").each(function () {
+            var source = d3.select(this),
+                output = source.selectAll(".output .node");
+            
+            output.each(function () {
+              var self = this,
+                  nodes = link
+                    .filter(function (d) { return d.source == self; })
+                    .map(function (d) { return d.target; }),
+                  targets = routine.filter(function () {
+                    return d3.select(this).selectAll(".input .node")
+                             .filter(function () { return this in nodes; })
+                             .empty();
+                  });
+            });
+          });
+        };
+        
+        return tree;
+        
+        var example = {
+          "application": [
+            {
+              "name": "",
+              "behavior": [
+                {
+                  "name": "",
+                  "object": [
+                    {
+                      "name": "",
+                      "property": [
+                        ""
+                      ],
+                      "method": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "scenario": [
+                    {
+                      "name": "",
+                      "source": [],
+                      "event": [],
+                      "condition": [],
+                      "action": [],
+                      "target": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       };
     }
   ]);
