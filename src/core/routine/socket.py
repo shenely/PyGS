@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 June 2013
+Modified:   08 August 2013
 
 Provides routines for socket communication.
 
@@ -22,6 +22,7 @@ Date          Author          Version     Description
 2013-06-26    shenely         1.1         Modifying routine structure
 2013-06-29    shenely                     Refactored agenda
 2013-06-29    shenely         1.2         Address handled internally
+2013-08-09    shenely         1.3         Adding persistance logic
 
 """
 
@@ -39,7 +40,8 @@ from zmq.eventloop import ioloop
 
 #Internal libraries
 from . import SourceRoutine,TargetRoutine
-from ..agenda import *
+from .. import agenda
+from .. import persist
 #
 ##################
 
@@ -56,11 +58,14 @@ __all__ = ["SubscribeSocket",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 #
 ####################
 
 
+subscribe_socket = persist.RoutinePersistance()
+
+@subscribe_socket.type(persist.SOURCE_ROUTINE)
 class SubscribeSocket(SourceRoutine):
     """Story:  Subscribe from socket
     
@@ -84,30 +89,59 @@ class SubscribeSocket(SourceRoutine):
     """
     
     name = "Socket.Subscribe"
-    type = HANDLER
+    type = agenda.HANDLER
     event = ioloop.POLLIN
     
-    def __init__(self,socket,address):
+    def __init__(self):
+        SourceRoutine.__init__(self)
+        
+        self._address = ""
+    
+    @subscribe_socket.property
+    def socket(self):
+        return self._socket
+    
+    @socket.setter
+    def socket(self,socket):
         assert isinstance(socket,zmq.Socket)
         assert socket.socket_type is zmq.SUB
         
-        socket.setsockopt(zmq.SUBSCRIBE,address)
+        self._socket = socket
+    
+    @property
+    def handle(self):
+        return self._socket
         
-        SourceRoutine.__init__(self)
+    @subscribe_socket.property
+    def address(self):
+        return self._address
+    
+    @address.setter
+    def address(self,address):
+        assert isinstance(address,types.StringTypes)
         
-        self.handle = socket
+        self._socket.setsockopt(zmq.UNSUBSCRIBE,self._address)
+        
+        self._address = address
+        
+        self._socket.setsockopt(zmq.SUBSCRIBE,self._address)
     
     def _receive(self):
-        address,message = self.handle.recv_multipart()
+        address,message = self._socket.recv_multipart()
         
         assert isinstance(address,types.StringTypes)
+        assert self.address in address
         assert isinstance(message,types.StringTypes)
                 
         logging.info("{0}:  From address {1}".\
-                     format(self.name,address))
+                     format(self.name,self._address))
         
         return message
 
+
+publish_socket = persist.RoutinePersistance()
+
+@publish_socket.type(persist.TARGET_ROUTINE)
 class PublishSocket(TargetRoutine):
     """Story:  Publish to socket
     
@@ -132,22 +166,43 @@ class PublishSocket(TargetRoutine):
     """
     
     name = "Socket.Publish"
-    type = HANDLER
+    type = agenda.HANDLER
     event = ioloop.POLLIN
     
-    def __init__(self,socket,address):
+    def __init__(self):
+        TargetRoutine.__init__(self)
+        
+        self._address = ""
+    
+    @publish_socket.property
+    def socket(self):
+        return self._socket
+    
+    @socket.setter
+    def socket(self,socket):
         assert isinstance(socket,zmq.Socket)
         assert socket.socket_type is zmq.PUB
         
-        TargetRoutine.__init__(self)
+        self._socket = socket
+    
+    @property
+    def handle(self):
+        return self._socket
         
-        self.handle = socket
-        self.address = address
+    @publish_socket.property
+    def address(self):
+        return self._address
+    
+    @address.setter
+    def address(self,address):
+        assert isinstance(address,types.StringTypes)
+        
+        self._address = address
            
     def _send(self,message):
         assert isinstance(message,types.StringTypes)
         
-        self.handle.send_multipart((self.address,message))
+        self._socket.send_multipart((self._address,message))
                 
         logging.info("{0}:  To address {1}".\
-                     format(self.name,self.address))
+                     format(self.name,self._address))

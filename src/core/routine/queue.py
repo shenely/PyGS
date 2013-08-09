@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   26 June 2013
+Modified:   09 August 2013
 
 Provides routines for prioritizing messages queues.
 
@@ -20,6 +20,7 @@ Date          Author          Version     Description
 ----------    ------------    --------    -----------------------------
 2013-05-02    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
+2013-08-09    shenely         1.2         Adding persistance logic
 
 """
 
@@ -39,6 +40,7 @@ from bson.tz_util import utc
 #Internal libraries
 from . import EventRoutine,ActionRoutine
 from epoch import EpochState
+from .. import persist
 #
 ##################
 
@@ -55,13 +57,16 @@ __all__ = ["GetQueue",
 ####################
 # Constant section #
 #
-__version__ = "1.0"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 
 J2000 = datetime(2000,1,1,12,tzinfo=utc)#Julian epoch (2000-01-01T12:00:00Z)
 #
 ####################
 
 
+queue_get = persist.RoutinePersistance()
+
+@queue_get.type(persist.EVENT_ROUTINE)
 class GetQueue(EventRoutine):
     """Story:  Get from Queue
     
@@ -90,17 +95,20 @@ class GetQueue(EventRoutine):
     """
     
     name = "Queue.Get"
+        
+    @queue_get.property
+    def queue(self):
+        return self._queue
     
-    def __init__(self,queue):
+    @queue.setter
+    def queue(self,queue):
         assert isinstance(queue,Queue)
         
-        EventRoutine.__init__(self)
-        
-        self.queue = queue
+        self._queue = queue
     
     def _occur(self,message):
-        if not self.queue.empty(): 
-            priority,message = self.queue.get()
+        if not self._queue.empty(): 
+            priority,message = self._queue.get()
             
             assert isinstance(priority,(types.IntType,types.FloatType))
                     
@@ -112,7 +120,11 @@ class GetQueue(EventRoutine):
             logging.warn("{0}:  Queue is empty".\
                          format(self.name))
 
-class PutQueue(ActionRoutine):
+
+queue_put = persist.RoutinePersistance()
+
+@queue_put.type(persist.ACTION_ROUTINE)
+class QueuePut(ActionRoutine):
     """Story:  Put to queue
     
     IN ORDER TO process important messages first
@@ -142,21 +154,24 @@ class PutQueue(ActionRoutine):
     """
     
     name = "Queue.Put"
+        
+    @queue_get.property
+    def queue(self):
+        return self._queue
     
-    def __init__(self,queue):
+    @queue.setter
+    def queue(self,queue):
         assert isinstance(queue,Queue)
         
-        ActionRoutine.__init__(self)
-        
-        self.queue = queue
+        self._queue = queue
     
     def _execute(self,message):
         assert isinstance(message,EpochState)#TODO:  Create EpochState (also, rename)
         
         priority = (message.epoch - J2000).total_seconds()        
         
-        if not self.queue.full():
-            self.queue.put((priority,message))
+        if not self._queue.full():
+            self._queue.put((priority,message))
                     
             logging.info("{0}:  Put with priority {1}".\
                          format(self.name,priority))

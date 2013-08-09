@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   16 July 2013
+Modified:   09 August 2013
 
 Provides routines for controlling the flow of data.
 
@@ -24,6 +24,7 @@ Date          Author          Version     Description
 2013-06-26    shenely         1.1         Modifying routine structure
 2013-06-29    shenely                     Refactored for agenda
 2013-07-17    shenely                     Corrected merge log message
+2013-08-09    shenely         1.2         Adding persistance logic
 
 
 """
@@ -39,7 +40,8 @@ import types
 
 #Internal libraries
 from . import *
-from ..agenda import *
+from .. import agenda
+from .. import persist
 #
 ##################
 
@@ -58,11 +60,14 @@ __all__ = ["SplitControl",
 ####################
 # Constant section #
 #
-__version__ = "1.1"#current version [major.minor]
+__version__ = "1.2"#current version [major.minor]
 #
 ####################
 
 
+split_control = persist.RoutinePersistance()
+
+@split_control.type(persist.SPECIAL_ROUTINE)
 class SplitControl(SourceRoutine,TargetRoutine):
     """Story:  Split pipeline
     
@@ -86,16 +91,23 @@ class SplitControl(SourceRoutine,TargetRoutine):
     name = "Control.Split"
     
     def __init__(self,processor):
-        assert isinstance(processor,Processor)
-        
         TargetRoutine.__init__(self)
+        
         self.target = list()
         
-        self.scheduler = processor
+    @split_control.property
+    def processor(self):
+        return self._processor
+    
+    @processor.setter
+    def processor(self,processor):
+        assert isinstance(processor,agenda.Processor)
+        
+        self._processor = processor
     
     def _process(self,message,ipipe):        
         for opipe in self.target:
-            self.scheduler.schedule(message,ipipe,opipe)
+            self._processor.schedule(message,ipipe,opipe)
         else:
             logging.info("{0}:  {1:d}-way split".\
                          format(self.name,len(self.target)))
@@ -117,6 +129,10 @@ class SplitControl(SourceRoutine,TargetRoutine):
         
         self.target.append(target)
 
+
+merge_control = persist.RoutinePersistance()
+
+@merge_control.type(persist.SPECIAL_ROUTINE)
 class MergeControl(SourceRoutine,TargetRoutine):
     """Story:  Split pipeline
     
@@ -188,6 +204,10 @@ class MergeControl(SourceRoutine,TargetRoutine):
         
         self.source.append(source)
 
+
+allow_control = persist.RoutinePersistance()
+
+@allow_control.type(persist.CONDITION_ROUTINE)
 class AllowControl(ConditionRoutine):
     """Story:  Allow message
     
@@ -215,6 +235,10 @@ class AllowControl(ConditionRoutine):
         
         return True
 
+
+block_control = persist.RoutinePersistance()
+
+@block_control.type(persist.CONDITION_ROUTINE)
 class BlockControl(ConditionRoutine):
     """Story:  Block message
     

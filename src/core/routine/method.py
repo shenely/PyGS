@@ -32,6 +32,7 @@ import types
 #External libraries
 
 #Internal libraries
+from .. import persist
 from . import ActionRoutine
 #
 ##################
@@ -53,21 +54,27 @@ __version__ = "1.0"#current version [major.minor]
 ####################
 
 
+execute_method = persist.RoutinePersistance()
+
+@execute_method.type(persist.ACTION_ROUTINE)
 class ExecuteMethod(ActionRoutine):    
     name = "Method.Execute"
+        
+    @execute_method.property
+    def method(self):
+        return self._method
     
-    def __init__(self,method):
+    @method.setter
+    def method(self,method):
         assert isinstance(method,types.MethodType)
         
-        ActionRoutine.__init__(self)
-        
-        self.method = method
+        self._method = method
     
     def _execute(self,message):
         logging.info("{0}:  Executing method".\
                      format(self.name))
         
-        message = self.method(message)
+        message = self._method(message)
         
         logging.info("{0}:  Executed method".\
                      format(self.name))
