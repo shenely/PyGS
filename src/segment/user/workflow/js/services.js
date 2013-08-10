@@ -320,9 +320,10 @@ angular.module('workflow.services', [])
             height = 40;
             
         var path = function (selection) {
-          var group = selection.append("g");
+          var data = selection.datum(),
+              group = selection.append("g");
           
-          busService.on("done.path", function () {
+          busService.on("done.path." + data.name, function () {
             var data = paths.map(function (path) {
                   var source = { 
                         "x": width * path.source.x,

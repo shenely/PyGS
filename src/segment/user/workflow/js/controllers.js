@@ -13,53 +13,71 @@ angular.module("workflow.controllers", [])
       selection.selectAll(".routine")
         .data([
           {
-            "name": "TestSource",
+            "name": "ContinuousClock1",
             "type": "source",
-            "classed": "routine.TestSource",
+            "classed": "epoch.routine.clock.ContinousClock",
             "methods": [
-              "testMethod"
             ],
             "properties": [
-              "testProperty"
+              "seed",
+              "scale"
             ]
           },
           {
-            "name": "TestSource",
+            "name": "SubscribeSocket1",
             "type": "source",
-            "classed": "routine.TestSource",
+            "classed": "core.routine.socket.SubscribeSocket",
             "methods": [
-              "testMethod"
             ],
             "properties": [
-              "testProperty"
+              "socket",
+              "address"
             ]
           },
           {
-            "name": "TestTarget",
+            "name": "SubscribeSocket2",
+            "type": "source",
+            "classed": "core.routine.socket.SubscribeSocket",
+            "methods": [
+            ],
+            "properties": [
+              "socket",
+              "address"
+            ]
+          },
+          {
+            "name": "PublishSocket1",
             "type": "target",
-            "classed": "routine.TestTarget",
+            "classed": "core.routine.socket.PublishSocket",
             "methods": [
-              "testMethod"
-              
             ],
             "properties": [
-              "testProperty"
+              "socket",
+              "address",
             ]
           },
           {
-            "name": "TestTarget",
+            "name": "SplitControl1",
             "type": "target",
-            "classed": "routine.TestTarget",
+            "classed": "core.routine.control.SplitControl",
             "methods": [
-              "testMethod"
-              
             ],
             "properties": [
-              "testProperty"
+              "processor"
             ]
           },
           {
-            "name": "TestCondition",
+            "name": "SplitControl2",
+            "type": "target",
+            "classed": "core.routine.control.SplitControl",
+            "methods": [
+            ],
+            "properties": [
+              "processor"
+            ]
+          },
+          {
+            "name": "TestCondition1",
             "type": "condition",
             "classed": "routine.TestCondition",
             "methods": [
@@ -70,58 +88,30 @@ angular.module("workflow.controllers", [])
             ]
           },
           {
-            "name": "TestCondition",
-            "type": "condition",
-            "classed": "routine.TestCondition",
-            "methods": [
-              "testMethod"
-            ],
-            "properties": [
-              "testProperty"
-            ]
-          },
-          {
-            "name": "TestEvent",
+            "name": "ParseEpoch1",
             "type": "event",
-            "classed": "routine.TestEvent",
+            "classed": "epoch.routine.ParseEpoch",
             "methods": [
-              "testMethod"
             ],
             "properties": [
-              "testProperty"
             ]
           },
           {
-            "name": "TestEvent",
+            "name": "ParseEpoch2",
             "type": "event",
-            "classed": "routine.TestEvent",
+            "classed": "epoch.routine.ParseEpoch",
             "methods": [
-              "testMethod"
             ],
             "properties": [
-              "testProperty"
             ]
           },
           {
-            "name": "TestAction",
+            "name": "FormatEpoch1",
             "type": "action",
-            "classed": "routine.TestAction",
+            "classed": "epoch.routine.FormatEpoch",
             "methods": [
-              "testMethod"
             ],
             "properties": [
-              "testProperty"
-            ]
-          },
-          {
-            "name": "TestAction",
-            "type": "action",
-            "classed": "routine.TestAction",
-            "methods": [
-              "testMethod"
-            ],
-            "properties": [
-              "testProperty"
             ]
           }
         ])
