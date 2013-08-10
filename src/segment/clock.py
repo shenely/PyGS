@@ -86,7 +86,10 @@ class ClockSegment(BaseSegment):
             epoch_clock = clock.DiscreteClock(seed,step)
             
         format_epoch = epoch.FormatEpoch()
-        pub_epoch = socket.PublishSocket(epoch_socket,epoch_address)
+        
+        pub_epoch = socket.PublishSocket()
+        pub_epoch.socket = epoch_socket
+        pub_epoch.address = epoch_address
         
         application.Behavior("Main clock cycle")
         

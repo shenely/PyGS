@@ -70,7 +70,10 @@ class GroundSegment(BaseSegment):
         
         epoch_address = EPOCH_ADDRESS.format(asset="System",segment="Clock")
     
-        sub_epoch = socket.SubscribeSocket(epoch_socket,epoch_address)
+        sub_epoch = socket.SubscribeSocket()
+        sub_epoch.socket = epoch_socket
+        sub_epoch.address = epoch_address
+        
         parse_epoch = epoch.ParseEpoch()
         self.epoch_split = control.SplitControl(application.processor)
     
@@ -86,7 +89,10 @@ class GroundSegment(BaseSegment):
         
         controller_address = CONTROLLER_ADDRESS.format(asset="System",segment="Asset")
     
-        sub_controller = socket.SubscribeSocket(controller_socket,controller_address)
+        sub_controller = socket.SubscribeSocket()
+        sub_controller.socket = controller_socket
+        sub_controller.address = controller_address
+        
         parse_controller = controller.ParseController(self)
             
         application.Behavior("Asset controller")

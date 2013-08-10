@@ -69,7 +69,10 @@ class SpaceSegment(BaseSegment):
         
         epoch_address = EPOCH_ADDRESS.format(asset="System",segment="Clock")
     
-        sub_epoch = socket.SubscribeSocket(epoch_socket,epoch_address)
+        sub_epoch = socket.SubscribeSocket()
+        sub_epoch.socket = epoch_socket
+        sub_epoch.address = epoch_address
+        
         parse_epoch = epoch.ParseEpoch()
         self.epoch_split = control.SplitControl(application.processor)
     
@@ -85,7 +88,10 @@ class SpaceSegment(BaseSegment):
         
         model_address = MODEL_ADDRESS.format(asset="System",segment="Asset")
     
-        sub_model = socket.SubscribeSocket(model_socket,model_address)
+        sub_model = socket.SubscribeSocket()
+        sub_model.socket = model_socket
+        sub_model.address = model_address
+        
         parse_model = model.ParseModel(self)
             
         application.Behavior("Asset model")

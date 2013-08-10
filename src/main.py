@@ -1,27 +1,26 @@
 import logging
 
 from core import broker
-from core import agenda
 from core import engine
-from segment.clock import ClockSegment
-from segment.space import SpaceSegment
-from segment.ground import GroundSegment
-from segment.user import UserSegment
+from core import persist
+from core import service
 
 def main():
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     
     broker.main()
+    persist.main()
     
-    processor = agenda.Processor()
-    application = engine.Application("End-to-end test",processor)
+    application = engine.Application("PyGS")
         
-    clock = ClockSegment(application)
-    space = SpaceSegment(application)
-    ground = GroundSegment(application)
-    user = UserSegment(application)
+    #clock = ClockSegment(application)
+    #space = SpaceSegment(application)
+    #ground = GroundSegment(application)
+    #user = UserSegment(application)
     
-    processor.start()
+    service.CoreService()
+    
+    application.start()
     
 if __name__ == '__main__':
     main()
