@@ -50,7 +50,7 @@ __all__ = ["CoreService"]
 #
 __version__ = "1.0"#current version [major.minor]
 
-ROUTINE_ADDRESS = "{0!s}.{1!s}.Routine"
+ROUTINE_ADDRESS = "System.Core.Engine"
 #
 ####################
 
@@ -58,19 +58,19 @@ class CoreService(object):
     def __init__(self):
         object.__init__(self)
         
-        routine_address = ROUTINE_ADDRESS.format("System","Core")
+        routine_address = ROUTINE_ADDRESS
         
         context = zmq.Context(1)
         
         routine_socket = context.socket(zmq.DEALER)
-        routine_socket.connect("tcp://localhost:5560")
         routine_socket.setsockopt(zmq.IDENTITY,routine_address)
+        routine_socket.connect("tcp://localhost:5560")
                 
         req_routine = socket.SocketRequest()
         req_routine.socket = routine_socket
         
         find_routine = database.DatabaseFind()
-        find_routine.collection = "Routines"
+        find_routine.collection = "Objects"
         find_routine.query = {}
         
         run_query = method.PropertyTransfer()

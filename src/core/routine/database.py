@@ -36,6 +36,7 @@ import pymongo
 
 #Internal libraries
 from . import EventRoutine,ActionRoutine
+from .. import BaseObject
 from .. import persist
 from .. import engine
 #
@@ -112,7 +113,7 @@ class DatabaseFind(EventRoutine):
     
     def _occur(self,message):
         try:
-            document = self.cursor.next()
+            document = BaseObject(**self.cursor.next())
                           
             logging.info("{0}:  Found {1} in database".\
                          format(self.name,document._id))

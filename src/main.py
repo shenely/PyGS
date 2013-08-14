@@ -4,6 +4,7 @@ from core import broker
 from core import engine
 from core import persist
 from core import service
+from segment.user import UserSegment
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
@@ -16,7 +17,7 @@ def main():
     #clock = ClockSegment(application)
     #space = SpaceSegment(application)
     #ground = GroundSegment(application)
-    #user = UserSegment(application)
+    user = UserSegment(application)
     
     service.CoreService()
     

@@ -2,6 +2,51 @@ body {
   font: 10px sans-serif;
 }
 
+.pallete {
+  float: left;
+  width: 400px;
+}
+
+.editor {
+  float: left;
+  border-width: 1px;
+  border-color: black;
+  border-style: solid;
+  width: 1200px;
+  height: 800px;
+}
+
+.pallete ul {
+  list-style-type: none;
+  margin-left: 0px;
+  padding-left: 0px;
+}
+
+.pallete .group div {
+  text-transform: capitalize;
+  font: bold 12px sans-serif;
+}
+
+.pallete .item {
+  display: inline-table;
+  background-color: #ddd;
+  border-style: dashed;
+  border-width: 1px;
+  border-color: grey;
+  padding: 4px;
+  margin: 2px;
+}
+
+.pallete #draggable {
+  position: absolute;
+  display: none;
+  opacity: 0.5;
+}
+
+.pallete #draggable.active {
+  display: block;
+}
+
 text.h1 {
   fill: #000;
   font-size: 20px;

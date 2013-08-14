@@ -59,7 +59,7 @@ class ThreadRouter(object):
             if (self.socket in sockets and sockets[self.socket] == zmq.POLLIN):
                 source,target,message = self.socket.recv_multipart()
                 
-                self.socket.send_multipart(target,source,message)
+                self.socket.send_multipart((target,source,message))
                 
     def bind(self,address):
         self.socket.bind(address)

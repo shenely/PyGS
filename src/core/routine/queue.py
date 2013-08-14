@@ -65,6 +65,8 @@ queue_object = persist.ObjectPersistance()
 
 @queue_object.type(persist.GENERAL_OBJECT)
 class QueueObject(object):
+    name = "Queue.Object"
+    
     @queue_object.property
     def type(self):
         if isinstance(self._queue,Queue):

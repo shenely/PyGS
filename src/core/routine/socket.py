@@ -74,6 +74,8 @@ socket_object = persist.ObjectPersistance()
 
 @socket_object.type(persist.GENERAL_OBJECT)
 class SocketObject(object):
+    name = "Socket.Object"
+    
     def __init__(self):
         object.__init__(self)
         

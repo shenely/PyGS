@@ -73,7 +73,7 @@ class ObjectDict(dict):
 
 class BaseObject(ObjectDict):
     def __init__(self,_id=None,**kwargs):
-        ObjectDict.__init__(self)
+        ObjectDict.__init__(self,**kwargs)
         
         assert isinstance(_id,ObjectId) or _id is None
         

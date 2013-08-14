@@ -92,13 +92,37 @@ class SubscribeWebSocket(ZMQWebSocket):
         
         self.socket.on_recv(self.recv_multipart)
 
+class DealerWebSocket(ZMQWebSocket):
+    type = zmq.DEALER
+    
+    def on_message(self,message):
+        messages = self.address,str(message)
+        
+        self.socket.send_multipart(messages)
+    
+    def recv_multipart(self,messages):
+        address,message = messages
+        
+        if address == self.address:
+            self.write_message(message)
+    
+    def open(self,path):
+        ZMQWebSocket.open(self)
+        
+        self.address = ".".join(map(str.capitalize,path.split("/")))
+        
+        self.socket.connect("tcp://127.0.0.1:5560")
+        
+        self.socket.on_recv(self.recv_multipart)
+
 class UserSegment(BaseSegment):
     def __init__(self,application,name="User"):
         self.name = name
         
         self.application = tornado.web.Application([(r"/", MainHandler),
                                        (r"/pub/(.*)",PublishWebSocket),
-                                       (r"/sub/(.*)",SubscribeWebSocket)],
+                                       (r"/sub/(.*)",SubscribeWebSocket),
+                                       (r"/dealer/(.*)",DealerWebSocket)],
                                       template_path="./segment/user/templates",
                                       static_path="./segment/user/static")
         

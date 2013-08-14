@@ -98,7 +98,7 @@ class ObjectPersistance(object):
                             properties = [property.func_name \
                                           for property in self.properties],
                             methods = [method.func_name \
-                                       for method in self.properties])
+                                       for method in self.methods])
             
             collection.save(document)
             

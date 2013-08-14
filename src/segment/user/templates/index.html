@@ -1,39 +1,46 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="kepler">
+<html lang="en">
     <head>
-        <title>kepler.js</title>
-        <link rel="stylesheet" href="{{ static_url('css/app.css') }}" type="text/css" />
+        <title>Something awesome</title>
+        <link rel="stylesheet" href="{{ static_url('css/workflow.css') }}" type="text/css" />
         <script src="{{ static_url('lib/jquery.min.js') }}" type="text/javascript"></script>
         <script src="{{ static_url('lib/angular.min.js') }}" type="text/javascript"></script>
         <script src="{{ static_url('lib/d3.min.js') }}" type="text/javascript"></script>
         <script src="{{ static_url('lib/topojson.js') }}" type="text/javascript"></script>
-        <script src="{{ static_url('js/app.js') }}" type="text/javascript"></script>
-        <script src="{{ static_url('js/services.js') }}" type="text/javascript"></script>
-        <script src="{{ static_url('js/controllers.js') }}" type="text/javascript"></script>
-        <script src="{{ static_url('js/filters.js') }}" type="text/javascript"></script>
-        <script src="{{ static_url('js/directives.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/apps/workflow.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/services/workflow/colorService.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/services/workflow/busService.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/services/workflow/dragService.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/services/workflow/lineService.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/services/workflow/shapeService.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/models/workflow/objectModel.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/palleteView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/editorView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/routineView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/processView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/blockView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/pathView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/sourceView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/targetView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/conditionView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/eventView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/actionView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/generalView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/specialView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/inputView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/outputView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/requireView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/provideView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/nodeView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/views/workflow/linkView.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/controllers/workflow/PalleteController.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/controllers/workflow/EditorController.js') }}" type="text/javascript"></script>
+        <script src="{{ static_url('js/directives/workflow.js') }}" type="text/javascript"></script>
     </head>
     <body>
-        <universe>
-            <planet earth>
-                <ground>
-                    <background sea="rgba(164,186,199,1.0)" 
-                                land="rgba(215,199,173,1.0)" 
-                                countries="rgba(0,0,0,1.0)" 
-                                graticule="rgba(0,0,0,1.0)"
-                                ></background>
-                    <foreground foot-print ground-track>
-	                    <asset name="Aqua" color="#077"></asset>
-	                    <asset name="Aura" color="#f70"></asset>
-                        <asset name="Terra" color="#070"></asset>
-                    </foreground>
-                </ground>
-                <space trail-path sub-point>
-	                <asset name="Aqua"></asset>
-	                <asset name="Aura"></asset>
-	                <asset name="Terra"></asset>
-                </space>
-            </planet>
-        </universe>
+        <div ng-app="workflow">
+	        <pallete></pallete>
+	        <editor></<editor>
+        </div>
     </body>
 </html>
