@@ -143,7 +143,7 @@ class Scenario(BaseObject):
         for index in self["then"]:
             self.Then(**self.behavior.routines[index])
         
-        for index in self["then"]:
+        for index in self["to"]:
             self.To(**self.behavior.routines[index])
     
     def From(self,description,routine):
