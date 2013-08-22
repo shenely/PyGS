@@ -22,10 +22,7 @@ workflowViews.factory("linkView", [
           self.enter().append("path")
             .classed("link", true);
         })
-        .on("move", function (data) {
-          //d3.event.preventDefault();
-          //d3.event.stopPropagation();
-          
+        .on("move", function (data) {          
           var mouse = d3.mouse(self.node());
           
           if (data !== undefined) {
@@ -63,6 +60,23 @@ workflowViews.factory("linkView", [
             
             self.exit().remove();
           }
+          
+          self
+            .on("click", function (d, i) {
+              links.splice(i, 1);
+              
+              self = self.data(links);
+              
+              self.exit().remove();
+              
+              dispatch.move();
+            })
+            .on("mouseenter", function () {
+              d3.select(this).classed("active", true);
+            })
+            .on("mouseleave", function () {
+              d3.select(this).classed("active", false);
+            });
         });
       
       var link = function (selection) {
@@ -81,8 +95,9 @@ workflowViews.factory("linkView", [
           input
             .on("mouseenter", function () {
               dispatch.move({ "target": this });
-              
-              selection.on("mousemove", null)
+            })
+            .on("mousemove", function () {
+              d3.event.stopPropagation();
             })
             .on("mouseleave", function () {
               dispatch.move({ "target": null });
@@ -93,9 +108,9 @@ workflowViews.factory("linkView", [
               dispatch.move({ });
             })
             .on("mouseup", function () {
-              dispatch.end({ });
+              dispatch.end();
               
-              input.on("mouseenter", null).on("mouseleave", null).on("mouseup", null);
+              input.on("mouseenter", null).on("mouseleave", null).on("mousemove", null);
               selection.on("mousemove", null).on("mouseup", null);
             });
         });
@@ -106,8 +121,9 @@ workflowViews.factory("linkView", [
           output
             .on("mouseenter", function () {
               dispatch.move({ "source": this });
-              
-              selection.on("mousemove", null)
+            })
+            .on("mousemove", function () {
+              d3.event.stopPropagation();
             })
             .on("mouseleave", function () {
               dispatch.move({ "source": null });
@@ -118,9 +134,9 @@ workflowViews.factory("linkView", [
               dispatch.move({ });
             })
             .on("mouseup", function () {
-              dispatch.end({ });
+              dispatch.end();
               
-              output.on("mouseenter", null).on("mouseleave", null).on("mouseup", null);
+              output.on("mouseenter", null).on("mouseleave", null).on("mousemove", null);
               selection.on("mousemove", null).on("mouseup", null);
             });
         });
@@ -131,8 +147,9 @@ workflowViews.factory("linkView", [
           require
             .on("mouseenter", function () {
               dispatch.move({ "target": this });
-              
-              selection.on("mousemove", null)
+            })
+            .on("mousemove", function () {
+              d3.event.stopPropagation();
             })
             .on("mouseleave", function () {
               dispatch.move({ "target": null });
@@ -143,9 +160,9 @@ workflowViews.factory("linkView", [
               dispatch.move({ });
             })
             .on("mouseup", function () {
-              dispatch.end({ });
+              dispatch.end();
               
-              require.on("mouseenter", null).on("mouseleave", null).on("mouseup", null);
+              require.on("mouseenter", null).on("mouseleave", null).on("mousemove", null);
               selection.on("mousemove", null).on("mouseup", null);
             });
         });
@@ -156,8 +173,9 @@ workflowViews.factory("linkView", [
           provide
             .on("mouseenter", function () {
               dispatch.move({ "source": this });
-              
-              selection.on("mousemove", null)
+            })
+            .on("mousemove", function () {
+              d3.event.stopPropagation();
             })
             .on("mouseleave", function () {
               dispatch.move({ "source": null });
@@ -168,9 +186,9 @@ workflowViews.factory("linkView", [
               dispatch.move({ });
             })
             .on("mouseup", function () {
-              dispatch.end({ });
+              dispatch.end();
               
-              provide.on("mouseenter", null).on("mouseleave", null).on("mouseup", null);
+              provide.on("mouseenter", null).on("mouseleave", null).on("mousemove", null);
               selection.on("mousemove", null).on("mouseup", null);
             });
         });
