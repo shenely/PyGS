@@ -1,49 +1,45 @@
 var workflowViews = workflowViews || angular.module('workflow.views', []);
 
-workflowViews.factory("palleteView", [
-  "colorService",
-  function (colorService) {
+workflowViews.factory("toolboxView", [
+  function () {
     return function () {
-      var groups,items;
+      var groups;
       
-      var pallete = function (selection) {
+      var toolbox = function (selection) {
         var pallete = selection
-              .classed("pallete", true)
-              .append("ul");
+              .classed("toolbox", true);
         
-        groups = pallete.selectAll(".group");
+        var clauses = pallete.append("category").attr("name", "Clauses"),
+            routines = pallete.append("category").attr("name", "Routines");
+        
+        groups = routines.selectAll("category");
+        
+        clauses.selectAll("category")
+            .data(["From", "When", "Given", "Then", "To"])
+          .enter().append("block")
+            .attr("type", function (d) { return d; });
       };
       
-      pallete.redraw = function (data) {
+      toolbox.redraw = function (data) {
         data = d3.nest()
           .key(function (d) { return d.type; })
           .entries(data);
       
         groups = groups.data(data);
         
-        var enter = groups.enter().append("li") .classed("group", true);
-        enter.append("div");
-        enter.append("ul");
-        
-        groups.selectAll("div")
-          .text(function (d) { return d.key; })
-          .style("background-color", function (d) { return colorService(d.key).brighter(); });
-        
+        groups.enter().append("category")
+            .attr("name", function (d) { return d.key[0].toUpperCase() + d.key.slice(1) });
         groups.exit().remove();
         
-        items = groups.select("ul").selectAll(".item")
-              .data(function (d) { return d.values; });
+        var blocks = groups.selectAll("block")
+          .data(function (d) { return d.values; });
          
-        items.enter().append("li").classed("item", true)
-          .attr("draggable", true)
-          .on("dragstart", function (d) {
-            d3.event.dataTransfer.setData("oid", d._id.$oid);
-          });
-        items.text(function (d) { return d.name; });
-        items.exit().remove();
+        blocks.enter().append("block")
+          .attr("type", function (d) { return d.name; });
+        blocks.exit().remove();
       };
       
-      return pallete;
+      return toolbox;
     };
   }
 ]);

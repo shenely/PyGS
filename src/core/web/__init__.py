@@ -119,7 +119,8 @@ class WebService(object):
         self.application = tornado.web.Application([(r"/", MainHandler),
                                        (r"/pub/(.*)",PublishWebSocket),
                                        (r"/sub/(.*)",SubscribeWebSocket),
-                                       (r"/dealer/(.*)",DealerWebSocket)],
+                                       (r"/dealer/(.*)",DealerWebSocket),
+                                       (r"/media/(.*)", tornado.web.StaticFileHandler, {"path": "./core/web/static/img"})],
                                       template_path="./core/web/templates",
                                       static_path="./core/web/static")
         
