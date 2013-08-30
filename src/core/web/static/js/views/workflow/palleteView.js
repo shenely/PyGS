@@ -9,15 +9,27 @@ workflowViews.factory("toolboxView", [
         var pallete = selection
               .classed("toolbox", true);
         
-        var clauses = pallete.append("category").attr("name", "Clauses"),
-            routines = pallete.append("category").attr("name", "Routines");
+        var engine = pallete.append("category").attr("name", "Engine"),
+            clauses = pallete.append("category").attr("name", "Clauses"),
+            routines = pallete.append("category").attr("name", "Routines"),
+            statements = pallete.append("category").attr("name", "Statements");
+        
+        engine.selectAll("block")
+            .data(["App", "Story", "Rule"])
+          .enter().append("block")
+            .attr("type", function (d) { return "engine_" + d; });
+        
+        clauses.selectAll("block")
+            .data(["From", "When", "Given", "Then", "To", "And"])
+          .enter().append("block")
+            .attr("type", function (d) { return "clause_" + d; });
         
         groups = routines.selectAll("category");
         
-        clauses.selectAll("category")
-            .data(["From", "When", "Given", "Then", "To"])
+        statements.selectAll("block")
+            .data(["Routine", "Clause", "Provide", "Require"])
           .enter().append("block")
-            .attr("type", function (d) { return d; });
+            .attr("type", function (d) { return "statement_" + d; });
       };
       
       toolbox.redraw = function (data) {
