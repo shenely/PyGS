@@ -4,13 +4,13 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   11 July 2013
+Modified:   09 September 2013
 
 Provides routines for order tasks.
 
 Classes:
-ParseEpoch  -- Parse epoch message
-FormatEpoch -- Format epoch message
+EpochParse  -- Parse epoch message
+EpochFormat -- Format epoch message
 
 """
 
@@ -23,6 +23,7 @@ Date          Author          Version     Description
 2013-06-29    shenely                     Accounted for address
 2013-06-29    shenely         1.2         Addresses handled by sockets
 2013-07-11    shenely                     Added assert statements
+2013-09-09    shenely         1.3         Adding persistance logic
 
 """
 
@@ -39,6 +40,7 @@ import types
 #Internal libraries
 from core import encoder,decoder
 from core.routine import EventRoutine,ActionRoutine
+from core import persist
 from .. import EpochState
 #
 ##################
@@ -47,8 +49,8 @@ from .. import EpochState
 ##################
 # Export section #
 #
-__all__ = ["ParseEpoch",
-           "FormatEpoch"]
+__all__ = ["EpochParse",
+           "EpochFormat"]
 #
 ##################
 
@@ -56,12 +58,15 @@ __all__ = ["ParseEpoch",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 #
 ####################
 
 
-class ParseEpoch(EventRoutine):
+epoch_parse = persist.ObjectPersistance()
+
+@epoch_parse.type(persist.EVENT_OBJECT)
+class EpochParse(EventRoutine):
     """Story:  Parse epoch message
     
     IN ORDER TO process messages for synchronizing the current epoch
@@ -96,7 +101,11 @@ class ParseEpoch(EventRoutine):
                      
         return epoch
 
-class FormatEpoch(ActionRoutine):
+
+epoch_format = persist.ObjectPersistance()
+
+@epoch_format.type(persist.ACTION_OBJECT)
+class EpochFormat(ActionRoutine):
     """Story:  Format epoch message
     
     IN ORDER TO generate messages for distributing the current epoch

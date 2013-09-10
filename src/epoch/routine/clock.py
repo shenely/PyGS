@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   25 July 2013
+Modified:   09 September 2013
 
 Provides routines for driving the simulation clock.
 
@@ -22,6 +22,7 @@ Date          Author          Version     Description
 2013-06-27    shenely         1.2         Properties for scheduler
 2013-07-25    shenely                     Adjusted timeout
 2013-07-28    shenely                     Upped the timeout (againt)
+2013-09-09    shenely         1.3         Adding persistance logic
 
 """
 
@@ -40,6 +41,7 @@ from bson.tz_util import utc
 #Internal libraries
 from core.routine import SourceRoutine
 from core import agenda
+from core import persist
 from .. import EpochState
 #
 ##################
@@ -57,7 +59,7 @@ __all__ = ["ContinuousClock",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 
 J2000 = datetime(2000,1,1,12,tzinfo=utc)#Julian epoch (2000-01-01T12:00:00Z)
 
@@ -69,6 +71,9 @@ TIMEOUT = 100#time between running
 ####################
 
 
+continuous_clock = persist.ObjectPersistance()
+
+@continuous_clock.type(persist.SOURCE_OBJECT)
 class ContinuousClock(SourceRoutine):
     """Story:  Continuous clock
     
@@ -104,31 +109,48 @@ class ContinuousClock(SourceRoutine):
     type = agenda.PERIODIC
     timeout = TIMEOUT
     
-    def __init__(self,epoch=J2000,scale=CLOCK_SCALE):
-        assert isinstance(epoch,datetime)
-        assert isinstance(scale,(types.IntType,types.FloatType))
-        
+    def __init__(self,scale=CLOCK_SCALE):
         SourceRoutine.__init__(self)
         
-        self.epoch = epoch
-        self.scale = scale
-        
         self.now = datetime.utcnow()
+        
+    @continuous_clock.property
+    def epoch(self):
+        return self._epoch
+    
+    @epoch.setter
+    def epoch(self,epoch):
+        assert isinstance(epoch,datetime)
+        
+        self._epoch = epoch
+        
+    @continuous_clock.property
+    def scale(self):
+        return self._scale
+    
+    @scale.setter
+    def scale(self,scale):
+        assert isinstance(scale,(types.IntType,types.FloatType))
+        
+        self._scale = scale
     
     def _receive(self):
         logging.info("{0}:  Ticking from {1}".\
-                     format(self.name,self.epoch))
+                     format(self.name,self._epoch))
         
         self.past = self.now
         self.now = datetime.utcnow()
             
-        self.epoch += self.scale * (self.now - self.past)#increase simulation time
+        self._epoch += self._scale * (self.now - self.past)#increase simulation time
         
         logging.info("{0}:  Ticked to {1}".\
-                     format(self.name,self.epoch))
+                     format(self.name,self._epoch))
         
-        return EpochState(self.epoch)
+        return EpochState(self._epoch)
 
+discrete_clock = persist.ObjectPersistance()
+
+@discrete_clock.type(persist.SOURCE_OBJECT)
 class DiscreteClock(SourceRoutine):
     """Story:  Discrete clock
     
@@ -160,23 +182,34 @@ class DiscreteClock(SourceRoutine):
     name = "Clock.Discrete"
     type = agenda.PERIODIC
     timeout = TIMEOUT
+        
+    @discrete_clock.property
+    def epoch(self):
+        return self._epoch
     
-    def __init__(self,epoch=J2000,step=CLOCK_STEP):
+    @epoch.setter
+    def epoch(self,epoch):
         assert isinstance(epoch,datetime)
+        
+        self._epoch = epoch
+        
+    @discrete_clock.property
+    def step(self):
+        return self._scale
+    
+    @step.setter
+    def step(self,step):
         assert isinstance(step,timedelta)
         
-        SourceRoutine.__init__(self)
-        
-        self.epoch = epoch
-        self.step = step
+        self._step = step
         
     def _receive(self):
         logging.info("{0}:  Ticking from {1}".\
-                     format(self.name,self.epoch))
+                     format(self.name,self._epoch))
         
-        self.epoch += self.step#increase simulation time
+        self._epoch += self._step#increase simulation time
         
         logging.info("{0}:  Ticked to {1}".\
-                     format(self.name,self.epoch))
+                     format(self.name,self._epoch))
         
-        return EpochState(self.epoch)
+        return EpochState(self._epoch)

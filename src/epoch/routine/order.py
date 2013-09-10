@@ -4,7 +4,7 @@
 
 Author(s):  Sean Henely
 Language:   Python 2.x
-Modified:   29 June 2013
+Modified:   09 September 2013
 
 Provides routines for order tasks.
 
@@ -21,6 +21,7 @@ Date          Author          Version     Description
 2013-05-14    shenely         1.0         Initial revision
 2013-06-26    shenely         1.1         Modifying routine structure
 2013-06-29    shenely         1.2         Adding methods
+2013-09-09    shenely         1.3         Adding persistence logic
 
 """
 
@@ -37,6 +38,7 @@ import types
 
 #Internal libraries
 from core.routine import ConditionRoutine
+from core import persist
 from . import EpochState
 #
 ##################
@@ -54,11 +56,14 @@ __all__ = ["BeforeEpoch",
 ####################
 # Constant section #
 #
-__version__ = "1.2"#current version [major.minor]
+__version__ = "1.3"#current version [major.minor]
 #
 ####################
 
 
+before_epoch = persist.ObjectPersistance()
+
+@before_epoch.type(persist.CONDITION_OBJECT)
 class BeforeEpoch(ConditionRoutine):
     """Story:  Before reference
     
@@ -90,32 +95,38 @@ class BeforeEpoch(ConditionRoutine):
     """
     
     name = "Epoch.Before"
+        
+    @before_epoch.property
+    def reference(self):
+        return self._reference
     
-    def __init__(self,reference,margin):
+    @reference.setter
+    def reference(self,reference):
         assert isinstance(reference,EpochState)#TODO:  Define EpochState (also, rename)
+        
+        self._reference = reference
+        
+    @before_epoch.property
+    def margin(self):
+        return self._margin
+    
+    @margin.setter
+    def margin(self,margin):
         assert isinstance(margin,timedelta)
         
-        ConditionRoutine.__init__(self)
-        
-        self.reference = reference
-        self.margin = margin
+        self._margin = margin
     
     def _satisfy(self,message):
-        before = self.reference.epoch - message.epoch
+        before = self._reference.epoch - message.epoch
         
         logging.info("{0}:  Before by {1}".\
                      format(self.name,before))
             
-        return before > self.margin
-    
-    def set_reference(self,reference):
-        assert isinstance(reference,EpochState)
+        return before > self._margin
         
-        self.reference = reference
-        
-        return reference
-        
+after_epoch = persist.ObjectPersistance()
 
+@after_epoch.type(persist.CONDITION_OBJECT)
 class AfterEpoch(ConditionRoutine):
     """Story:  After reference
     
@@ -147,27 +158,31 @@ class AfterEpoch(ConditionRoutine):
     """
     
     name = "Epoch.After"
+        
+    @before_epoch.property
+    def reference(self):
+        return self._reference
     
-    def __init__(self,reference,margin):
-        assert isinstance(reference,EpochState)
+    @reference.setter
+    def reference(self,reference):
+        assert isinstance(reference,EpochState)#TODO:  Define EpochState (also, rename)
+        
+        self._reference = reference
+        
+    @before_epoch.property
+    def margin(self):
+        return self._margin
+    
+    @margin.setter
+    def margin(self,margin):
         assert isinstance(margin,timedelta)
         
-        ConditionRoutine.__init__(self)
-        
-        self.reference = reference
-        self.margin = margin
+        self._margin = margin
     
     def _satisfy(self,message):
-        after = message.epoch - self.reference.epoch
+        after = message.epoch - self._reference.epoch
         
         logging.info("{0}:  After by {1}".\
                      format(self.name,after))
         
-        return after > self.margin
-    
-    def set_reference(self,reference):
-        assert isinstance(reference,EpochState)
-        
-        self.reference = reference
-        
-        return reference
+        return after > self._margin
